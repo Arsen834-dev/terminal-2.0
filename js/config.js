@@ -1,28 +1,27 @@
 // ============ КОНФИГУРАЦИЯ ============
 
-// Supabase
 export const SUPABASE_URL = 'https://qblnleuunawrkyvwekvg.supabase.co';
 export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibG5sZXV1bmF3cmt5dndla3ZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMDY3NDYsImV4cCI6MjA5NjY4Mjc0Nn0.3UaltpiiLT7pZyZVegGIUUEq5qDdKf2VOdLkCLmqr0k';
-
-// Gemini API
 export const GEMINI_API_KEY = 'AIzaSyAQ.Ab8RN6Lj8Vo-J7S6mOYceHOcvqe0zop0yxexIW6t8LdJPcw0gw';
-
-// OpenRouter
 export const OPENROUTER_API_KEY = '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';
 
-// Константы
+// Чат
 export const CHAT_PAGE_SIZE = window.innerWidth > 768 ? 100 : 30;
 export const ANNOUNCE_PER_PAGE = 5;
-export const REP_INTERVAL = 1800000; // 30 минут
-export const TK_INTERVAL = 1800000; // 30 минут
-export const WC26_THINK_INTERVAL = 1200000; // 20 минут
-export const WC26_CONTENT_INTERVAL = 86400000; // 24 часа
 
-// Эмодзи для реакций
+// Таймеры
+export const REP_INTERVAL = 1800000;
+export const TK_INTERVAL = 1800000;
+export const WC26_THINK_INTERVAL = 1200000;
+export const WC26_CONTENT_INTERVAL = 86400000;
+
+// Аватарки
+export const AVATAR_MAX_SIZE = 2 * 1024 * 1024;
+export const AVATAR_DIMENSION = 256;
+export const AVATAR_BUCKET = 'avatars';
+
+// Реакции
 export const REACTION_EMOJIS = ['👍', '❤', '😂', '🔥', '💀', '😡', '🎯', '👏', '🫡', '💯', '🤝', '⚡', '💎', '🎪', '🌑'];
-
-// Аватары
-export const AVATARS = ['😀','😂','🤣','😎','🤩','🥳','😇','🤠','👻','💀','🤡','👽','🤖','👾','👑','🔦','👸','🤴','🦸','🦹','🧙‍♂️','🧛','🧝','🧟','👼','😈','👹','👺','🕶️','🎩','👒','🎓','⛑️','💂','👮','🕵️','🥷','🤵','👰','🎭','👨‍💻','👩‍💻','🧑‍🔬','👨‍🚀','👩‍✈️','🧑‍🏭','👨‍🎤','👩‍🎨','🎸','🎹','🎺','🥁','🎻','🎤','🎧','📸','🎥','🎬','🎮','🕹️','💰','💎','⭐','🔥','⚡','💣','🗝️','🔑','💉','🧬','🧪','🧲','🛡️','⚔️','🗡️','🏹','🔫','🧨','🪓','🔧','🔨','⛏️','🦊','🐺','🐉','🐲','🦅','🦉','🦇','🐍','🦎','🐙','🦑','🦈','🦂','🕷️','🌑','🌕','🌙','✨','💫','☄️','🌌','🪐','🔮','🧿','🕯️','💀','☠️','👁️','🧠','🦾','🦿','🩸','💊','⚙️','⛓️','📡','🖥️','🎲','🎯','🎰','♠️','♦️','♣️','🃏','🀄','🎴','🪙','🏆','🥇'];
 
 // Достижения
 export const ACHIEVEMENTS = [
@@ -34,10 +33,23 @@ export const ACHIEVEMENTS = [
     { id: 'clan_creator', name: 'ОСНОВАТЕЛЬ', desc: 'Создать отряд', icon: '⚔️' }
 ];
 
-// Эмодзи для выбора отряда
+// Эмодзи отрядов
 export const CLAN_EMOJIS = ['⚔️','🛡','👑','💀','🔥','⚡','🌟','💎','🐺','🦅','🐉','🦊','🐍','🦎','🦇','👻','🤖','🎯','🏴','💣','🔱','⚜','🀄','🎲','🔮'];
 
-// Текст для тикера
+// Расы для РП
+export const RP_RACES = [
+    { id: 'human', name: 'Человек', icon: '👤' },
+    { id: 'unathi', name: 'Унатх', icon: '🦎' },
+    { id: 'tajaran', name: 'Таяран', icon: '🐱' },
+    { id: 'diona', name: 'Диона', icon: '🌿' },
+    { id: 'vox', name: 'Вокс', icon: '🦜' },
+    { id: 'slime', name: 'Слайм', icon: '🟢' },
+    { id: 'vulpkanin', name: 'Вульпканин', icon: '🦊' },
+    { id: 'skrell', name: 'Скрелл', icon: '🐸' },
+    { id: 'ipc', name: 'Киборг', icon: '🤖' }
+];
+
+// Тикер
 export const TICKER_TEXTS = [
     "Слухи: найдена карта старой канализации в квадрате 105 планеты 436",
     "Внимание: патрули усилены в квадрате 7, обход через квадрат 12 на станции Flant-NT405",
@@ -67,5 +79,5 @@ export const TICKER_TEXTS = [
     "Связь: Движение Фонариков желает вам удачи!"
 ];
 
-// Удаленные ID предметов (для фильтрации)
+// Удалённые ID
 export const REMOVED_ITEM_IDS = ['c_inverted', 'c_hellfire', 'c_obsidian', 'c_hexagon', 'c_emerald', 'c_ruby', 'b_pais', 'b_mauler', 'b_gygax'];

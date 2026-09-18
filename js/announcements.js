@@ -18,68 +18,39 @@ export const announceTypes = {
 
 export async function loadAnnouncements() {
     try {
-        let { data } = await supabase.from('announcements')
-            .select('*')
-            .order('created_at', { ascending: false });
-        if (data) {
-            announcements = data;
-            window.announcements = announcements;
-        }
+        let { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+        if (data) { announcements = data; window.announcements = announcements; }
     } catch (e) {}
 }
 
 export async function createAnnouncement(title, text, type) {
-    if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) {
-        return { success: false, error: '⛔ НЕТ ПРАВ' };
-    }
+    if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) return { success: false, error: '⛔ НЕТ ПРАВ' };
     try {
-        await supabase.from('announcements').insert({
-            type: type || 'news',
-            title,
-            text,
-            author: CA.name
-        });
+        await supabase.from('announcements').insert({ type: type || 'news', title, text, author: CA.name });
         await loadAnnouncements();
-        notif('📢 ОБЪЯВЛЕНИЕ ОПУБЛИКОВАНО');
+        notif('📢 ОПУБЛИКОВАНО');
         return { success: true };
-    } catch (e) {
-        return { success: false, error: 'Ошибка создания' };
-    }
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export async function deleteAnnouncement(id) {
-    if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) {
-        return { success: false, error: '⛔ НЕТ ПРАВ' };
-    }
-    try {
-        await supabase.from('announcements').delete().eq('id', id);
-        await loadAnnouncements();
-        notif('🗑 ОБЪЯВЛЕНИЕ УДАЛЕНО');
-        return { success: true };
-    } catch (e) {
-        return { success: false, error: 'Ошибка удаления' };
-    }
+    if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) return { success: false, error: '⛔ НЕТ ПРАВ' };
+    try { await supabase.from('announcements').delete().eq('id', id); await loadAnnouncements(); notif('🗑 УДАЛЕНО'); return { success: true }; }
+    catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export async function pinAnnouncement(id) {
-    if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) {
-        return { success: false, error: '⛔ НЕТ ПРАВ' };
-    }
+    if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) return { success: false, error: '⛔ НЕТ ПРАВ' };
     let a = announcements.find(x => x.id == id);
     if (!a) return { success: false, error: '⛔ Не найдено' };
     let np = !a.pinned;
     try {
-        await supabase.from('announcements').update({
-            pinned: np,
-            pinned_by: np ? CA.name : null
-        }).eq('id', id);
+        await supabase.from('announcements').update({ pinned: np, pinned_by: np ? CA.name : null }).eq('id', id);
         announcements = announcements.map(x => x.id == id ? { ...x, pinned: np, pinned_by: np ? CA.name : null } : x);
         addLog(CA.name, np ? 'pin_announce' : 'unpin_announce', '#' + id);
         notif(np ? '📌 ЗАКРЕПЛЕНО' : '📌 ОТКРЕПЛЕНО');
         return { success: true };
-    } catch (e) {
-        return { success: false, error: 'Ошибка' };
-    }
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export function getFilteredAnnouncements() {
@@ -97,24 +68,11 @@ export function getPaginatedAnnouncements() {
     let totalPages = Math.ceil(filtered.length / ANNOUNCE_PER_PAGE);
     if (announcePage > totalPages) announcePage = totalPages || 1;
     let start = (announcePage - 1) * ANNOUNCE_PER_PAGE;
-    return {
-        items: filtered.slice(start, start + ANNOUNCE_PER_PAGE),
-        totalPages,
-        currentPage: announcePage,
-        total: filtered.length
-    };
+    return { items: filtered.slice(start, start + ANNOUNCE_PER_PAGE), totalPages, currentPage: announcePage, total: filtered.length };
 }
 
-export function setAnnounceFilter(filter) {
-    announceFilter = filter;
-    announcePage = 1;
-}
-
-export function setAnnouncePage(page) {
-    announcePage = page;
-}
-
-// ==================== RENDER ANNOUNCE APP (UI) ====================
+export function setAnnounceFilter(filter) { announceFilter = filter; announcePage = 1; }
+export function setAnnouncePage(page) { announcePage = page; }
 
 export function renderAnnounceApp() {
     let c = document.getElementById('announce-content');
@@ -122,18 +80,12 @@ export function renderAnnounceApp() {
     let sorted = [...announcements].sort((a, b) => { if (a.pinned && !b.pinned) return -1; if (!a.pinned && b.pinned) return 1; return 0; });
     c.innerHTML = '<button class="settings-btn" id="show-create-announce-btn"><span>📢</span> СОЗДАТЬ ОБЪЯВЛЕНИЕ</button><div id="announce-list">' +
         (sorted.length === 0 ? '<div style="color:#cc0000;">НЕТ</div>' :
-        sorted.map(a => '<div class="announce-card' + (a.pinned ? ' pinned' : '') + '"><div class="announce-type-badge">' + (announceTypes[a.type] || '📰') + (a.pinned ? ' 📌' : '') + '</div><div class="announce-title-text">' + a.title + '</div><div class="announce-text-body">' + (a.text || '').replace(/\n/g, '<br>').replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid #ff1744;margin:5px 0;">') + '</div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="announce-author">— <span onclick="window.showAgentInfo(\'' + a.author + '\')" style="cursor:pointer;text-decoration:underline;">' + a.author + '</span></div><div style="display:flex;gap:5px;"><button class="modal-btn" style="font-size:0.9rem;" data-pin-ann="' + a.id + '">' + (a.pinned ? '📌 ОТКРЕПИТЬ' : '📌 ЗАКРЕПИТЬ') + '</button><button class="modal-btn" style="font-size:0.9rem;" data-del-ann="' + a.id + '">🗑 УДАЛИТЬ</button></div></div></div>').join('')) +
+        sorted.map(a => '<div class="announce-card' + (a.pinned ? ' pinned' : '') + '"><div class="announce-type-badge">' + (announceTypes[a.type] || '📰') + (a.pinned ? ' 📌' : '') + '</div><div class="announce-title-text">' + a.title + '</div><div class="announce-text-body">' + (a.text || '').replace(/\n/g, '<br>').replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid #ff1744;margin:5px 0;">') + '</div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="announce-author">— ' + a.author + '</div><div style="display:flex;gap:5px;"><button class="modal-btn" style="font-size:0.9rem;" data-pin-ann="' + a.id + '">' + (a.pinned ? '📌 ОТКРЕПИТЬ' : '📌 ЗАКРЕПИТЬ') + '</button><button class="modal-btn" style="font-size:0.9rem;" data-del-ann="' + a.id + '">🗑 УДАЛИТЬ</button></div></div></div>').join('')) +
         '</div>';
     setTimeout(() => {
-        document.getElementById('show-create-announce-btn')?.addEventListener('click', function() {
-            if (typeof showCreateAnnouncement === 'function') showCreateAnnouncement();
-        });
-        document.querySelectorAll('[data-pin-ann]').forEach(b => b.addEventListener('click', function() {
-            pinAnnouncement(parseInt(this.dataset.pinAnn));
-        }));
-        document.querySelectorAll('[data-del-ann]').forEach(b => b.addEventListener('click', function() {
-            deleteAnnouncement(parseInt(this.dataset.delAnn));
-        }));
+        document.getElementById('show-create-announce-btn')?.addEventListener('click', () => { if (typeof showCreateAnnouncement === 'function') showCreateAnnouncement(); });
+        document.querySelectorAll('[data-pin-ann]').forEach(b => b.addEventListener('click', function() { pinAnnouncement(parseInt(this.dataset.pinAnn)); }));
+        document.querySelectorAll('[data-del-ann]').forEach(b => b.addEventListener('click', function() { deleteAnnouncement(parseInt(this.dataset.delAnn)); }));
     }, 10);
 }
 

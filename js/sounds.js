@@ -7,8 +7,10 @@ let bgTrackIndex = 0;
 const sounds = {};
 
 export function preloadSound(name, file) {
-    sounds[name] = new Audio(file);
-    sounds[name].volume = 0.3;
+    try {
+        sounds[name] = new Audio(file);
+        sounds[name].volume = 0.3;
+    } catch (e) {}
 }
 
 export function playSound(name) {
@@ -22,12 +24,9 @@ export function startBgMusic() {
     if (!soundEnabled || window.innerWidth <= 768) return;
     if (bgPlaylist.length === 0) {
         bgPlaylist = [
-            new Audio('bg_music_1.mp3'),
-            new Audio('bg_music_2.mp3'),
-            new Audio('bg_music_3.mp3'),
-            new Audio('bg_music_4.mp3'),
-            new Audio('bg_music_5.mp3'),
-            new Audio('bg_music_6.mp3')
+            new Audio('bg_music_1.mp3'), new Audio('bg_music_2.mp3'),
+            new Audio('bg_music_3.mp3'), new Audio('bg_music_4.mp3'),
+            new Audio('bg_music_5.mp3'), new Audio('bg_music_6.mp3')
         ];
         bgPlaylist.forEach(a => { a.volume = 0.03; });
     }
@@ -62,16 +61,15 @@ export function stopBgMusic() {
 
 export function toggleSound() {
     soundEnabled = !soundEnabled;
-    if (soundEnabled) {
-        startBgMusic();
-    } else {
-        stopBgMusic();
-    }
+    if (soundEnabled) startBgMusic();
+    else stopBgMusic();
     localStorage.setItem('syndicate_sound', soundEnabled);
     return soundEnabled;
 }
 
 export function getSoundEnabled() {
+    let saved = localStorage.getItem('syndicate_sound');
+    soundEnabled = saved !== 'false';
     return soundEnabled;
 }
 
