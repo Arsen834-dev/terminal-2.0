@@ -75,3 +75,25 @@ export function debounce(fn, delay) {
         timer = setTimeout(() => fn.apply(this, args), delay);
     };
 }
+export function glowIcon(id) {
+    let el = document.getElementById(id);
+    if (el) el.classList.add('new-badge-glow');
+}
+
+export function stopGlowIcon(id) {
+    let el = document.getElementById(id);
+    if (el) el.classList.remove('new-badge-glow');
+}
+
+export function updateBadgeIcons() {
+    // Простая версия — без циклических зависимостей
+    let chatIcon = document.getElementById('icon-chat');
+    if (chatIcon && window.unreadMentions) {
+        let b = chatIcon.querySelector('.icon-badge');
+        let total = window.unreadMentions.chat + window.unreadMentions.clan;
+        if (total > 0) {
+            if (!b) { b = document.createElement('span'); b.className = 'icon-badge'; chatIcon.appendChild(b); }
+            b.textContent = total;
+        } else if (b) b.remove();
+    }
+}

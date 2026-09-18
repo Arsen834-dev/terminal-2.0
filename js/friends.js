@@ -1,7 +1,6 @@
 // ============ FRIENDS / ДРУЗЬЯ ============
 import { supabase, CA, loadAgent } from './auth.js';
-import { notif } from './utils.js';
-import { startDM, glowIcon } from './chat.js';
+import { notif, glowIcon } from './utils.js';
 
 let friends = [];
 

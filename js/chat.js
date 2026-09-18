@@ -601,3 +601,16 @@ export {
     dmMessagesAll, dmChannel, currentDM, clanChats,
     currentClanId, clanChannel, pinnedChatSubscription, mentionAgents
 };
+window.startDM = startDM;
+window.addReaction = addReaction;
+window.addClanReaction = addClanReaction;
+window.addDMReaction = addDMReaction;
+window.pinChatMessage = pinChatMessage;
+window.deleteMessage = deleteMessage;
+window.deleteClanMessage = deleteClanMessage;
+window.replyToMessage = replyToMessage;
+window.replyToClanMessage = replyToClanMessage;
+window.editMessage = editMessage;
+window.glowIcon = glowIcon;
+window.stopGlowIcon = stopGlowIcon;
+window.updateBadgeIcons = updateBadgeIcons;

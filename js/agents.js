@@ -5,7 +5,7 @@ import { getFriends, sendFriendRequest, removeFriend, blockAgent } from './frien
 import { getAchievements } from './achievements.js';
 import { clans } from './clans.js';
 import { notif, closeModal, timeAgo } from './utils.js';
-import { startDM, glowIcon } from './chat.js';
+import { glowIcon } from './utils.js';
 
 // Открыть профиль агента (паблик-стиль)
 export async function showAgentInfo(name) {
