@@ -20,7 +20,7 @@ export async function loadRpCharacters() {
 
 export async function createRpCharacter(charData) {
     if (!CA) return { success: false, error: '⛔ Не авторизован' };
-    if (!charData.name || charData.name.length < 2 || charData.name.length > 30) return { success: false, error: '⛔ ИМЯ 2-30 СИМВОЛОВ' };
+    if (!charData.name || charData.name.length < 2 || charData.name.length > 30) return { success: false, error: '⛔ Имя 2-30 символов' };
     try {
         let { data, error } = await supabase.from('rp_characters').insert({
             owner: CA.name,
@@ -35,7 +35,7 @@ export async function createRpCharacter(charData) {
         }).select().single();
         if (error) return { success: false, error: error.message };
         await loadRpCharacters();
-        notif('✅ ПЕРСОНАЖ СОЗДАН');
+        notif('✅ Персонаж создан');
         return { success: true, character: data };
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
@@ -54,7 +54,7 @@ export async function updateRpCharacter(id, charData) {
             avatar_url: charData.avatar_url
         }).eq('id', id).eq('owner', CA.name);
         await loadRpCharacters();
-        notif('✅ ПЕРСОНАЖ ОБНОВЛЁН');
+        notif('✅ Персонаж обновлён');
         return { success: true };
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
@@ -68,7 +68,7 @@ export async function deleteRpCharacter(id) {
             currentRpChar = null;
             localStorage.removeItem('syndicate_rp_char');
         }
-        notif('🗑 ПЕРСОНАЖ УДАЛЁН');
+        notif('🗑 Персонаж удалён');
         return { success: true };
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
@@ -90,7 +90,7 @@ export function loadSavedRpChar() {
 
 export function requireCharacter() {
     if (!currentRpChar) {
-        notif('⚠ СНАЧАЛА СОЗДАЙ ПЕРСОНАЖА');
+        notif('⚠ Сначала создай персонажа');
         return false;
     }
     return true;
@@ -119,7 +119,7 @@ export async function sendRpMessage() {
     let inp = document.getElementById('rp-input');
     let msg = inp?.value?.trim();
     if (!msg || !CA || !currentRpChar) {
-        if (!currentRpChar) notif('⚠ ВЫБЕРИ ПЕРСОНАЖА');
+        if (!currentRpChar) notif('⚠ Выбери персонажа');
         return;
     }
     let md = {
@@ -139,24 +139,24 @@ export function renderRpMessages() {
     let c = document.getElementById('rp-messages');
     if (!c) return;
     if (rpMessages.length === 0) {
-        c.innerHTML = '<div style="text-align:center;color:#880000;padding:20px;">СООБЩЕНИЙ ПОКА НЕТ</div>';
+        c.innerHTML = '<div class="empty-state">Сообщений пока нет</div>';
         return;
     }
     c.innerHTML = rpMessages.map(m => {
         let avatarHtml = m.char_avatar_url
-            ? '<img src="' + m.char_avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+            ? '<img src="' + m.char_avatar_url + '" style="width:100%;height:100%;object-fit:cover;">'
             : '🎭';
         let txt = (m.text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
-        txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid #ff1744;margin:5px 0;" onerror="this.style.display=\'none\'">');
+        txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;border-radius:12px;margin:6px 0;" onerror="this.style.display=\'none\'">');
         return '<div class="chat-msg">' +
             '<div class="chat-msg-left"><span class="chat-avatar-frame f-default"><span class="chat-avatar">' + avatarHtml + '</span></span></div>' +
             '<div class="chat-msg-right">' +
             '<div class="chat-header-row">' +
-            '<span class="chat-author" style="color:#ffd700;">' + m.char_name + '</span>' +
-            '<span style="color:#880000;font-size:0.75rem;">(' + m.owner + ')</span>' +
+            '<span class="chat-author" style="color:var(--accent);">' + m.char_name + '</span>' +
+            '<span style="color:var(--text-3);font-size:0.75rem;">(' + m.owner + ')</span>' +
             '<span class="chat-time">' + m.time + '</span>' +
             '</div>' +
-            '<div class="chat-text" style="color:#cc0000;font-style:italic;">' + txt + '</div>' +
+            '<div class="chat-text" style="font-style:italic;">' + txt + '</div>' +
             '</div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
@@ -177,7 +177,7 @@ export async function loadRpScenes() {
 }
 
 export async function createRpScene(title, description) {
-    if (!CA || !currentRpChar) return { success: false, error: '⚠ НУЖЕН ПЕРСОНАЖ' };
+    if (!CA || !currentRpChar) return { success: false, error: '⚠ Нужен персонаж' };
     try {
         await supabase.from('rp_scenes').insert({
             title, description, author: CA.name,
@@ -186,7 +186,7 @@ export async function createRpScene(title, description) {
             players: []
         });
         await loadRpScenes();
-        notif('✅ СПЕКТАКЛЬ СОЗДАН');
+        notif('✅ Спектакль создан');
         return { success: true };
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
@@ -195,12 +195,12 @@ export function renderRpScenes() {
     let c = document.getElementById('rp-scenes-list');
     if (!c) return;
     if (rpScenes.length === 0) {
-        c.innerHTML = '<div style="color:#880000;text-align:center;padding:20px;">СПЕКТАКЛЕЙ ПОКА НЕТ</div>';
+        c.innerHTML = '<div class="empty-state">Спектаклей пока нет</div>';
         return;
     }
     c.innerHTML = rpScenes.map(s => {
-        let av = s.char_avatar_url ? '<img src="' + s.char_avatar_url + '" style="width:32px;height:32px;border-radius:50%;">' : '🎭';
-        return '<div class="guide-item"><div style="display:flex;align-items:center;gap:10px;"><span>' + av + '</span><div style="flex:1;"><div style="color:#ff1744;font-size:1.2rem;">' + s.title + '</div><div style="color:#880000;font-size:0.8rem;">' + s.char_name + ' (' + s.author + ') • ' + timeAgo(s.created_at) + '</div></div></div><div style="color:#cc0000;margin-top:8px;">' + (s.description || '') + '</div></div>';
+        let av = s.char_avatar_url ? '<img src="' + s.char_avatar_url + '" style="width:44px;height:44px;border-radius:12px;object-fit:cover;">' : '🎭';
+        return '<div class="card" style="padding:14px;margin-bottom:8px;"><div style="display:flex;gap:12px;align-items:center;"><div>' + av + '</div><div style="flex:1;"><div style="font-weight:700;">' + s.title + '</div><div style="color:var(--text-3);font-size:0.8rem;">' + s.char_name + ' (' + s.author + ') · ' + timeAgo(s.created_at) + '</div></div></div><div style="color:var(--text-2);margin-top:8px;line-height:1.5;">' + (s.description || '') + '</div></div>';
     }).join('');
 }
 

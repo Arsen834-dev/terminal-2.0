@@ -6,7 +6,6 @@ import { getAchievements } from './achievements.js';
 import { clans } from './clans.js';
 import { notif, closeModal, timeAgo } from './utils.js';
 
-// Открыть профиль агента (паблик-стиль)
 export async function showAgentInfo(name) {
     if (!name) return;
     const modal = document.getElementById('modal-agent-profile');
@@ -14,9 +13,8 @@ export async function showAgentInfo(name) {
 
     try {
         const agent = await loadAgent(name);
-        if (!agent) { notif('⛔ АГЕНТ НЕ НАЙДЕН'); return; }
+        if (!agent) { notif('⛔ Агент не найден'); return; }
 
-        // Посты
         let posts = [];
         try {
             let { data } = await supabase.from('profile_posts')
@@ -24,7 +22,6 @@ export async function showAgentInfo(name) {
             if (data) posts = data;
         } catch (e) {}
 
-        // Подписки
         let subscribersCount = 0, followingCount = 0, iAmSubscribed = false;
         try {
             let { data: subs } = await supabase.from('subscriptions').select('*').eq('target', name);
@@ -36,14 +33,8 @@ export async function showAgentInfo(name) {
 
         let coverUrl = agent.cover_url || '';
         let avatarHtml = agent.avatar_url
-            ? '<img src="' + agent.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+            ? '<img src="' + agent.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">'
             : '🕶️';
-
-        let frameClass = 'f-default';
-        if (agent.active_frame) {
-            let f = shopItems.frames.find(x => x.id === agent.active_frame);
-            if (f && f.cssClass) frameClass = f.cssClass;
-        }
 
         let colorClass = agent.active_color ? getActiveColorClassForId(agent.active_color) : '';
 
@@ -56,118 +47,84 @@ export async function showAgentInfo(name) {
 
         let now = Date.now();
         let isOnline = agent.name === CA?.name || (agent.last_seen && (now - new Date(agent.last_seen).getTime()) < 300000);
-        let statusHtml = isOnline ? '<span style="color:#00ff41;">● ОНЛАЙН</span>' : '<span style="color:#cc0000;">● ОФФЛАЙН</span>';
+        let statusHtml = isOnline ? '<span style="color:var(--success);">● Онлайн</span>' : '<span style="color:var(--text-3);">● Оффлайн</span>';
 
-        let roleMap = { admin: '👑 АДМИН', moderator: '🛡 МОДЕР', agent: '🎯 АГЕНТ' };
-        let roleText = roleMap[agent.role] || '🎯 АГЕНТ';
+        let roleMap = { admin: '👑 Админ', moderator: '🛡 Модер', agent: '🎯 Агент' };
+        let roleText = roleMap[agent.role] || '🎯 Агент';
 
-        let clanName = 'НЕТ';
+        let clanName = 'Нет';
         let memberClan = clans.find(c => c.members && c.members.some(m => m.name === agent.name));
-        if (memberClan) clanName = memberClan.emoji + ' ' + memberClan.name + ' [' + memberClan.tag + ']';
-
-        let styleClass = '';
-        if (agent.active_style) {
-            let s = shopItems.styles.find(x => x.id === agent.active_style);
-            if (s && s.cssClass) styleClass = s.cssClass;
-        }
+        if (memberClan) clanName = memberClan.emoji + ' ' + memberClan.name;
 
         let isMe = agent.name === CA?.name;
         let html = '';
 
         // Обложка
-        html += '<div style="position:relative;height:140px;background:' + (coverUrl ? 'url(' + coverUrl + ') center/cover' : 'linear-gradient(135deg,#1a0000,#4a0000,#1a0000') + ';border:2px solid #ff1744;border-radius:12px 12px 0 0;">';
-        if (isMe) {
-            html += '<button class="modal-btn" style="position:absolute;top:10px;right:10px;font-size:0.8rem;padding:5px 10px;" onclick="window.changeCover()">📷 ОБЛОЖКА</button>';
-        }
+        html += '<div style="position:relative;height:160px;background:' + (coverUrl ? 'url(' + coverUrl + ') center/cover' : 'linear-gradient(135deg,#1a0000,var(--accent-dark),#1a0000)') + ';">';
+        if (isMe) html += '<button class="btn btn-secondary" style="position:absolute;top:12px;right:12px;font-size:0.8rem;padding:6px 12px;" onclick="window.changeCover()">📷 Обложка</button>';
         html += '</div>';
 
         // Аватар
-        html += '<div style="position:relative;margin-top:-60px;margin-left:20px;display:flex;align-items:flex-end;gap:15px;">';
-        html += '<span class="status-avatar-frame ' + frameClass + '" style="width:120px;height:120px;background:#000;display:flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden;">';
-        html += '<span style="font-size:3rem;">' + avatarHtml + '</span>';
-        html += '</span>';
+        html += '<div style="padding:0 20px;">';
+        html += '<div style="width:100px;height:100px;margin-top:-50px;border-radius:12px;background:var(--bg-3);border:3px solid var(--bg-2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:2.5rem;position:relative;z-index:2;">' + avatarHtml + '</div>';
         html += '</div>';
 
-        // Имя и статус
-        html += '<div style="padding:15px 20px;">';
+        // Имя
+        html += '<div style="padding:16px 20px;">';
         html += '<div style="display:flex;align-items:center;gap:8px;">';
-        html += '<span class="' + colorClass + '" style="font-size:1.6rem;font-weight:bold;">' + agent.name + '</span>';
+        html += '<span class="' + colorClass + '" style="font-size:1.4rem;font-weight:700;">' + agent.name + '</span>';
         html += badgeHtml;
         html += '</div>';
-        html += '<div style="color:#cc0000;font-size:0.9rem;margin-top:3px;">' + roleText + ' | ' + statusHtml + '</div>';
-        if (agent.status_text) html += '<div style="color:#ff1744;margin-top:5px;">💬 ' + agent.status_text + '</div>';
-        if (agent.bio) html += '<div style="color:#880000;font-size:0.9rem;margin-top:5px;">📄 ' + agent.bio + '</div>';
-        html += '<div style="color:#880000;font-size:0.8rem;margin-top:5px;">⚔️ Отряд: ' + clanName + '</div>';
+        html += '<div style="color:var(--text-3);font-size:0.9rem;margin-top:4px;">' + roleText + ' · ' + statusHtml + '</div>';
+        html += '<div style="color:var(--text-3);font-size:0.85rem;margin-top:6px;">⚔️ Отряд: ' + clanName + '</div>';
         html += '</div>';
 
         // Статистика
-        html += '<div style="display:flex;gap:20px;padding:10px 20px;border-top:1px solid #2a0000;border-bottom:1px solid #2a0000;">';
-        html += '<div style="text-align:center;"><div style="color:#ff1744;font-size:1.2rem;font-weight:bold;">' + subscribersCount + '</div><div style="color:#880000;font-size:0.7rem;">ПОДПИСЧИКИ</div></div>';
-        html += '<div style="text-align:center;"><div style="color:#ff1744;font-size:1.2rem;font-weight:bold;">' + followingCount + '</div><div style="color:#880000;font-size:0.7rem;">ПОДПИСКИ</div></div>';
-        html += '<div style="text-align:center;"><div style="color:#ffd700;font-size:1.2rem;font-weight:bold;">' + (agent.crystals || 0) + '</div><div style="color:#880000;font-size:0.7rem;">ТК</div></div>';
-        html += '<div style="text-align:center;"><div style="color:#ff1744;font-size:1.2rem;font-weight:bold;">' + (agent.rep || 0) + '</div><div style="color:#880000;font-size:0.7rem;">РЕПА</div></div>';
-        html += '<div style="text-align:center;"><div style="color:#ffd700;font-size:1.2rem;font-weight:bold;">' + (agent.achievements ? agent.achievements.length : 0) + '</div><div style="color:#880000;font-size:0.7rem;">АЧИВКИ</div></div>';
+        html += '<div style="display:flex;gap:24px;padding:12px 20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">';
+        html += '<div><div style="font-weight:700;color:var(--text);">' + subscribersCount + '</div><div style="color:var(--text-3);font-size:0.75rem;">подписчики</div></div>';
+        html += '<div><div style="font-weight:700;color:var(--text);">' + followingCount + '</div><div style="color:var(--text-3);font-size:0.75rem;">подписки</div></div>';
+        html += '<div><div style="font-weight:700;color:var(--accent);">' + (agent.crystals || 0) + '</div><div style="color:var(--text-3);font-size:0.75rem;">ТК</div></div>';
+        html += '<div><div style="font-weight:700;color:var(--text);">' + (agent.rep || 0) + '</div><div style="color:var(--text-3);font-size:0.75rem;">репа</div></div>';
         html += '</div>';
 
         // Кнопки
         if (!isMe) {
-            html += '<div style="display:flex;gap:10px;padding:15px;">';
-            html += '<button class="modal-btn" id="profile-dm-btn" style="flex:1;font-size:1rem;">📩 НАПИСАТЬ</button>';
-            if (iAmSubscribed) {
-                html += '<button class="modal-btn" id="profile-sub-btn" style="flex:1;font-size:1rem;color:#ff9100;border-color:#ff9100;">✓ ПОДПИСАН</button>';
-            } else {
-                html += '<button class="modal-btn" id="profile-sub-btn" style="flex:1;font-size:1rem;color:#00ff41;border-color:#00ff41;">➕ ПОДПИСАТЬСЯ</button>';
-            }
+            html += '<div style="display:flex;gap:8px;padding:16px 20px 8px;">';
+            html += '<button class="btn btn-primary" id="profile-dm-btn" style="flex:1;">📩 Написать</button>';
+            if (iAmSubscribed) html += '<button class="btn btn-secondary" id="profile-sub-btn" style="flex:1;">✓ Подписан</button>';
+            else html += '<button class="btn btn-secondary" id="profile-sub-btn" style="flex:1;">➕ Подписаться</button>';
             html += '</div>';
-            html += '<div style="display:flex;gap:10px;padding:0 15px 15px;">';
-            html += '<button class="modal-btn" id="profile-add-friend-btn" style="flex:1;font-size:0.9rem;">🤝 ДОБАВИТЬ</button>';
-            html += '<button class="modal-btn" id="profile-block-btn" style="flex:1;font-size:0.9rem;color:#ff0000;border-color:#ff0000;">🚫 БЛОК</button>';
+            html += '<div style="display:flex;gap:8px;padding:0 20px 16px;">';
+            html += '<button class="btn btn-secondary" id="profile-add-friend-btn" style="flex:1;">🤝 Добавить</button>';
+            html += '<button class="btn btn-danger" id="profile-block-btn" style="flex:1;">🚫 Блок</button>';
             html += '</div>';
         } else {
-            html += '<div style="padding:15px;">';
-            html += '<button class="modal-btn" style="width:100%;font-size:1rem;" onclick="window.showCreatePost()">✏️ СОЗДАТЬ ПОСТ</button>';
-            html += '</div>';
+            html += '<div style="padding:16px 20px;"><button class="btn btn-primary btn-full" onclick="window.showCreatePost()">✏️ Создать пост</button></div>';
         }
 
         // Стена
-        html += '<div style="padding:15px;border-top:1px solid #2a0000;">';
-        html += '<div style="color:#ff1744;font-size:1.2rem;margin-bottom:10px;">📝 СТЕНА</div>';
+        html += '<div style="padding:0 20px 20px;">';
+        html += '<div style="font-weight:700;margin-bottom:12px;">📝 Стена</div>';
         if (!posts || posts.length === 0) {
-            html += '<div style="color:#880000;text-align:center;padding:20px;">ПОСТОВ ПОКА НЕТ</div>';
+            html += '<div class="empty-state">Постов пока нет</div>';
         } else {
             posts.forEach(p => {
                 let liked = p.liked_by && CA && p.liked_by.includes(CA.name);
-                html += '<div class="profile-post" style="border:1px solid #2a0000;padding:12px;margin-bottom:10px;border-radius:8px;background:rgba(0,0,0,0.4);">';
-                html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
-                html += '<span style="font-size:1.2rem;">' + (p.avatar_url ? '<img src="' + p.avatar_url + '" style="width:32px;height:32px;border-radius:50%;">' : '🕶️') + '</span>';
-                html += '<span style="color:#ff1744;font-weight:bold;">' + agent.name + '</span>';
-                html += '<span style="color:#880000;font-size:0.75rem;margin-left:auto;">' + timeAgo(p.created_at) + '</span>';
-                html += '</div>';
-                if (p.text) html += '<div style="color:#cc0000;margin-bottom:8px;">' + p.text.replace(/\n/g, '<br>') + '</div>';
-                if (p.image_url) html += '<img src="' + p.image_url + '" style="max-width:100%;max-height:300px;border:1px solid #ff1744;border-radius:8px;">';
-                html += '<div style="display:flex;gap:15px;margin-top:10px;">';
-                html += '<button class="post-like-btn' + (liked ? ' liked' : '') + '" data-post-like="' + p.id + '" style="background:transparent;border:none;color:' + (liked ? '#ff1744' : '#880000') + ';cursor:pointer;font-family:VT323;font-size:1rem;">❤ ' + (p.likes || 0) + '</button>';
+                html += '<div class="card" style="padding:14px;margin-bottom:8px;">';
+                html += '<div style="font-size:0.8rem;color:var(--text-3);margin-bottom:6px;">' + timeAgo(p.created_at) + '</div>';
+                if (p.text) html += '<div style="color:var(--text-2);line-height:1.5;">' + p.text.replace(/\n/g, '<br>') + '</div>';
+                if (p.image_url) html += '<img src="' + p.image_url + '" style="max-width:100%;border-radius:12px;margin-top:8px;">';
+                html += '<div style="display:flex;gap:16px;margin-top:10px;">';
+                html += '<button class="card-action' + (liked ? ' liked' : '') + '" data-post-like="' + p.id + '" style="color:' + (liked ? 'var(--accent)' : 'var(--text-3)') + ';background:none;border:none;cursor:pointer;font-size:0.9rem;">❤ ' + (p.likes || 0) + '</button>';
                 if (isMe || (CA && CA.role === 'admin')) {
-                    html += '<button data-post-del="' + p.id + '" style="background:transparent;border:none;color:#ff0000;cursor:pointer;font-family:VT323;font-size:1rem;">🗑</button>';
+                    html += '<button data-post-del="' + p.id + '" style="color:var(--danger);background:none;border:none;cursor:pointer;font-size:0.9rem;">🗑</button>';
                 }
-                html += '</div>';
-                html += '</div>';
+                html += '</div></div>';
             });
         }
         html += '</div>';
 
-        // Кнопка закрыть
-        html += '<div style="padding:15px;"><button class="modal-btn" style="width:100%;" data-close-modal="modal-agent-profile">ЗАКРЫТЬ</button></div>';
-
-        // Применяем стиль
-        let modalBox = modal.querySelector('.modal-box');
-        if (modalBox) {
-            modalBox.className = 'modal-box';
-            modalBox.style.maxWidth = '650px';
-            modalBox.style.padding = '0';
-            modalBox.style.overflow = 'hidden';
-            if (styleClass) modalBox.classList.add(styleClass);
-        }
+        html += '<div style="padding:0 20px 20px;"><button class="btn btn-secondary btn-full" data-close-modal="modal-agent-profile">Закрыть</button></div>';
 
         let content = document.getElementById('profile-content');
         if (!content) {
@@ -176,7 +133,13 @@ export async function showAgentInfo(name) {
         }
         content.innerHTML = html;
 
-        // Обработчики
+        let modalBox = modal.querySelector('.modal-box');
+        if (modalBox) {
+            modalBox.style.padding = '0';
+            modalBox.style.overflow = 'hidden';
+            modalBox.style.maxWidth = '600px';
+        }
+
         setTimeout(() => {
             document.getElementById('profile-dm-btn')?.addEventListener('click', function() {
                 closeModal('modal-agent-profile');
@@ -186,10 +149,10 @@ export async function showAgentInfo(name) {
             document.getElementById('profile-sub-btn')?.addEventListener('click', async function() {
                 if (iAmSubscribed) {
                     await supabase.from('subscriptions').delete().eq('subscriber', CA.name).eq('target', name);
-                    notif('👋 ОТПИСАЛИСЬ');
+                    notif('👋 Отписались');
                 } else {
                     await supabase.from('subscriptions').insert({ subscriber: CA.name, target: name });
-                    notif('➕ ПОДПИСАЛИСЬ');
+                    notif('➕ Подписались');
                 }
                 closeModal('modal-agent-profile');
                 setTimeout(() => showAgentInfo(name), 300);
@@ -197,20 +160,14 @@ export async function showAgentInfo(name) {
 
             document.getElementById('profile-add-friend-btn')?.addEventListener('click', async function() {
                 let friendsList = getFriends();
-                let isFriend = friendsList.some(f =>
-                    (f.agent === CA?.name && f.friend === agent.name && f.status === 'accepted') ||
-                    (f.agent === agent.name && f.friend === CA?.name && f.status === 'accepted')
-                );
+                let isFriend = friendsList.some(f => (f.agent === CA?.name && f.friend === agent.name && f.status === 'accepted') || (f.agent === agent.name && f.friend === CA?.name && f.status === 'accepted'));
                 if (isFriend) {
-                    let rec = friendsList.find(f =>
-                        (f.agent === CA?.name && f.friend === agent.name) ||
-                        (f.agent === agent.name && f.friend === CA?.name)
-                    );
+                    let rec = friendsList.find(f => (f.agent === CA?.name && f.friend === agent.name) || (f.agent === agent.name && f.friend === CA?.name));
                     if (rec) await removeFriend(rec.id);
-                    notif('🗑 УДАЛЁН ИЗ ДРУЗЕЙ');
+                    notif('🗑 Удалён из друзей');
                 } else {
                     let r = await sendFriendRequest(agent.name);
-                    if (r.success) notif(r.message || '🤝 ЗАПРОС ОТПРАВЛЕН');
+                    if (r.success) notif(r.message || '🤝 Запрос отправлен');
                     else notif(r.error);
                 }
                 closeModal('modal-agent-profile');
@@ -219,7 +176,7 @@ export async function showAgentInfo(name) {
 
             document.getElementById('profile-block-btn')?.addEventListener('click', async function() {
                 await blockAgent(agent.name);
-                notif('🚫 ЗАБЛОКИРОВАН');
+                notif('🚫 Заблокирован');
                 closeModal('modal-agent-profile');
             });
 
@@ -238,7 +195,7 @@ export async function showAgentInfo(name) {
 
             document.querySelectorAll('[data-post-del]').forEach(b => b.addEventListener('click', async function() {
                 await supabase.from('profile_posts').delete().eq('id', parseInt(this.dataset.postDel));
-                notif('🗑 УДАЛЕНО');
+                notif('🗑 Удалено');
                 closeModal('modal-agent-profile');
                 setTimeout(() => showAgentInfo(name), 200);
             }));
@@ -247,7 +204,6 @@ export async function showAgentInfo(name) {
         modal.style.display = 'flex';
         setTimeout(() => modal.classList.add('show'), 10);
 
-        // Звук профиля
         if (agent.active_sound && agent.active_sound !== 'snd_default' && agent.active_sound !== 'snd_custom') {
             try {
                 let audio = new Audio(agent.active_sound);
@@ -258,11 +214,10 @@ export async function showAgentInfo(name) {
         }
     } catch (err) {
         console.error('Ошибка загрузки профиля:', err);
-        notif('⛔ ОШИБКА ЗАГРУЗКИ');
+        notif('⛔ Ошибка загрузки');
     }
 }
 
-// Создать пост
 export async function createPost(text, imageUrl) {
     if (!CA) return { success: false, error: 'Не авторизован' };
     try {
@@ -270,19 +225,17 @@ export async function createPost(text, imageUrl) {
             author: CA.name, text: text || '', image_url: imageUrl || '',
             avatar_url: CA.avatar_url || '', likes: 0, liked_by: []
         });
-        notif('✅ ПОСТ ОПУБЛИКОВАН');
-        // Достижение
+        notif('✅ Пост опубликован');
         if (typeof window.checkAchievements === 'function') window.checkAchievements();
         return { success: true };
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
-// Смена обложки — использует uploadCover из auth.js
 export async function changeCover(file) {
     if (!CA || !file) return { success: false, error: 'Нет файла' };
     let { uploadCover } = await import('./auth.js');
     let r = await uploadCover(file);
-    if (r.success) notif('✅ ОБЛОЖКА ОБНОВЛЕНА');
+    if (r.success) notif('✅ Обложка обновлена');
     else notif('⛔ ' + r.error);
     return r;
 }

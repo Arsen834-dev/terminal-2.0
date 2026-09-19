@@ -22,9 +22,9 @@ export async function loadClanJoinRequests() {
 
 export async function createClan(name, tag, emoji, description, joinType) {
     if (!CA) return { success: false, error: '⛔ Не авторизован' };
-    if (clans.find(c => c.members?.find(m => m.name === CA.name))) return { success: false, error: '⚠ ВЫ УЖЕ В ОТРЯДЕ' };
+    if (clans.find(c => c.members?.find(m => m.name === CA.name))) return { success: false, error: '⚠ Вы уже в отряде' };
     let cost = (CA.clansCreated || 0) > 0 ? 100 : 0;
-    if (cost > 0 && (CA.crystals || 0) < cost) return { success: false, error: '⛔ НЕДОСТАТОЧНО ТК' };
+    if (cost > 0 && (CA.crystals || 0) < cost) return { success: false, error: '⛔ Недостаточно ТК' };
     if (cost > 0) CA.crystals -= cost;
     CA.clansCreated = (CA.clansCreated || 0) + 1;
     await supabase.from('agents').update({ clans_created: CA.clansCreated }).eq('name', CA.name);
@@ -47,13 +47,13 @@ export async function joinClan(clanId) {
     if (!CA) return { success: false, error: '⛔ Не авторизован' };
     let cl = clans.find(c => c.id == clanId);
     if (!cl) return { success: false, error: '⛔ Отряд не найден' };
-    if (clans.some(c => c.members?.some(m => m.name === CA.name))) return { success: false, error: '⚠ ВЫ УЖЕ В ОТРЯДЕ' };
+    if (clans.some(c => c.members?.some(m => m.name === CA.name))) return { success: false, error: '⚠ Вы уже в отряде' };
     if (cl.join_type === 'request') {
-        try { await supabase.from('clan_join_requests').insert({ clan_id: clanId, requester: CA.name }); return { success: true, message: '📩 ЗАЯВКА ОТПРАВЛЕНА' }; }
+        try { await supabase.from('clan_join_requests').insert({ clan_id: clanId, requester: CA.name }); return { success: true, message: '📩 Заявка отправлена' }; }
         catch (e) { return { success: false, error: 'Ошибка заявки' }; }
     }
     if (!cl.members) cl.members = [];
-    if (cl.members.find(m => m.name === CA.name)) return { success: false, error: '⚠ ВЫ УЖЕ В ОТРЯДЕ' };
+    if (cl.members.find(m => m.name === CA.name)) return { success: false, error: '⚠ Вы уже в отряде' };
     cl.members.push({ name: CA.name, role: 'member' });
     cl.rating = (cl.rating || 0) + 10;
     try {
@@ -65,7 +65,7 @@ export async function joinClan(clanId) {
 
 export async function leaveClan(clanId) {
     let cl = clans.find(c => c.id == clanId);
-    if (!cl || !CA || cl.leader === CA.name) return { success: false, error: '⛔ НЕЛЬЗЯ' };
+    if (!cl || !CA || cl.leader === CA.name) return { success: false, error: '⛔ Нельзя' };
     cl.members = cl.members.filter(m => m.name !== CA.name);
     cl.rating = Math.max(0, (cl.rating || 0) - 10);
     try {
@@ -77,7 +77,7 @@ export async function leaveClan(clanId) {
 
 export async function deleteClan(clanId) {
     let cl = clans.find(c => c.id == clanId);
-    if (!cl || cl.leader !== CA.name) return { success: false, error: '⛔ НЕТ ПРАВ' };
+    if (!cl || cl.leader !== CA.name) return { success: false, error: '⛔ Нет прав' };
     let wars = clanWars.filter(w => !w.resolved && (w.attacker_tag === cl.tag || w.defender_tag === cl.tag));
     for (let w of wars) {
         let a = clans.find(c => c.tag === w.attacker_tag);
@@ -94,11 +94,11 @@ export async function declareWar(attackerClanId, targetClanId) {
     let a = clans.find(c => c.id == attackerClanId);
     let d = clans.find(c => c.id == targetClanId);
     if (!a || !d) return { success: false, error: '⛔ Отряд не найден' };
-    if (a.leader !== CA.name) return { success: false, error: '⛔ ТОЛЬКО ЛИДЕР' };
-    if ((a.treasury || 0) < 500) return { success: false, error: '⚠ НЕТ 500 ТК' };
-    if ((d.treasury || 0) < 500) return { success: false, error: '⚠ У ЦЕЛИ НЕТ 500 ТК' };
+    if (a.leader !== CA.name) return { success: false, error: '⛔ Только лидер' };
+    if ((a.treasury || 0) < 500) return { success: false, error: '⚠ Нет 500 ТК' };
+    if ((d.treasury || 0) < 500) return { success: false, error: '⚠ У цели нет 500 ТК' };
     let already = clanWars.some(w => !w.resolved && ((w.attacker_tag === a.tag && w.defender_tag === d.tag) || (w.attacker_tag === d.tag && w.defender_tag === a.tag)));
-    if (already) return { success: false, error: '⚠ УЖЕ ВОЙНА' };
+    if (already) return { success: false, error: '⚠ Уже война' };
     a.treasury -= 500; d.treasury -= 500;
     let war = { attacker_tag: a.tag, defender_tag: d.tag, end_time: new Date(Date.now() + 86400000).toISOString(), pot: 1000, resolved: false, stats: { attacker_score: 0, defender_score: 0, last_update: Date.now() } };
     try {
@@ -160,7 +160,7 @@ export async function checkCompletedWars() {
 }
 
 export async function donateToClan(clanId, amount) {
-    if (!CA || (CA.crystals || 0) < amount || amount < 1) return { success: false, error: '⛔ НЕДОСТАТОЧНО ТК' };
+    if (!CA || (CA.crystals || 0) < amount || amount < 1) return { success: false, error: '⛔ Недостаточно ТК' };
     let cl = clans.find(c => c.id == clanId);
     if (!cl) return { success: false, error: '⛔ Отряд не найден' };
     CA.crystals -= amount;
@@ -172,28 +172,25 @@ export async function donateToClan(clanId, amount) {
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
-// МОДАЛКА ПОПОЛНЕНИЯ КАЗНЫ
 export function showDonateModal(clanId) {
     let existing = document.getElementById('modal-donate-clan');
     if (existing) existing.remove();
     let modal = document.createElement('div');
-    modal.className = 'modal-overlay';
+    modal.className = 'modal-overlay show';
     modal.id = 'modal-donate-clan';
     modal.style.display = 'flex';
-    modal.classList.add('show');
-    modal.innerHTML = '<div class="modal-box"><div class="modal-title">💰 ПОПОЛНИТЬ КАЗНУ</div>' +
-        '<div style="color:#cc0000;">Ваш баланс: ' + (CA?.crystals || 0) + ' ТК</div>' +
-        '<input type="number" class="modal-input" id="donate-amount" placeholder="СУММА" min="1" max="' + (CA?.crystals || 0) + '">' +
-        '<button class="modal-btn" id="donate-confirm-btn" style="width:100%;">ПОПОЛНИТЬ</button>' +
-        '<button class="modal-btn" onclick="this.closest(\'.modal-overlay\').remove()" style="width:100%;">ОТМЕНА</button></div>';
+    modal.innerHTML = '<div class="modal-box"><div class="modal-title">💰 Пополнить казну</div>' +
+        '<div style="color:var(--text-3);margin-bottom:8px;">Ваш баланс: ' + (CA?.crystals || 0) + ' ТК</div>' +
+        '<input type="number" class="modal-input" id="donate-amount" placeholder="Сумма" min="1" max="' + (CA?.crystals || 0) + '">' +
+        '<div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Отмена</button><button class="btn btn-primary" id="donate-confirm-btn">Пополнить</button></div></div>';
     document.body.appendChild(modal);
     setTimeout(() => {
         document.getElementById('donate-confirm-btn').addEventListener('click', async function() {
             let amt = parseInt(document.getElementById('donate-amount').value);
-            if (!amt || amt < 1) return notif('⛔ НЕВЕРНАЯ СУММА');
+            if (!amt || amt < 1) return notif('⛔ Неверная сумма');
             let r = await donateToClan(clanId, amt);
             if (r.success) {
-                notif('💰 +' + amt + ' ТК В КАЗНУ');
+                notif('💰 +' + amt + ' ТК в казну');
                 modal.remove();
                 if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
                 renderClans();
@@ -204,13 +201,12 @@ export function showDonateModal(clanId) {
     }, 10);
 }
 
-// МОДАЛКА ВЫБОРА ЦЕЛИ ДЛЯ ВОЙНЫ
 export function openWarTargetModal(clanId) {
     let myClan = clans.find(c => c.id == clanId);
     if (!myClan || myClan.leader !== CA.name) return;
-    if ((myClan.treasury || 0) < 500) return notif('⚠ У ВАШЕГО ОТРЯДА НЕТ 500 ТК В КАЗНЕ!');
+    if ((myClan.treasury || 0) < 500) return notif('⚠ У вашего отряда нет 500 ТК в казне!');
     let alreadyAtWar = clanWars.some(w => !w.resolved && (w.attacker_tag === myClan.tag || w.defender_tag === myClan.tag));
-    if (alreadyAtWar) return notif('⚠ ВЫ УЖЕ ВЕДЁТЕ ВОЙНУ!');
+    if (alreadyAtWar) return notif('⚠ Вы уже ведёте войну!');
 
     let targets = clans.filter(c =>
         c.id !== clanId &&
@@ -223,12 +219,12 @@ export function openWarTargetModal(clanId) {
     let listDiv = document.getElementById('war-target-list');
     if (!modal || !listDiv) return;
 
-    listDiv.innerHTML = '<div style="color:#ffd700;margin-bottom:15px;padding:10px;border:1px solid #ffd700;font-size:0.9rem;">⚔️ <b>ПРАВИЛА ВОЙНЫ:</b><br>• Война длится 24 часа<br>• Каждый час начисляются очки за онлайн участников и их репутацию<br>• Победитель получает банк 1000 ТК и +50 рейтинга<br>• Проигравший теряет -50 рейтинга<br>• С каждой стороны списывается 500 ТК в банк</div>';
+    listDiv.innerHTML = '<div class="card" style="border-color:var(--accent);margin-bottom:16px;padding:14px;font-size:0.9rem;"><b>⚔️ Правила войны:</b><br>• Война длится 24 часа<br>• Каждый час начисляются очки за онлайн участников и их репутацию<br>• Победитель получает банк 1000 ТК и +50 рейтинга<br>• Проигравший теряет -50 рейтинга<br>• С каждой стороны списывается 500 ТК в банк</div>';
 
     if (targets.length === 0) {
-        listDiv.innerHTML += '<div style="color:#cc0000;padding:20px;text-align:center;">⚠ НЕТ ДОСТУПНЫХ ЦЕЛЕЙ<br><small>Разница ≤2 участников, казна ≥500 ТК, нет активной войны</small></div>';
+        listDiv.innerHTML += '<div class="empty-state">⚠ Нет доступных целей<br><small>Разница ≤2 участников, казна ≥500 ТК, нет активной войны</small></div>';
     } else {
-        listDiv.innerHTML += targets.map(c => '<div class="admin-row"><span>' + c.emoji + ' ' + c.name + ' [' + c.tag + '] (' + c.members?.length + ' уч., ' + c.treasury + ' ТК)</span><button class="modal-btn" data-attack-target="' + c.id + '">⚔️ НАПАСТЬ</button></div>').join('');
+        listDiv.innerHTML += targets.map(c => '<div class="card" style="padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;"><span>' + c.emoji + ' ' + c.name + ' [' + c.tag + '] (' + c.members?.length + ' уч., ' + c.treasury + ' ТК)</span><button class="btn btn-primary" data-attack-target="' + c.id + '" style="padding:6px 12px;font-size:0.85rem;">⚔️ Напасть</button></div>').join('');
         setTimeout(() => {
             document.querySelectorAll('[data-attack-target]').forEach(btn => {
                 btn.addEventListener('click', async function(e) {
@@ -236,7 +232,7 @@ export function openWarTargetModal(clanId) {
                     let targetClanId = parseInt(this.dataset.attackTarget);
                     let r = await declareWar(clanId, targetClanId);
                     if (r.success) {
-                        notif('⚔️ ВОЙНА ОБЪЯВЛЕНА!');
+                        notif('⚔️ Война объявлена!');
                         closeModal('modal-war-target');
                         await loadClans();
                         await loadClanWars();
@@ -279,9 +275,9 @@ export async function autoDistributeTreasury() {
 
 export async function acceptJoinRequest(clanId, name) {
     let cl = clans.find(c => c.id === clanId);
-    if (!cl || cl.leader !== CA.name) return { success: false, error: '⛔ НЕТ ПРАВ' };
+    if (!cl || cl.leader !== CA.name) return { success: false, error: '⛔ Нет прав' };
     if (!cl.members) cl.members = [];
-    if (cl.members.find(m => m.name === name)) return { success: false, error: '⛔ УЖЕ В ОТРЯДЕ' };
+    if (cl.members.find(m => m.name === name)) return { success: false, error: '⛔ Уже в отряде' };
     cl.members.push({ name, role: 'member' });
     cl.rating = (cl.rating || 0) + 10;
     try {
@@ -309,49 +305,59 @@ export async function renderClans() {
             });
         }
         let activeWars = clanWars.filter(w => (w.attacker_tag === myClan.tag || w.defender_tag === myClan.tag) && !w.resolved);
-        html += '<div class="clan-info-block"><div style="font-size:1.5rem;">' + myClan.emoji + ' ' + myClan.name + ' <span style="color:#cc0000;">[' + myClan.tag + ']</span></div><div style="color:#cc0000;">' + (myClan.description || '') + '</div><div>👑 ' + myClan.leader + ' | 💰 ' + (myClan.treasury || 0) + ' ТК | ⭐ ' + (myClan.rating || 0) + ' | 👥 ' + (myClan.members?.length || 0) + '</div>';
+        html += '<div class="card" style="margin-bottom:16px;">';
+        html += '<div style="font-size:1.3rem;font-weight:700;">' + myClan.emoji + ' ' + myClan.name + ' <span style="color:var(--accent);">[' + myClan.tag + ']</span></div>';
+        if (myClan.description) html += '<div style="color:var(--text-2);margin-top:6px;">' + myClan.description + '</div>';
+        html += '<div style="color:var(--text-3);font-size:0.9rem;margin-top:8px;">👑 ' + myClan.leader + ' · 💰 ' + (myClan.treasury || 0) + ' ТК · ⭐ ' + (myClan.rating || 0) + ' · 👥 ' + (myClan.members?.length || 0) + '</div>';
+        html += '</div>';
+
         if (activeWars.length > 0) {
-            html += '<div style="margin-top:10px;"><b>⚔️ АКТИВНЫЕ ВОЙНЫ:</b></div>';
+            html += '<div style="font-weight:700;margin-bottom:8px;">⚔️ Активные войны</div>';
             activeWars.forEach(w => {
                 let timeLeft = Math.max(0, Math.ceil((new Date(w.end_time).getTime() - Date.now()) / 3600000));
                 let att = w.stats?.attacker_score || 0;
                 let def = w.stats?.defender_score || 0;
-                html += '<div class="clan-war-card"><div style="display:flex;justify-content:space-between;"><span>' + w.attacker_tag + ' VS ' + w.defender_tag + '</span><span>🏆 ' + (w.pot || 1000) + ' ТК</span></div><div style="display:flex;justify-content:space-between;font-size:0.8rem;"><span>⚔️ ' + att + '</span><span>🛡 ' + def + '</span></div><div style="font-size:0.8rem;">⏳ ' + timeLeft + 'ч</div></div>';
+                html += '<div class="card" style="padding:12px;margin-bottom:6px;border-color:var(--accent);"><div style="display:flex;justify-content:space-between;"><span style="font-weight:600;">' + w.attacker_tag + ' VS ' + w.defender_tag + '</span><span style="color:var(--accent);">🏆 ' + (w.pot || 1000) + ' ТК</span></div><div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--text-3);margin-top:4px;"><span>⚔️ ' + att + '</span><span>🛡 ' + def + '</span></div><div style="font-size:0.85rem;color:var(--text-3);margin-top:4px;">⏳ ' + timeLeft + 'ч</div></div>';
             });
         }
-        html += '<div style="margin-top:10px;"><b>Участники:</b></div>';
+
+        html += '<div style="font-weight:700;margin:16px 0 8px;">Участники</div>';
         myClan.members.forEach(m => {
-            html += '<div class="clan-member-row"><span>' + m.name + ' ' + (m.role === 'leader' ? '👑' : m.role === 'officer' ? '🛡' : '') + '</span><span>';
+            html += '<div class="card" style="padding:10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;"><span>' + m.name + ' ' + (m.role === 'leader' ? '👑' : m.role === 'officer' ? '🛡' : '') + '</span><span>';
             if (myClan.leader === CA.name && m.name !== CA.name) {
-                html += '<button class="modal-btn" style="font-size:0.7rem;padding:2px 6px;" data-cr="' + myClan.id + '" data-crn="' + m.name + '" data-crr="' + (m.role === 'officer' ? 'member' : 'officer') + '">' + (m.role === 'officer' ? '⬇' : '⬆') + '</button>';
-                html += '<button class="modal-btn" style="font-size:0.7rem;padding:2px 6px;color:#ff0000;border-color:#ff0000;" data-kick="' + myClan.id + '" data-kickn="' + m.name + '">✕</button>';
+                html += '<button class="btn btn-secondary" data-cr="' + myClan.id + '" data-crn="' + m.name + '" data-crr="' + (m.role === 'officer' ? 'member' : 'officer') + '" style="padding:4px 8px;font-size:0.75rem;">' + (m.role === 'officer' ? '⬇' : '⬆') + '</button> ';
+                html += '<button class="btn btn-danger" data-kick="' + myClan.id + '" data-kickn="' + m.name + '" style="padding:4px 8px;font-size:0.75rem;">✕</button>';
             }
             html += '</span></div>';
         });
-        html += '<button class="modal-btn" data-donate="' + myClan.id + '">💰 ПОПОЛНИТЬ КАЗНУ</button>';
+
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">';
+        html += '<button class="btn btn-primary" data-donate="' + myClan.id + '">💰 Пополнить казну</button>';
         if (myClan.leader === CA.name) {
-            html += '<button class="modal-btn" data-war="' + myClan.id + '">⚔️ ОБЪЯВИТЬ ВОЙНУ</button>';
-            html += '<button class="modal-btn" data-delclan="' + myClan.id + '" style="color:#ff0000;border-color:#ff0000;">🗑 УДАЛИТЬ</button>';
+            html += '<button class="btn btn-primary" data-war="' + myClan.id + '">⚔️ Объявить войну</button>';
+            html += '<button class="btn btn-danger" data-delclan="' + myClan.id + '">🗑 Удалить отряд</button>';
         }
-        html += '<button class="modal-btn" data-leave="' + myClan.id + '">🚪 ПОКИНУТЬ</button></div>';
+        html += '<button class="btn btn-secondary" data-leave="' + myClan.id + '">🚪 Покинуть</button>';
+        html += '</div>';
+
         let requests = clanJoinRequests.filter(r => r.clanId === myClan.id);
         if (requests.length > 0 && myClan.leader === CA.name) {
-            html += '<div style="margin-top:10px;padding:10px;border:2px solid #ffd700;"><b>📩 ЗАЯВКИ:</b>';
-            requests.forEach(r => { html += '<div class="clan-member-row"><span>' + r.requester + '</span><button class="modal-btn" style="font-size:0.8rem;" data-accept-join="' + myClan.id + '" data-accept-name="' + r.requester + '">✅ ПРИНЯТЬ</button></div>'; });
+            html += '<div class="card" style="margin-top:16px;border-color:var(--accent);"><div style="font-weight:700;margin-bottom:8px;">📩 Заявки</div>';
+            requests.forEach(r => { html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span>' + r.requester + '</span><button class="btn btn-primary" data-accept-join="' + myClan.id + '" data-accept-name="' + r.requester + '" style="padding:6px 12px;font-size:0.8rem;">✅ Принять</button></div>'; });
             html += '</div>';
         }
     } else {
-        html += '<div style="color:#cc0000;margin-bottom:15px;">ВЫ НЕ В ОТРЯДЕ</div><button class="settings-btn" id="create-clan-btn"><span>⚔️</span> СОЗДАТЬ ОТРЯД (' + ((CA.clansCreated || 0) > 0 ? '100 ТК' : 'БЕСПЛАТНО') + ')</button>';
+        html += '<div class="card" style="padding:16px;text-align:center;"><div style="color:var(--text-3);margin-bottom:12px;">Вы не в отряде</div><button class="btn btn-primary btn-full" id="create-clan-btn">⚔️ Создать отряд (' + ((CA.clansCreated || 0) > 0 ? '100 ТК' : 'бесплатно') + ')</button></div>';
     }
-    html += '<div style="margin-top:20px;"><b>РЕЙТИНГ ОТРЯДОВ:</b></div>';
-    if (clans.length === 0) html += '<div style="color:#cc0000;">НЕТ ОТРЯДОВ</div>';
+    html += '<div style="font-weight:700;margin:24px 0 8px;">Рейтинг отрядов</div>';
+    if (clans.length === 0) html += '<div class="empty-state">Нет отрядов</div>';
     else {
-        html += '<div class="agent-table-header"><div>ОТРЯД</div><div>⭐</div><div>💰</div><div>👥</div></div>';
         clans.sort((a, b) => (b.rating || 0) - (a.rating || 0)).forEach(cl => {
-            html += '<div class="agent-row" data-clan-info="' + cl.id + '"><div>' + cl.emoji + ' ' + cl.name + ' [' + cl.tag + ']</div><div>' + (cl.rating || 0) + '</div><div>' + (cl.treasury || 0) + '</div><div>' + (cl.members?.length || 0) + '</div></div>';
+            html += '<div class="card" style="padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" data-clan-info="' + cl.id + '"><span>' + cl.emoji + ' ' + cl.name + ' [' + cl.tag + ']</span><span style="color:var(--text-3);font-size:0.85rem;">⭐ ' + (cl.rating || 0) + ' · 💰 ' + (cl.treasury || 0) + ' · 👥 ' + (cl.members?.length || 0) + '</span></div>';
         });
     }
     c.innerHTML = html;
+
     setTimeout(() => {
         document.getElementById('create-clan-btn')?.addEventListener('click', () => { if (typeof window.showCreateClan === 'function') window.showCreateClan(); });
         document.querySelectorAll('[data-clan-info]').forEach(b => b.addEventListener('click', function() { if (typeof window.showClanInfo === 'function') window.showClanInfo(parseInt(this.dataset.clanInfo)); }));
@@ -384,7 +390,7 @@ export async function kickClanMember(clanId, name) {
     await supabase.from('clans').update({ members: cl.members, rating: cl.rating }).eq('id', clanId);
     await loadClans();
     renderClans();
-    notif('👢 ИСКЛЮЧЁН');
+    notif('👢 Исключён');
 }
 
 export { clans, clanWars, clanJoinRequests };

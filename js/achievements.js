@@ -9,6 +9,7 @@ export function getUnlockedAchievements() { return CA?.achievements || []; }
 
 export function unlockAchievement(id) {
     if (!CA) return false;
+    if (!CA.achievements) CA.achievements = [];
     if (CA.achievements.includes(id)) return false;
     CA.achievements.push(id);
     let a = ACHIEVEMENTS.find(x => x.id === id);
@@ -26,6 +27,7 @@ export function getAchievementProgress() {
 
 export function checkAchievements() {
     if (!CA) return;
+    if (!CA.achievements) CA.achievements = [];
     if (!CA.achievements.includes('first_login')) unlockAchievement('first_login');
     if ((CA.guidesCreated || 0) >= 1 && !CA.achievements.includes('guide_master')) unlockAchievement('guide_master');
     if ((CA.chatCount || 0) >= 10 && !CA.achievements.includes('socializer')) unlockAchievement('socializer');
@@ -40,9 +42,10 @@ export function renderAchievementsUI() {
     if (!list) return;
     list.innerHTML = ACHIEVEMENTS.map(a => {
         let unlocked = CA.achievements?.includes(a.id);
-        return '<div class="achievement-card ' + (unlocked ? '' : 'locked') + '">' +
-            '<div><span style="font-size:1.5rem;">' + a.icon + '</span> <strong>' + a.name + '</strong>' +
-            '<br><small style="color:#cc0000;">' + a.desc + '</small></div>' +
-            '<div>' + (unlocked ? '✓' : '🔒') + '</div></div>';
+        return '<div class="card" style="' + (unlocked ? '' : 'opacity:0.4;') + 'padding:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">' +
+            '<div style="display:flex;gap:12px;align-items:center;"><span style="font-size:1.8rem;">' + a.icon + '</span>' +
+            '<div><div style="font-weight:600;">' + a.name + '</div>' +
+            '<div style="color:var(--text-3);font-size:0.85rem;">' + a.desc + '</div></div></div>' +
+            '<div style="font-size:1.3rem;">' + (unlocked ? '✓' : '🔒') + '</div></div>';
     }).join('');
 }

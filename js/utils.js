@@ -2,12 +2,38 @@
 
 export function notif(msg) {
     let n = document.createElement('div');
-    n.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a0000;border:2px solid #ff1744;padding:15px 30px;z-index:10000;font-family:VT323;color:#ff1744;font-size:1.3rem;border-radius:8px;box-shadow:0 0 20px rgba(255,23,68,0.5);';
+    n.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-2);
+        border: 1px solid var(--accent);
+        padding: 14px 24px;
+        z-index: 10000;
+        font-family: 'Inter', sans-serif;
+        color: var(--text);
+        font-size: 0.95rem;
+        font-weight: 500;
+        border-radius: var(--radius-pill);
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        opacity: 0;
+        transition: opacity 0.3s, transform 0.3s;
+        pointer-events: none;
+        max-width: 90vw;
+        text-align: center;
+    `;
     n.textContent = msg;
     document.body.appendChild(n);
+    requestAnimationFrame(() => {
+        n.style.opacity = '1';
+        n.style.transform = 'translateX(-50%) translateY(0)';
+    });
     setTimeout(() => {
         n.style.opacity = '0';
-        n.style.transition = 'opacity 0.3s';
+        n.style.transform = 'translateX(-50%) translateY(-10px)';
         setTimeout(() => n.remove(), 300);
     }, 2500);
 }
@@ -23,6 +49,11 @@ export function closeModal(id) {
 export function uploadFileAndInsert(event, inputId) {
     let file = event.target.files[0];
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+        notif('⛔ Файл больше 2 МБ');
+        event.target.value = '';
+        return;
+    }
     let reader = new FileReader();
     reader.onload = function() {
         let inp = document.getElementById(inputId);
@@ -45,7 +76,9 @@ export function escapeHtml(text) {
     return (text || '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 export function formatTime(date) {
@@ -57,12 +90,12 @@ export function formatDate(date) {
 }
 
 export function timeAgo(dateStr) {
-    if (!dateStr) return 'НЕИЗВЕСТНО';
+    if (!dateStr) return 'неизвестно';
     let diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (diff < 60) return 'ТОЛЬКО ЧТО';
-    if (diff < 3600) return Math.floor(diff / 60) + ' МИН. НАЗАД';
-    if (diff < 86400) return Math.floor(diff / 3600) + ' Ч. НАЗАД';
-    if (diff < 604800) return Math.floor(diff / 86400) + ' ДН. НАЗАД';
+    if (diff < 60) return 'только что';
+    if (diff < 3600) return Math.floor(diff / 60) + ' мин назад';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' ч назад';
+    if (diff < 604800) return Math.floor(diff / 86400) + ' дн назад';
     return new Date(dateStr).toLocaleDateString('ru-RU');
 }
 
@@ -86,4 +119,19 @@ export function glowIcon(id) {
 export function stopGlowIcon(id) {
     let el = document.getElementById(id);
     if (el) el.classList.remove('new-badge-glow');
+}
+
+// Копирование в буфер
+export function copyToClipboard(text) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => notif('📋 Скопировано'));
+    } else {
+        let ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        notif('📋 Скопировано');
+    }
 }

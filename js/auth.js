@@ -166,8 +166,6 @@ export async function saveAgent() {
             clans_created: CA.clansCreated || 0,
             banned: CA.banned || false,
             muted: CA.muted || false,
-            bio: CA.bio || '',
-            status_text: CA.status_text || '',
             active_color: activeItems.color,
             active_frame: activeItems.frame,
             active_badge: activeItems.badge,
@@ -274,8 +272,6 @@ export async function login() {
     CA.logins = (CA.logins || 0) + 1;
     CA.avatar_url = ag.avatar_url || '';
     CA.cover_url = ag.cover_url || '';
-    CA.bio = ag.bio || '';
-    CA.status_text = ag.status_text || '';
     CA.role = CA.role || 'agent';
     CA.nameHistory = CA.nameHistory || [];
     CA.banned = CA.banned || false;
@@ -317,7 +313,6 @@ export async function register() {
         name: n, passHash: ph, rep: 0, crystals: 200, achievements: [],
         logins: 1, avatar_url: '', cover_url: '', chatCount: 0, role: 'agent',
         nameHistory: [], guidesCreated: 0, clansCreated: 0,
-        banned: false, muted: false, bio: '', status_text: ''
     };
 
     setInventory([

@@ -23,7 +23,7 @@ function buildGrid() {
             '<div class="cell-header"><span class="cell-title">' + n + '</span>' +
             '<span class="cell-status">' + sm[i % sm.length] + '</span></div>' +
             '<div class="cell-data">[████░░░░░░] ' + Math.floor(Math.random() * 40 + 10) + '%</div>' +
-            '<div class="mini-bar"><div class="mini-bar-fill"></div></div></div>';
+            '</div>';
     }).join('');
 }
 
@@ -43,7 +43,7 @@ function updateMain() {
 
 function triggerErrorStorm() {
     let pct = document.getElementById('big-percent');
-    if (pct) pct.style.color = '#ff0000';
+    if (pct) pct.style.color = 'var(--danger)';
     document.querySelectorAll('.loader-cell').forEach((c, i) => {
         setTimeout(() => c.classList.add('error'), i * 30);
     });
@@ -80,7 +80,7 @@ export function recoverSystem(onComplete) {
     if (eo) eo.style.display = 'none';
     if (em) em.style.display = 'none';
     let pct = document.getElementById('big-percent');
-    if (pct) { pct.style.color = '#ff1744'; pct.textContent = '100%'; }
+    if (pct) { pct.style.color = 'var(--accent)'; pct.textContent = '100%'; }
     loadProgress = 100;
     document.querySelectorAll('.loader-cell.error').forEach((c, i) => {
         setTimeout(() => {

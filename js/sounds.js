@@ -17,19 +17,19 @@ export function preloadSound(name, file) {
     } catch (e) {}
 }
 
-// ==================== ПРЕДЗАГРУЗКА ЭФФЕКТОВ ====================
-preloadSound('click', 'click.mp3');      // ✅
-preloadSound('open', 'open.mp3');        // ✅
-preloadSound('close', 'close.mp3');      // ✅
-preloadSound('success', 'achieve.mp3');  // ✅
-preloadSound('login', 'open.mp3');       // ⚠ это open, но ок
-preloadSound('buy', 'buy.mp3');          // ✅
-preloadSound('alarm', 'war_declared.mp3'); // ✅
-preloadSound('war', 'war_declared.mp3'); // ✅
-preloadSound('achieve', 'achieve.mp3');  // ✅
-preloadSound('send', 'send.mp3');        // ✅
-preloadSound('receive', 'receive.mp3');  // ✅
-preloadSound('glitch', 'glitchcomp.mp3'); // ✅
+// Предзагрузка эффектов
+preloadSound('click', 'click.mp3');
+preloadSound('open', 'open.mp3');
+preloadSound('close', 'close.mp3');
+preloadSound('success', 'achieve.mp3');
+preloadSound('login', 'open.mp3');
+preloadSound('buy', 'buy.mp3');
+preloadSound('alarm', 'war_declared.mp3');
+preloadSound('war', 'war_declared.mp3');
+preloadSound('achieve', 'achieve.mp3');
+preloadSound('send', 'send.mp3');
+preloadSound('receive', 'receive.mp3');
+preloadSound('glitch', 'glitchcomp.mp3');
 
 export function playSound(name) {
     if (!soundEnabled || !sounds[name]) return;
