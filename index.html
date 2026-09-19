@@ -29,20 +29,45 @@
         #skull-intro { text-align: center; }
         #skull-svg { filter: drop-shadow(0 0 30px #ff1744); }
         .hydra-subtitle { color: #880000; font-size: 1.8rem; letter-spacing: 6px; text-transform: uppercase; margin-top: 20px; opacity: 0; animation: subtitleAppear 0.8s 1s forwards; text-shadow: 0 0 10px #550000; }
-                #skull-ascii {
+        #skull-ascii {
             color: #ff1744;
             font-family: 'Courier New', monospace;
             font-size: 8px;
             line-height: 1.05;
-            text-shadow: 0 0 8px #ff1744, 0 0 20px #880000;
-            filter: drop-shadow(0 0 30px #ff1744);
+            text-shadow: 0 0 6px #ff1744, 0 0 15px #880000;
+            filter: drop-shadow(0 0 20px #ff1744);
             white-space: pre;
             margin: 0 auto;
             display: inline-block;
             text-align: left;
-            animation: skullPulse 2s ease-in-out infinite;
+            opacity: 0;
+            animation: skullAppear 1.5s ease-out forwards, skullPulse 2s ease-in-out 1.5s infinite;
+        }
+        @keyframes skullAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.7);
+                filter: blur(10px) drop-shadow(0 0 5px #ff1744);
+                letter-spacing: -2px;
+            }
+            50% {
+                opacity: 0.6;
+                filter: blur(3px) drop-shadow(0 0 15px #ff1744);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                filter: blur(0) drop-shadow(0 0 20px #ff1744);
+                letter-spacing: 0;
+            }
         }
         @keyframes skullPulse {
+            0%, 100% { text-shadow: 0 0 6px #ff1744, 0 0 15px #880000; }
+            50% { text-shadow: 0 0 12px #ff1744, 0 0 30px #ff1744, 0 0 50px #880000; }
+        }
+        #skull-ascii.eating {
+            animation: skullEat 0.8s ease-in forwards !important;
+        }        @keyframes skullPulse {
             0%, 100% { text-shadow: 0 0 8px #ff1744, 0 0 20px #880000; }
             50% { text-shadow: 0 0 15px #ff1744, 0 0 40px #ff1744, 0 0 60px #880000; }
         }
@@ -51,9 +76,12 @@
         }
         @keyframes hydraOut { 0% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: hidden; } }
         @keyframes subtitleAppear { 0% { opacity: 0; letter-spacing: 15px; } 100% { opacity: 1; letter-spacing: 6px; } }
-        @keyframes skullEat { 0% { transform: scale(1); } 100% { transform: scale(8); opacity: 0; } }
-        #skull-svg.eating { animation: skullEat 0.8s ease-in forwards; }
-
+        @keyframes skullEat {
+            0% { transform: scale(1); opacity: 1; }
+            50% { opacity: 0.8; filter: blur(2px); }
+            100% { transform: scale(8); opacity: 0; filter: blur(20px); }
+        }
+        #skull-ascii.eating { animation: skullEat 0.8s ease-in forwards !important; }
         /* ЗАГРУЗЧИК */
         #loader-screen { position: fixed; inset: 0; z-index: 90; background: #000; display: none; padding: 6px; }
         .loader-grid { display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); gap: 3px; height: 100%; width: 100%; }
@@ -329,7 +357,8 @@
 
         /* МОБИЛЬНАЯ */
         @media (max-width: 768px) {
-            #skull-ascii { font-size: 4px; }
+            #skull-ascii { font-size: 3px; line-height: 1; }
+        }              
             .header-ticker-wrap, .status-ticker { display: none !important; }
             .desktop-icon { width: 70px !important; height: 70px !important; }
             .desktop-icon .icon-emoji { font-size: 1.6rem; }
@@ -343,7 +372,6 @@
             .desktop-statusbar { height: 42px; padding: 5px 10px; gap: 8px; font-size: 0.75rem; margin-bottom: 60px; }
             .status-name { font-size: 0.85rem; max-width: 70px; }
             .mobile-nav { display: flex; }
-        }
     </style>
 </head>
 <body>
@@ -354,56 +382,55 @@
     <!-- ЗАСТАВКА -->
     <div id="start-screen">
         <div id="skull-intro">
-            <pre id="skull-ascii">…—-….
-                        ..-:””         ””-..
-                    .-‘                      ‘-.
-                .’              .     .       ‘.
-                .’   .          .    .      .    .”.
-            .’  .    .       .   .   .     .   . ..:.
-            .’ .   . .  .       .   .   ..  .   . ….::.
-            ..   .   .      .  .    .     .  ..  . ….:IA.
-        .:  .   .    .    .  .  .    .. .  .. .. ….:IA.
-        .: .   .   ..   .    .     . . .. . … ….:.:VHA.
-        ‘..  .  .. .   .       .  . .. . .. . …..:.::IHHB.
-        .:. .  . .  . .   .  .  . . . …:.:… …….:HIHMM.
-        .:…. .   . .”::”‘.. .   .  . .:.:.:II;,. .. ..:IHIMMA
-        ‘:.:..  ..::IHHHHHI::. . .  …:.::::.,,,. . ….VIMMHM
-    .:::I. .AHHHHHHHHHHAI::. .:…,:IIHHHHHHMMMHHL:. . VMMMM
-    .:.:V.:IVHHHHHHHMHMHHH::..:” .:HIHHHHHHHHHHHHHMHHA. .VMMM.
-    :..V.:IVHHHHHMMHHHHHHHB… . .:VPHHMHHHMMHHHHHHHHHAI.:VMMI
-    ::V..:VIHHHHHHMMMHHHHHH. .   .I”:IIMHHMMHHHHHHHHHHHAPI:WMM
-    ::”. .:.HHHHHHHHMMHHHHHI.  . .:..I:MHMMHHHHHHHHHMHV:’:H:WM
-    :: . :.::IIHHHHHHMMHHHHV  .ABA.:.:IMHMHMMMHMHHHHV:’. .IHWW
-    ‘.  ..:..:.:IHHHHHMMHV” .AVMHMA.:.’VHMMMMHHHHHV:’ .  :IHWV
-    :.  .:…:”.:.:TPP”   .AVMMHMMA.:. “VMMHHHP.:… .. :IVAI
-    .:.   ‘… .:”‘   .   ..HMMMHMMMA::. .”VHHI:::….  .:IHW’
-    …  .  . ..:IIPPIH: ..HMMMI.MMMV:I:.  .:ILLH:.. …:I:IM
-    : .   .'”‘ .:.V”. .. .  :HMMM:IMMMI::I. ..:HHIIPPHI::’.P:HM.
-    :.  .  .  .. ..:.. .    :AMMM IMMMM..:…:IV”:T::I::.”.:IHIMA
-    ‘V:.. .. . .. .  .  .   ‘VMMV..VMMV :….:V:.:..:….::IHHHMH
-    “IHH:.II:.. .:. .  . . . ” :HB”” . . ..PI:.::.:::..:IHHMMV”
-    :IP””HHII:.  .  .    . . .’V:. . . ..:IH:.:.::IHIHHMMMMM”
-    :V:. VIMA:I..  .     .  . .. . .  .:.I:I:..:IHHHHMMHHMMM
-    :”VI:.VWMA::. .:      .   .. .:. ..:.I::.:IVHHHMMMHMMMMI
-    :.”VIIHHMMA:.  .   .   .:  .:.. . .:.II:I:AMMMMMMHMMMMMI
-    :..VIHIHMMMI…::.,:.,:!”I:!”I!”I!”V:AI:VAMMMMMMHMMMMMM’
-    ‘:.:HIHIMHHA:”!!”I.:AXXXVVXXXXXXXA:.”HPHIMMMMHHMHMMMMMV
-        V:H:I:MA:W’I :AXXXIXII:IIIISSSSSSXXA.I.VMMMHMHMMMMMM
-        ‘I::IVA ASSSSXSSSSBBSBMBSSSSSSBBMMMBS.VVMMHIMM'”‘
-            I:: VPAIMSSSSSSSSSBSSSMMBSSSBBMMMMXXI:MMHIMMI
-        .I::. “H:XIIXBBMMMMMMMMMMMMMMMMMBXIXXMMPHIIMM’
-        :::I.  ‘:XSSXXIIIIXSSBMBSSXXXIIIXXSMMAMI:.IMM
-        :::I:.  .VSSSSSISISISSSBII:ISSSSBMMB:MI:..:MM
-        ::.I:.  ‘:”SSSSSSSISISSXIIXSSSSBMMB:AHI:..MMM.
-        ::.I:. . ..:”BBSSSSSSSSSSSSBBBMMMB:AHHI::.HMMI
-        :..::.  . ..::”:BBBBBSSBBBMMMB:MMMMHHII::IHHMI
-        ‘:.I:… ….:IHHHHHMMMMMMMMMMMMMMMHHIIIIHMMV”
-            “V:. ..:…:.IHHHMMMMMMMMMMMMMMMMHHHMHHMHP’
-            ‘:. .:::.:.::III::IHHHHMMMMMHMHMMHHHHM”
-                “::….::.:::..:..::IIIIIHHHHMMMHHMV”
-                “::.::.. .. .  …:::IIHHMMMMHMV”
-                    “V::… . .I::IHHMMV”‘
-                    ‘”VHVHHHAHHHHMMV:”‘</pre>
+            <pre id="skull-ascii">
+    #############################################################
+    #############################################################
+    #############################################################
+    #############################################################
+    ##########################################++#################
+    ###########################################++++##############
+    ###########################################++++++############
+    ##########################################++++++++###########
+    #########################################+++++++++-+#########
+    #########+######################+++++++++--------+--+########
+    ######++++#################++++++++++++++-------++----+######
+    ######+++++#################++++#######+++++---+++-----+#####
+    #####++++-++##############################+++--+--...-.-#####
+    #####++++--+#######++--+++#########++-----+++++++....-..#####
+    #####+++----######+--.--++++++-++++--....---+++++.....-.+####
+    #####+++-..######--....-----------.......--+#####-....--+####
+    #####+-----#+-..............-..-...............+++....--#####
+    #####+----+-.............--.+##+.................--....-+####
+    ####++++-+-..............-+#+##+.--................-...--####
+    ####++++-++...............++####-.-..............+......-####
+    ####+----+#-..-..........++#.....---.........---++--....-####
+    #####-..-###-.---......-###+... .--++......--+-++#--....-####
+    #####+..-###---...--++####-.......-++#+--....-++##--....+####
+    ######-.##++#####+-+##+##+........---++#+++####+---+-..-#####
+    ########+++++-.......-+++-.........----....-....-------+#####
+    #####+++#####+..---.--+++.....-....----..----..+++-----+#####
+    #######-++++--------+++#+-...-+..------.------+--.---.-######
+    ########+.-......--++-###+-++--.--.-++-.---..--.......#######
+    #########-.-.......++++######+.---#++#----...........-#######
+    ########+-..-.......+++######+-#++#+##---............########
+    #########-..-+-....-+##++####++##+#++#---......-....-########
+    ##########++#--..++---...+--+----.-........+#..-.############
+    #############+--..#++++++#-##+-#+.++-+.....--.-..############
+    #############+-+...+-++++#+#+++#+-+----.--#...-.-############
+    #############+-+-.-.++--.....................-..-############
+    #############+++#-+++--+--.--...............+-...############
+    #############++++###+#--...-............-.--+-...############
+    #############++++####+-++#+++------+--..---+-..-.############
+    ############+++-++##+#+++-...........--------...+############
+    #############+--+++++-+++-.-------..-.....--.-###############
+    #################++++--++---++++------...--.+################
+    ##################--+#++#+++####+++++-----.##################
+    ###################+--###+####+++++++---.-###################
+    ######################-++++++-.---++--..#####################
+    #########################-..........-+#######################
+    #############################################################
+    #############################################################
+    #############################################################</pre>
             <div class="hydra-subtitle">ТЕРМИНАЛ СИНДИКАТА</div>
         </div>
     </div>    
@@ -641,7 +668,7 @@
                     }
                 }, 800);
             }
-        }, 3000);
+        }, 4000);
 
         // ========== РАБОЧИЙ СТОЛ ==========
         function updateStatusBar() {
