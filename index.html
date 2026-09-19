@@ -32,7 +32,7 @@
         #skull-ascii {
             color: #ff1744;
             font-family: 'Courier New', monospace;
-            font-size: 8px;
+            font-size: 4px;
             line-height: 1.05;
             text-shadow: 0 0 6px #ff1744, 0 0 15px #880000;
             filter: drop-shadow(0 0 20px #ff1744);
@@ -357,7 +357,7 @@
 
         /* МОБИЛЬНАЯ */
         @media (max-width: 768px) {
-            #skull-ascii { font-size: 3px; line-height: 1; }
+            #skull-ascii { font-size: 2.5px; line-height: 1; }
         }              
             .header-ticker-wrap, .status-ticker { display: none !important; }
             .desktop-icon { width: 70px !important; height: 70px !important; }
@@ -611,8 +611,7 @@
         import { loadClans, loadClanWars, createClan, joinClan, leaveClan, deleteClan, declareWar, donateToClan, acceptJoinRequest, checkCompletedWars, autoDistributeTreasury, renderClans, changeClanRole, kickClanMember, showDonateModal, openWarTargetModal, clans, clanWars } from './js/clans.js';
         import { loadFriends, sendFriendRequest, acceptFriend, removeFriend, blockAgent, unblockAgent, getFriends, renderFriends } from './js/friends.js';
         import { loadGuides, createGuide, deleteGuide, editGuide, loadMemes, createMeme, deleteMeme, likeMeme, userGuides, memes, renderGuides, saveEditedGuide, renderMemes, openGuideModal } from './js/guides.js';
-        import { loadAnnouncements, createAnnouncement, deleteAnnouncement, pinAnnouncement, getPaginatedAnnouncements, setAnnounceFilter, setAnnouncePage, announcements, renderAnnounceApp } from './js/announcements.js';
-        import { getAchievements, unlockAchievement, checkAchievements, renderAchievementsUI } from './js/achievements.js';
+        import { loadAnnouncements, createAnnouncement, deleteAnnouncement, pinAnnouncement, renderAnnounceApp } from './js/announcements.js';          import { getAchievements, unlockAchievement, checkAchievements, renderAchievementsUI } from './js/achievements.js';
         import { showAgentInfo, createPost, changeCover } from './js/agents.js';
         import { muteAgent, banAgent, deleteAgent, changeAgentRole, renderAdminPanel, renderLogs } from './js/admin.js';
         import { changeName, changePassword, changeAvatar, changeStatus, changeBio } from './js/settings.js';
