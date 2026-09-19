@@ -2,8 +2,11 @@
 
 export const SUPABASE_URL = 'https://qblnleuunawrkyvwekvg.supabase.co';
 export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibG5sZXV1bmF3cmt5dndla3ZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMDY3NDYsImV4cCI6MjA5NjY4Mjc0Nn0.3UaltpiiLT7pZyZVegGIUUEq5qDdKf2VOdLkCLmqr0k';
-export const GEMINI_API_KEY = 'AIzaSyAQ.Ab8RN6Lj8Vo-J7S6mOYceHOcvqe0zop0yxexIW6t8LdJPcw0gw';
-export const OPENROUTER_API_KEY = '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';
+
+// ============ W-C26 (ОТКЛЮЧЁН) ============
+export const WC26_ENABLED = false;
+export const GEMINI_API_KEY = '';
+export const OPENROUTER_API_KEY = '';
 
 // Чат
 export const CHAT_PAGE_SIZE = window.innerWidth > 768 ? 100 : 30;
@@ -12,8 +15,6 @@ export const ANNOUNCE_PER_PAGE = 5;
 // Таймеры
 export const REP_INTERVAL = 1800000;
 export const TK_INTERVAL = 1800000;
-export const WC26_THINK_INTERVAL = 1200000;
-export const WC26_CONTENT_INTERVAL = 86400000;
 
 // Аватарки
 export const AVATAR_MAX_SIZE = 2 * 1024 * 1024;

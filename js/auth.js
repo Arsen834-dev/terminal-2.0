@@ -31,12 +31,22 @@ export function translit(s) {
     let map = {
         'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y',
         'к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f',
-        'х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'
+        'х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+        'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'E','Ж':'ZH','З':'Z','И':'I','Й':'Y',
+        'К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F',
+        'Х':'H','Ц':'TS','Ч':'CH','Ш':'SH','Щ':'SCH','Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'YU','Я':'YA',
+        ' ':'_'
     };
     return s.split('').map(c => map[c] || c).join('');
 }
 
-// ==================== АВАТАРКИ / ОБЛОЖКИ ====================
+// ==================== БЕЗОПАСНОЕ ИМЯ ФАЙЛА ====================
+function safeFileName(prefix, ext) {
+    let base = translit(CA.name).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 30);
+    return prefix + '_' + base + '_' + Date.now() + '.' + (ext || 'png');
+}
+
+// ==================== АВАТАРКИ ====================
 export async function uploadAvatar(file) {
     if (!CA) return { success: false, error: 'Нет агента' };
     if (!file) return { success: false, error: 'Нет файла' };
@@ -51,20 +61,22 @@ export async function uploadAvatar(file) {
                 canvas.width = AVATAR_DIMENSION;
                 canvas.height = AVATAR_DIMENSION;
                 let ctx = canvas.getContext('2d');
+                // Обрезка по центру в квадрат
                 let size = Math.min(img.width, img.height);
                 let sx = (img.width - size) / 2;
                 let sy = (img.height - size) / 2;
                 ctx.drawImage(img, sx, sy, size, size, 0, 0, AVATAR_DIMENSION, AVATAR_DIMENSION);
 
                 canvas.toBlob(async (blob) => {
-                    let fileName = 'avatar_' + CA.name + '_' + Date.now() + '.png';
+                    if (!blob) { resolve({ success: false, error: 'Ошибка обработки' }); return; }
+                    let fileName = safeFileName('avatar', 'png');
                     let { error } = await supabase.storage
                         .from(AVATAR_BUCKET)
                         .upload(fileName, blob, { upsert: true, contentType: 'image/png' });
 
                     if (error) {
                         console.error('Upload error:', error);
-                        resolve({ success: false, error: error.message });
+                        resolve({ success: false, error: error.message || 'Ошибка загрузки' });
                         return;
                     }
 
@@ -77,12 +89,15 @@ export async function uploadAvatar(file) {
                     resolve({ success: true, url: publicUrl });
                 }, 'image/png');
             };
+            img.onerror = () => resolve({ success: false, error: 'Не удалось прочитать картинку' });
             img.src = e.target.result;
         };
+        reader.onerror = () => resolve({ success: false, error: 'Ошибка чтения файла' });
         reader.readAsDataURL(file);
     });
 }
 
+// ==================== ОБЛОЖКИ ====================
 export async function uploadCover(file) {
     if (!CA) return { success: false, error: 'Нет агента' };
     if (!file) return { success: false, error: 'Нет файла' };
@@ -94,24 +109,24 @@ export async function uploadCover(file) {
             let img = new Image();
             img.onload = async function() {
                 let canvas = document.createElement('canvas');
-                canvas.width = 900;
-                canvas.height = 300;
+                canvas.width = 1200;
+                canvas.height = 400;
                 let ctx = canvas.getContext('2d');
-                // Обрезаем по центру с сохранением пропорций
-                let ratio = Math.max(900 / img.width, 300 / img.height);
+                let ratio = Math.max(1200 / img.width, 400 / img.height);
                 let w = img.width * ratio, h = img.height * ratio;
-                let sx = (w - 900) / 2 / ratio;
-                let sy = (h - 300) / 2 / ratio;
-                ctx.drawImage(img, sx, sy, 900 / ratio, 300 / ratio, 0, 0, 900, 300);
+                let sx = (w - 1200) / 2 / ratio;
+                let sy = (h - 400) / 2 / ratio;
+                ctx.drawImage(img, sx, sy, 1200 / ratio, 400 / ratio, 0, 0, 1200, 400);
 
                 canvas.toBlob(async (blob) => {
-                    let fileName = 'cover_' + CA.name + '_' + Date.now() + '.png';
+                    if (!blob) { resolve({ success: false, error: 'Ошибка обработки' }); return; }
+                    let fileName = safeFileName('cover', 'png');
                     let { error } = await supabase.storage
                         .from(COVER_BUCKET)
                         .upload(fileName, blob, { upsert: true, contentType: 'image/png' });
 
                     if (error) {
-                        resolve({ success: false, error: error.message });
+                        resolve({ success: false, error: error.message || 'Ошибка загрузки' });
                         return;
                     }
 
@@ -123,8 +138,10 @@ export async function uploadCover(file) {
                     resolve({ success: true, url: publicUrl });
                 }, 'image/png');
             };
+            img.onerror = () => resolve({ success: false, error: 'Не удалось прочитать картинку' });
             img.src = e.target.result;
         };
+        reader.onerror = () => resolve({ success: false, error: 'Ошибка чтения файла' });
         reader.readAsDataURL(file);
     });
 }
@@ -202,7 +219,6 @@ export function setActiveItems(items) { activeItems = { ...activeItems, ...items
 export function setActiveBooster(b) { activeBooster = b; }
 export function setBoosterEndTime(t) { boosterEndTime = t; }
 
-// ВАЖНО: замена массива НА МЕСТЕ (чтобы live binding работал)
 export function setInventory(newInv) {
     inventory.length = 0;
     if (Array.isArray(newInv)) {

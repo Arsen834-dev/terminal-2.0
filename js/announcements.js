@@ -88,7 +88,7 @@ export function renderAnnounceApp() {
     let sorted = [...announcements].sort((a, b) => { if (a.pinned && !b.pinned) return -1; if (!a.pinned && b.pinned) return 1; return 0; });
     c.innerHTML = '<button class="settings-btn" id="show-create-announce-btn"><span>📢</span> СОЗДАТЬ ОБЪЯВЛЕНИЕ</button><div id="announce-list">' +
         (sorted.length === 0 ? '<div style="color:#cc0000;">НЕТ</div>' :
-        sorted.map(a => '<div class="announce-card' + (a.pinned ? ' pinned' : '') + '"><div class="announce-type-badge">' + (announceTypes[a.type] || '📰') + (a.pinned ? ' 📌' : '') + '</div><div class="announce-title-text">' + a.title + '</div><div class="announce-text-body">' + (a.text || '').replace(/\n/g, '<br>').replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid #ff1744;margin:5px 0;">') + '</div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="announce-author">— ' + a.author + '</div><div style="display:flex;gap:5px;"><button class="modal-btn" style="font-size:0.9rem;" data-pin-ann="' + a.id + '">' + (a.pinned ? '📌 ОТКРЕПИТЬ' : '📌 ЗАКРЕПИТЬ') + '</button><button class="modal-btn" style="font-size:0.9rem;" data-del-ann="' + a.id + '">🗑 УДАЛИТЬ</button></div></div></div>').join('')) +
+        sorted.map(a => '<div class="announce-card' + (a.pinned ? ' pinned' : '') + '"><div class="announce-type-badge">' + (announceTypes[a.type] || '📰') + (a.pinned ? ' 📌' : '') + '</div><div class="announce-title-text">' + a.title + '</div><div class="announce-text-body">' + (a.text || '').replace(/\n/g, '<br>').replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid #ff1744;margin:5px 0;border-radius:8px;">') + '</div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="announce-author">— ' + a.author + '</div><div style="display:flex;gap:5px;"><button class="modal-btn" style="font-size:0.9rem;" data-pin-ann="' + a.id + '">' + (a.pinned ? '📌 ОТКРЕПИТЬ' : '📌 ЗАКРЕПИТЬ') + '</button><button class="modal-btn" style="font-size:0.9rem;" data-del-ann="' + a.id + '">🗑 УДАЛИТЬ</button></div></div></div>').join('')) +
         '</div>';
     setTimeout(() => {
         document.getElementById('show-create-announce-btn')?.addEventListener('click', () => {
@@ -104,3 +104,5 @@ export function renderAnnounceApp() {
         }));
     }, 10);
 }
+
+export { announcements, announceFilter, announcePage };

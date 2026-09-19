@@ -105,13 +105,13 @@ export function renderChat(keepScroll = false) {
     if (!c) return;
     let osh = c.scrollHeight, ost = c.scrollTop;
     let msgs = chatMessages.slice(window.innerWidth > 768 ? -30 : -15);
-    if (msgs.length === 0) { c.innerHTML = '<div style="text-align:center;color:#cc0000;padding:20px;">СООБЩЕНИЙ ПОКА НЕТ</div>'; return; }
+    if (msgs.length === 0) { c.innerHTML = '<div style="text-align:center;color:#880000;padding:20px;">СООБЩЕНИЙ ПОКА НЕТ</div>'; return; }
     c.innerHTML = msgs.map((m, i) => {
         let ri = m.role === 'admin' ? ' 👑' : m.role === 'moderator' ? ' 🛡' : '';
         let canMod = CA && (CA.role === 'admin' || CA.role === 'moderator');
         let txt = (m.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-        txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid #ff1744;margin:5px 0;" onerror="this.style.display=\'none\'">');
-        txt = txt.replace(/@all/g, '<span class="mention" style="color:#ff0000;text-shadow:0 0 10px #ff0000;font-weight:bold;">@all</span>');
+        txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid rgba(255,255,255,0.1);margin:5px 0;border-radius:12px;" onerror="this.style.display=\'none\'">');
+        txt = txt.replace(/@all/g, '<span class="mention" style="color:#E91E63;font-weight:bold;">@all</span>');
         txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
         let cs = m.author_color ? (getActiveColorClassForId(m.author_color) === 'rainbow-text' ? 'rainbow-text' : getActiveColorClassForId(m.author_color)) : '';
         let fc = m.author_font ? { 'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune', 'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western', 'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil', 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon', 'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic' }[m.author_font] || '' : '';
@@ -138,14 +138,14 @@ export function renderChat(keepScroll = false) {
             if (m.author === CA?.name) menu += '<div class="chat-menu-item" data-edit-msg="' + m.id + '">✏️ РЕДАКТИРОВАТЬ</div>';
             menu += '</div></span>';
         }
-        let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : (m.avatar || '🕶️');
+        let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : (m.avatar || '🕶️');
         return '<div class="chat-msg' + (m.pinned ? ' pinned' : '') + '" data-msg-id="' + m.id + '">' +
             '<div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div>' +
             '<div class="chat-msg-right"><div class="chat-header-row">' +
             '<span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;">' + (m.author || '???') + ri + '</span>' + be +
             '<span class="chat-time">' + (m.time || '') + '</span>' + menu + '</div>' +
             (m.pinned ? '<div class="chat-pin-info">📌 Закреплено' + (m.pinned_by ? ' агентом ' + m.pinned_by : '') + '</div>' : '') +
-            (m.reply_to ? '<div style="color:#cc0000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_author || '???') + ': ' + (m.reply_text || '...') + '</div>' : '') +
+            (m.reply_to ? '<div style="color:#880000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_author || '???') + ': ' + (m.reply_text || '...') + '</div>' : '') +
             '<div class="chat-text ' + fc + '">' + txt + '</div>' +
             '<div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="chat" data-msgid="' + m.id + '">+</span></div>' +
             '</div></div>';
@@ -260,10 +260,10 @@ export function renderAdminChat() {
     let c = document.getElementById('chat-messages');
     c.style.display = 'block';
     let msgs = adminMessages.slice(-30);
-    if (msgs.length === 0) { c.innerHTML = '<div style="text-align:center;color:#cc0000;padding:20px;">СООБЩЕНИЙ ПОКА НЕТ</div>'; return; }
+    if (msgs.length === 0) { c.innerHTML = '<div style="text-align:center;color:#880000;padding:20px;">СООБЩЕНИЙ ПОКА НЕТ</div>'; return; }
     c.innerHTML = msgs.map(m => {
         let txt = (m.text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
-        let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : '🕶️';
+        let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : '🕶️';
         return '<div class="chat-msg"><div class="chat-msg-left"><span class="chat-avatar-frame f-default"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right"><div class="chat-header-row"><span class="chat-author">' + m.author + '</span><span class="chat-time">' + m.time + '</span></div><div class="chat-text">' + txt + '</div></div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
@@ -312,9 +312,9 @@ export function renderDMList() {
         if (m.to_agent === CA.name) agents.add(m.from_agent);
     });
     agents.delete('W-C26');
-    list.innerHTML = '<div style="color:#ff1744;margin-bottom:10px;">ДИАЛОГИ</div>';
+    list.innerHTML = '<div style="color:#E91E63;margin-bottom:10px;font-weight:600;">ДИАЛОГИ</div>';
     if (agents.size === 0) {
-        list.innerHTML += '<div style="color:#cc0000;">НЕТ ДИАЛОГОВ</div>';
+        list.innerHTML += '<div style="color:#880000;">НЕТ ДИАЛОГОВ</div>';
     } else {
         agents.forEach(a => {
             list.innerHTML += '<div class="dm-list-item ' + (currentDM === a ? 'active' : '') + '"><span>' + a + '</span><span class="chat-menu-wrap"><button class="chat-menu-btn" data-dm-delete-btn="' + a + '">⋯</button></span></div>';
@@ -348,9 +348,9 @@ export function renderDMList() {
 
 export function renderDMMessages() {
     let c = document.getElementById('dm-messages');
-    if (!currentDM || !CA) { if (c) c.innerHTML = '<div style="text-align:center;color:#cc0000;">ВЫБЕРИТЕ ДИАЛОГ</div>'; return; }
+    if (!currentDM || !CA) { if (c) c.innerHTML = '<div style="text-align:center;color:#880000;">ВЫБЕРИТЕ ДИАЛОГ</div>'; return; }
     let msgs = dmMessagesAll.filter(m => (m.from_agent === CA.name && m.to_agent === currentDM) || (m.from_agent === currentDM && m.to_agent === CA.name));
-    if (msgs.length === 0) { c.innerHTML = '<div style="text-align:center;color:#cc0000;">НЕТ СООБЩЕНИЙ</div>'; return; }
+    if (msgs.length === 0) { c.innerHTML = '<div style="text-align:center;color:#880000;">НЕТ СООБЩЕНИЙ</div>'; return; }
     c.innerHTML = msgs.map(m => {
         let cs = m.author_color ? getActiveColorClassForId(m.author_color) : '';
         let fc = m.author_font ? { 'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune', 'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western', 'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil', 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon', 'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic' }[m.author_font] || '' : '';
@@ -358,10 +358,10 @@ export function renderDMMessages() {
         let replyText = (m.text || '').substring(0, 50).replace(/'/g, "\\'");
         let menu = '<span class="chat-menu-wrap"><button class="chat-menu-btn" data-menu-btn="dm' + m.id + '">⋯</button><div class="chat-menu-dropdown"><div class="chat-menu-item" data-reply-dm="' + m.id + '" data-reply-author="' + m.from_agent + '" data-reply-text="' + replyText + '">↩ ОТВЕТИТЬ</div>' + (m.from_agent === CA?.name ? '<div class="chat-menu-item" data-delete-dm-msg="' + m.id + '">🗑 УДАЛИТЬ</div>' : '') + '</div></span>';
         let txt = (m.text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
-        txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid #ff1744;margin:5px 0;" onerror="this.style.display=\'none\'">');
+        txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid rgba(255,255,255,0.1);margin:5px 0;border-radius:12px;" onerror="this.style.display=\'none\'">');
         txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
-        let replyHtml = m.reply_to ? '<div style="color:#cc0000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_author || '???') + ': ' + (m.reply_text || '...') + '</div>' : '';
-        let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : '🕶️';
+        let replyHtml = m.reply_to ? '<div style="color:#880000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_author || '???') + ': ' + (m.reply_text || '...') + '</div>' : '';
+        let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : '🕶️';
         return '<div class="chat-msg"><div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right">' + replyHtml + '<div class="chat-header-row"><span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.from_agent + '\')" style="cursor:pointer;">' + m.from_agent + '</span><span class="chat-time">' + m.time + '</span>' + menu + '</div><div class="chat-text ' + fc + '">' + txt + '</div></div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
@@ -456,15 +456,15 @@ export function renderClanMessages() {
     if (!c || !currentClanId) return;
     c.style.display = 'block';
     let msgs = clanChats[currentClanId] || [];
-    if (msgs.length === 0) { c.innerHTML = '<div style="text-align:center;color:#cc0000;padding:20px;">НЕТ СООБЩЕНИЙ</div>'; return; }
+    if (msgs.length === 0) { c.innerHTML = '<div style="text-align:center;color:#880000;padding:20px;">НЕТ СООБЩЕНИЙ</div>'; return; }
     let canMod = CA && (CA.role === 'admin' || CA.role === 'moderator');
     c.innerHTML = msgs.map(m => {
         let cs = m.author_color ? getActiveColorClassForId(m.author_color) : '';
         let fc = m.author_font ? { 'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune', 'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western', 'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil', 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon', 'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic' }[m.author_font] || '' : '';
         let frc = m.author_frame ? (shopItems.frames.find(f => f.id === m.author_frame)?.cssClass || 'f-default') : 'f-default';
         let txt = (m.text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
-        txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid #ff1744;margin:5px 0;" onerror="this.style.display=\'none\'">');
-        txt = txt.replace(/@all/g, '<span class="mention" style="color:#ff0000;font-weight:bold;">@all</span>');
+        txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid rgba(255,255,255,0.1);margin:5px 0;border-radius:12px;" onerror="this.style.display=\'none\'">');
+        txt = txt.replace(/@all/g, '<span class="mention" style="color:#E91E63;font-weight:bold;">@all</span>');
         txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
         let menu = '';
         if (m.id) {
@@ -473,7 +473,7 @@ export function renderClanMessages() {
             if (canMod || m.author === CA?.name) menu += '<div class="chat-menu-item" data-delete-msg="' + m.id + '" data-chat-type="clan">🗑 УДАЛИТЬ</div>';
             menu += '</div></span>';
         }
-        let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : '🕶️';
+        let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : '🕶️';
         return '<div class="chat-msg" data-msg-id="' + m.id + '"><div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right"><div class="chat-header-row"><span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;">' + (m.author || '???') + '</span><span class="chat-time">' + (m.time || '') + '</span>' + menu + '</div><div class="chat-text ' + fc + '">' + txt + '</div></div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
@@ -505,10 +505,10 @@ export async function addClanReaction(msgId, emoji) {
 function renderClanList() {
     let c = document.getElementById('chat-messages');
     c.style.display = 'block';
-    c.innerHTML = '<div style="color:#ff1744;margin-bottom:10px;padding:10px;">⚔️ ОТРЯД</div>';
+    c.innerHTML = '<div style="color:#E91E63;margin-bottom:10px;padding:10px;font-weight:600;">⚔️ ОТРЯД</div>';
     let myClan = clans.find(cl => cl.members && cl.members.find(m => m.name === CA?.name));
     if (myClan) c.innerHTML += '<div class="dm-list-item ' + (currentClanId === myClan.id ? 'active' : '') + '" data-open-clan="' + myClan.id + '"><span>' + myClan.emoji + ' ' + myClan.name + '</span></div>';
-    else c.innerHTML += '<div style="color:#cc0000;padding:10px;">ВЫ НЕ В ОТРЯДЕ</div>';
+    else c.innerHTML += '<div style="color:#880000;padding:10px;">ВЫ НЕ В ОТРЯДЕ</div>';
     setTimeout(() => {
         document.querySelectorAll('[data-open-clan]').forEach(b => b.addEventListener('click', function() { openClanChat(parseInt(this.dataset.openClan)); }));
     }, 10);
