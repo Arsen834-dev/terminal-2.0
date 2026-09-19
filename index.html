@@ -29,6 +29,26 @@
         #skull-intro { text-align: center; }
         #skull-svg { filter: drop-shadow(0 0 30px #ff1744); }
         .hydra-subtitle { color: #880000; font-size: 1.8rem; letter-spacing: 6px; text-transform: uppercase; margin-top: 20px; opacity: 0; animation: subtitleAppear 0.8s 1s forwards; text-shadow: 0 0 10px #550000; }
+                #skull-ascii {
+            color: #ff1744;
+            font-family: 'Courier New', monospace;
+            font-size: 8px;
+            line-height: 1.05;
+            text-shadow: 0 0 8px #ff1744, 0 0 20px #880000;
+            filter: drop-shadow(0 0 30px #ff1744);
+            white-space: pre;
+            margin: 0 auto;
+            display: inline-block;
+            text-align: left;
+            animation: skullPulse 2s ease-in-out infinite;
+        }
+        @keyframes skullPulse {
+            0%, 100% { text-shadow: 0 0 8px #ff1744, 0 0 20px #880000; }
+            50% { text-shadow: 0 0 15px #ff1744, 0 0 40px #ff1744, 0 0 60px #880000; }
+        }
+        #skull-ascii.eating {
+            animation: skullEat 0.8s ease-in forwards;
+        }
         @keyframes hydraOut { 0% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: hidden; } }
         @keyframes subtitleAppear { 0% { opacity: 0; letter-spacing: 15px; } 100% { opacity: 1; letter-spacing: 6px; } }
         @keyframes skullEat { 0% { transform: scale(1); } 100% { transform: scale(8); opacity: 0; } }
@@ -309,6 +329,7 @@
 
         /* МОБИЛЬНАЯ */
         @media (max-width: 768px) {
+            #skull-ascii { font-size: 4px; }
             .header-ticker-wrap, .status-ticker { display: none !important; }
             .desktop-icon { width: 70px !important; height: 70px !important; }
             .desktop-icon .icon-emoji { font-size: 1.6rem; }
@@ -333,31 +354,59 @@
     <!-- ЗАСТАВКА -->
     <div id="start-screen">
         <div id="skull-intro">
-            <svg id="skull-svg" viewBox="0 0 200 220" width="180" height="200">
-                <defs>
-                    <filter id="glowFilter">
-                        <feGaussianBlur stdDeviation="3" result="blur"/>
-                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                    </filter>
-                </defs>
-                <g fill="none" stroke="#ff1744" stroke-width="3" filter="url(#glowFilter)">
-                    <path d="M60,120 C60,70 80,30 100,20 C120,30 140,70 140,120 L140,140 C140,160 130,170 100,170 C70,170 60,160 60,140 Z" fill="#0a0000"/>
-                    <ellipse cx="80" cy="80" rx="15" ry="20" fill="#000"/>
-                    <ellipse cx="120" cy="80" rx="15" ry="20" fill="#000"/>
-                    <ellipse cx="80" cy="80" rx="8" ry="12" fill="#ff1744"><animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite"/></ellipse>
-                    <ellipse cx="120" cy="80" rx="8" ry="12" fill="#ff1744"><animate attributeName="opacity" values="0.4;1;0.4" dur="1.5s" repeatCount="indefinite"/></ellipse>
-                    <path d="M95,105 L100,95 L105,105" fill="#000"/>
-                    <line x1="75" y1="145" x2="75" y2="155"/><line x1="85" y1="145" x2="85" y2="158"/><line x1="95" y1="145" x2="95" y2="160"/><line x1="105" y1="145" x2="105" y2="160"/><line x1="115" y1="145" x2="115" y2="158"/><line x1="125" y1="145" x2="125" y2="155"/>
-                </g>
-                <g fill="none" stroke="#ff1744" stroke-width="3" filter="url(#glowFilter)">
-                    <path d="M65,165 C65,185 80,195 100,195 C120,195 135,185 135,165" fill="#0a0000"/>
-                    <line x1="70" y1="165" x2="70" y2="175"/><line x1="80" y1="167" x2="80" y2="180"/><line x1="90" y1="169" x2="90" y2="183"/><line x1="100" y1="170" x2="100" y2="185"/><line x1="110" y1="169" x2="110" y2="183"/><line x1="120" y1="167" x2="120" y2="180"/><line x1="130" y1="165" x2="130" y2="175"/>
-                </g>
-            </svg>
+            <pre id="skull-ascii">…—-….
+                        ..-:””         ””-..
+                    .-‘                      ‘-.
+                .’              .     .       ‘.
+                .’   .          .    .      .    .”.
+            .’  .    .       .   .   .     .   . ..:.
+            .’ .   . .  .       .   .   ..  .   . ….::.
+            ..   .   .      .  .    .     .  ..  . ….:IA.
+        .:  .   .    .    .  .  .    .. .  .. .. ….:IA.
+        .: .   .   ..   .    .     . . .. . … ….:.:VHA.
+        ‘..  .  .. .   .       .  . .. . .. . …..:.::IHHB.
+        .:. .  . .  . .   .  .  . . . …:.:… …….:HIHMM.
+        .:…. .   . .”::”‘.. .   .  . .:.:.:II;,. .. ..:IHIMMA
+        ‘:.:..  ..::IHHHHHI::. . .  …:.::::.,,,. . ….VIMMHM
+    .:::I. .AHHHHHHHHHHAI::. .:…,:IIHHHHHHMMMHHL:. . VMMMM
+    .:.:V.:IVHHHHHHHMHMHHH::..:” .:HIHHHHHHHHHHHHHMHHA. .VMMM.
+    :..V.:IVHHHHHMMHHHHHHHB… . .:VPHHMHHHMMHHHHHHHHHAI.:VMMI
+    ::V..:VIHHHHHHMMMHHHHHH. .   .I”:IIMHHMMHHHHHHHHHHHAPI:WMM
+    ::”. .:.HHHHHHHHMMHHHHHI.  . .:..I:MHMMHHHHHHHHHMHV:’:H:WM
+    :: . :.::IIHHHHHHMMHHHHV  .ABA.:.:IMHMHMMMHMHHHHV:’. .IHWW
+    ‘.  ..:..:.:IHHHHHMMHV” .AVMHMA.:.’VHMMMMHHHHHV:’ .  :IHWV
+    :.  .:…:”.:.:TPP”   .AVMMHMMA.:. “VMMHHHP.:… .. :IVAI
+    .:.   ‘… .:”‘   .   ..HMMMHMMMA::. .”VHHI:::….  .:IHW’
+    …  .  . ..:IIPPIH: ..HMMMI.MMMV:I:.  .:ILLH:.. …:I:IM
+    : .   .'”‘ .:.V”. .. .  :HMMM:IMMMI::I. ..:HHIIPPHI::’.P:HM.
+    :.  .  .  .. ..:.. .    :AMMM IMMMM..:…:IV”:T::I::.”.:IHIMA
+    ‘V:.. .. . .. .  .  .   ‘VMMV..VMMV :….:V:.:..:….::IHHHMH
+    “IHH:.II:.. .:. .  . . . ” :HB”” . . ..PI:.::.:::..:IHHMMV”
+    :IP””HHII:.  .  .    . . .’V:. . . ..:IH:.:.::IHIHHMMMMM”
+    :V:. VIMA:I..  .     .  . .. . .  .:.I:I:..:IHHHHMMHHMMM
+    :”VI:.VWMA::. .:      .   .. .:. ..:.I::.:IVHHHMMMHMMMMI
+    :.”VIIHHMMA:.  .   .   .:  .:.. . .:.II:I:AMMMMMMHMMMMMI
+    :..VIHIHMMMI…::.,:.,:!”I:!”I!”I!”V:AI:VAMMMMMMHMMMMMM’
+    ‘:.:HIHIMHHA:”!!”I.:AXXXVVXXXXXXXA:.”HPHIMMMMHHMHMMMMMV
+        V:H:I:MA:W’I :AXXXIXII:IIIISSSSSSXXA.I.VMMMHMHMMMMMM
+        ‘I::IVA ASSSSXSSSSBBSBMBSSSSSSBBMMMBS.VVMMHIMM'”‘
+            I:: VPAIMSSSSSSSSSBSSSMMBSSSBBMMMMXXI:MMHIMMI
+        .I::. “H:XIIXBBMMMMMMMMMMMMMMMMMBXIXXMMPHIIMM’
+        :::I.  ‘:XSSXXIIIIXSSBMBSSXXXIIIXXSMMAMI:.IMM
+        :::I:.  .VSSSSSISISISSSBII:ISSSSBMMB:MI:..:MM
+        ::.I:.  ‘:”SSSSSSSISISSXIIXSSSSBMMB:AHI:..MMM.
+        ::.I:. . ..:”BBSSSSSSSSSSSSBBBMMMB:AHHI::.HMMI
+        :..::.  . ..::”:BBBBBSSBBBMMMB:MMMMHHII::IHHMI
+        ‘:.I:… ….:IHHHHHMMMMMMMMMMMMMMMHHIIIIHMMV”
+            “V:. ..:…:.IHHHMMMMMMMMMMMMMMMMHHHMHHMHP’
+            ‘:. .:::.:.::III::IHHHHMMMMMHMHMMHHHHM”
+                “::….::.:::..:..::IIIIIHHHHMMMHHMV”
+                “::.::.. .. .  …:::IIHHMMMMHMV”
+                    “V::… . .I::IHHMMV”‘
+                    ‘”VHVHHHAHHHHMMV:”‘</pre>
             <div class="hydra-subtitle">ТЕРМИНАЛ СИНДИКАТА</div>
         </div>
-    </div>
-
+    </div>    
     <!-- ЗАГРУЗЧИК -->
     <div id="loader-screen">
         <div class="loader-grid" id="loader-grid"></div>
@@ -535,7 +584,7 @@
         import { loadClans, loadClanWars, createClan, joinClan, leaveClan, deleteClan, declareWar, donateToClan, acceptJoinRequest, checkCompletedWars, autoDistributeTreasury, renderClans, changeClanRole, kickClanMember, showDonateModal, openWarTargetModal, clans, clanWars } from './js/clans.js';
         import { loadFriends, sendFriendRequest, acceptFriend, removeFriend, blockAgent, unblockAgent, getFriends, renderFriends } from './js/friends.js';
         import { loadGuides, createGuide, deleteGuide, editGuide, loadMemes, createMeme, deleteMeme, likeMeme, userGuides, memes, renderGuides, saveEditedGuide, renderMemes, openGuideModal } from './js/guides.js';
-        import { loadAnnouncements, createAnnouncement, deleteAnnouncement, pinAnnouncement, getPaginatedAnnouncements, setAnnounceFilter, setAnnouncePage, announcements, announceTypes, renderAnnounceApp } from './js/announcements.js';
+        import { loadAnnouncements, createAnnouncement, deleteAnnouncement, pinAnnouncement, getPaginatedAnnouncements, setAnnounceFilter, setAnnouncePage, announcements, renderAnnounceApp } from './js/announcements.js';
         import { getAchievements, unlockAchievement, checkAchievements, renderAchievementsUI } from './js/achievements.js';
         import { showAgentInfo, createPost, changeCover } from './js/agents.js';
         import { muteAgent, banAgent, deleteAgent, changeAgentRole, renderAdminPanel, renderLogs } from './js/admin.js';
@@ -576,7 +625,7 @@
 
         // Заставка
         setTimeout(() => {
-            const skull = document.getElementById('skull-svg');
+            const skull = document.getElementById('skull-ascii');
             if (skull) {
                 skull.classList.add('eating');
                 setTimeout(() => {
