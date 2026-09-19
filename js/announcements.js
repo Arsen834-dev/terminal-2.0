@@ -4,9 +4,9 @@ import { ANNOUNCE_PER_PAGE } from './config.js';
 import { addLog } from './admin.js';
 import { notif } from './utils.js';
 
-export let announcements = [];
-export let announceFilter = 'all';
-export let announcePage = 1;
+let announcements = [];
+let announceFilter = 'all';
+let announcePage = 1;
 
 export const announceTypes = {
     news: '📰 Новость',
@@ -20,7 +20,6 @@ export async function loadAnnouncements() {
     try {
         let { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
         if (data) {
-            // Обновляем МАССИВ НА МЕСТЕ, чтобы live-binding работал
             announcements.length = 0;
             data.forEach(a => announcements.push(a));
             window.announcements = announcements;
