@@ -7,9 +7,9 @@ let rpMessages = [];
 let rpChannel = null;
 let currentRpChar = null;
 let currentRpRoom = 'general';
+let rpScenes = [];
 
 // ==================== ПЕРСОНАЖИ ====================
-
 export async function loadRpCharacters() {
     if (!CA) return;
     try {
@@ -64,6 +64,10 @@ export async function deleteRpCharacter(id) {
     try {
         await supabase.from('rp_characters').delete().eq('id', id).eq('owner', CA.name);
         await loadRpCharacters();
+        if (currentRpChar && currentRpChar.id === id) {
+            currentRpChar = null;
+            localStorage.removeItem('syndicate_rp_char');
+        }
         notif('🗑 ПЕРСОНАЖ УДАЛЁН');
         return { success: true };
     } catch (e) { return { success: false, error: 'Ошибка' }; }
@@ -71,7 +75,11 @@ export async function deleteRpCharacter(id) {
 
 export function getRpCharacters() { return rpCharacters; }
 export function getCurrentRpChar() { return currentRpChar; }
-export function setCurrentRpChar(char) { currentRpChar = char; localStorage.setItem('syndicate_rp_char', JSON.stringify(char)); }
+export function setCurrentRpChar(char) {
+    currentRpChar = char;
+    if (char) localStorage.setItem('syndicate_rp_char', JSON.stringify(char));
+    else localStorage.removeItem('syndicate_rp_char');
+}
 
 export function loadSavedRpChar() {
     try {
@@ -80,8 +88,15 @@ export function loadSavedRpChar() {
     } catch (e) {}
 }
 
-// ==================== СООБЩЕНИЯ ====================
+export function requireCharacter() {
+    if (!currentRpChar) {
+        notif('⚠ СНАЧАЛА СОЗДАЙ ПЕРСОНАЖА');
+        return false;
+    }
+    return true;
+}
 
+// ==================== СООБЩЕНИЯ ====================
 export async function loadRpMessages(room = 'general') {
     try {
         let { data } = await supabase.from('rp_messages')
@@ -131,6 +146,8 @@ export function renderRpMessages() {
         let avatarHtml = m.char_avatar_url
             ? '<img src="' + m.char_avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
             : '🎭';
+        let txt = (m.text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
+        txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid #ff1744;margin:5px 0;" onerror="this.style.display=\'none\'">');
         return '<div class="chat-msg">' +
             '<div class="chat-msg-left"><span class="chat-avatar-frame f-default"><span class="chat-avatar">' + avatarHtml + '</span></span></div>' +
             '<div class="chat-msg-right">' +
@@ -139,7 +156,7 @@ export function renderRpMessages() {
             '<span style="color:#880000;font-size:0.75rem;">(' + m.owner + ')</span>' +
             '<span class="chat-time">' + m.time + '</span>' +
             '</div>' +
-            '<div class="chat-text" style="color:#cc0000;font-style:italic;">' + (m.text || '').replace(/\n/g, '<br>') + '</div>' +
+            '<div class="chat-text" style="color:#cc0000;font-style:italic;">' + txt + '</div>' +
             '</div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
@@ -151,10 +168,7 @@ export function switchRpRoom(room) {
     subscribeRpChat(room);
 }
 
-// ==================== UI ДЛЯ СПЕКТАКЛЕЙ ====================
-
-let rpScenes = [];
-
+// ==================== СПЕКТАКЛИ ====================
 export async function loadRpScenes() {
     try {
         let { data } = await supabase.from('rp_scenes').select('*').order('created_at', { ascending: false });
@@ -180,7 +194,10 @@ export async function createRpScene(title, description) {
 export function renderRpScenes() {
     let c = document.getElementById('rp-scenes-list');
     if (!c) return;
-    if (rpScenes.length === 0) { c.innerHTML = '<div style="color:#880000;text-align:center;padding:20px;">СПЕКТАКЛЕЙ ПОКА НЕТ</div>'; return; }
+    if (rpScenes.length === 0) {
+        c.innerHTML = '<div style="color:#880000;text-align:center;padding:20px;">СПЕКТАКЛЕЙ ПОКА НЕТ</div>';
+        return;
+    }
     c.innerHTML = rpScenes.map(s => {
         let av = s.char_avatar_url ? '<img src="' + s.char_avatar_url + '" style="width:32px;height:32px;border-radius:50%;">' : '🎭';
         return '<div class="guide-item"><div style="display:flex;align-items:center;gap:10px;"><span>' + av + '</span><div style="flex:1;"><div style="color:#ff1744;font-size:1.2rem;">' + s.title + '</div><div style="color:#880000;font-size:0.8rem;">' + s.char_name + ' (' + s.author + ') • ' + timeAgo(s.created_at) + '</div></div></div><div style="color:#cc0000;margin-top:8px;">' + (s.description || '') + '</div></div>';

@@ -19,6 +19,7 @@ export const WC26_CONTENT_INTERVAL = 86400000;
 export const AVATAR_MAX_SIZE = 2 * 1024 * 1024;
 export const AVATAR_DIMENSION = 256;
 export const AVATAR_BUCKET = 'avatars';
+export const COVER_BUCKET = 'avatars';
 
 // Реакции
 export const REACTION_EMOJIS = ['👍', '❤', '😂', '🔥', '💀', '😡', '🎯', '👏', '🫡', '💯', '🤝', '⚡', '💎', '🎪', '🌑'];
@@ -30,7 +31,9 @@ export const ACHIEVEMENTS = [
     { id: 'socializer', name: 'СОЦИАЛИЗАТОР', desc: '10 сообщений в чате', icon: '💬' },
     { id: 'rich', name: 'БОГАЧ', desc: 'Накопить 1000 ТК', icon: '💰' },
     { id: 'reputation', name: 'УВАЖАЕМЫЙ', desc: '100 очков репутации', icon: '⭐' },
-    { id: 'clan_creator', name: 'ОСНОВАТЕЛЬ', desc: 'Создать отряд', icon: '⚔️' }
+    { id: 'clan_creator', name: 'ОСНОВАТЕЛЬ', desc: 'Создать отряд', icon: '⚔️' },
+    { id: 'rp_actor', name: 'АКТЁР', desc: 'Создать РП-персонажа', icon: '🎭' },
+    { id: 'blogger', name: 'БЛОГЕР', desc: 'Создать пост на стене', icon: '📝' }
 ];
 
 // Эмодзи отрядов
@@ -79,5 +82,5 @@ export const TICKER_TEXTS = [
     "Связь: Движение Фонариков желает вам удачи!"
 ];
 
-// Удалённые ID
+// Удалённые ID предметов
 export const REMOVED_ITEM_IDS = ['c_inverted', 'c_hellfire', 'c_obsidian', 'c_hexagon', 'c_emerald', 'c_ruby', 'b_pais', 'b_mauler', 'b_gygax'];

@@ -1,7 +1,7 @@
 // ============ CLANS / ОТРЯДЫ, ВОЙНЫ ============
 import { supabase, CA, getAgents, saveAgent } from './auth.js';
 import { addLog } from './admin.js';
-import { notif } from './utils.js';
+import { notif, closeModal } from './utils.js';
 
 let clans = [];
 let clanWars = [];
@@ -55,8 +55,11 @@ export async function joinClan(clanId) {
     if (cl.members.find(m => m.name === CA.name)) return { success: false, error: '⚠ ВЫ УЖЕ В ОТРЯДЕ' };
     cl.members.push({ name: CA.name, role: 'member' });
     cl.rating = (cl.rating || 0) + 10;
-    try { await supabase.from('clans').update({ members: cl.members, rating: cl.rating }).eq('id', clanId); await loadClans(); return { success: true }; }
-    catch (e) { return { success: false, error: 'Ошибка вступления' }; }
+    try {
+        await supabase.from('clans').update({ members: cl.members, rating: cl.rating }).eq('id', clanId);
+        await loadClans();
+        return { success: true };
+    } catch (e) { return { success: false, error: 'Ошибка вступления' }; }
 }
 
 export async function leaveClan(clanId) {
@@ -64,8 +67,11 @@ export async function leaveClan(clanId) {
     if (!cl || !CA || cl.leader === CA.name) return { success: false, error: '⛔ НЕЛЬЗЯ' };
     cl.members = cl.members.filter(m => m.name !== CA.name);
     cl.rating = Math.max(0, (cl.rating || 0) - 10);
-    try { await supabase.from('clans').update({ members: cl.members, rating: cl.rating }).eq('id', clanId); await loadClans(); return { success: true }; }
-    catch (e) { return { success: false, error: 'Ошибка выхода' }; }
+    try {
+        await supabase.from('clans').update({ members: cl.members, rating: cl.rating }).eq('id', clanId);
+        await loadClans();
+        return { success: true };
+    } catch (e) { return { success: false, error: 'Ошибка выхода' }; }
 }
 
 export async function deleteClan(clanId) {
@@ -135,8 +141,15 @@ export async function checkCompletedWars() {
             let loser = aWon ? war.defender_tag : war.attacker_tag;
             let wc = clans.find(c => c.tag === winner);
             let lc = clans.find(c => c.tag === loser);
-            if (wc) { wc.rating = (wc.rating || 0) + 50; wc.treasury = (wc.treasury || 0) + (war.pot || 1000); await supabase.from('clans').update({ rating: wc.rating, treasury: wc.treasury }).eq('id', wc.id); }
-            if (lc) { lc.rating = Math.max(0, (lc.rating || 0) - 50); await supabase.from('clans').update({ rating: lc.rating }).eq('id', lc.id); }
+            if (wc) {
+                wc.rating = (wc.rating || 0) + 50;
+                wc.treasury = (wc.treasury || 0) + (war.pot || 1000);
+                await supabase.from('clans').update({ rating: wc.rating, treasury: wc.treasury }).eq('id', wc.id);
+            }
+            if (lc) {
+                lc.rating = Math.max(0, (lc.rating || 0) - 50);
+                await supabase.from('clans').update({ rating: lc.rating }).eq('id', lc.id);
+            }
             await supabase.from('clan_wars').update({ resolved: true, winner }).eq('id', war.id);
             addLog('СИСТЕМА', 'war_end', winner + ' победил ' + loser);
         }
@@ -150,8 +163,92 @@ export async function donateToClan(clanId, amount) {
     if (!cl) return { success: false, error: '⛔ Отряд не найден' };
     CA.crystals -= amount;
     cl.treasury = (cl.treasury || 0) + amount;
-    try { await supabase.from('clans').update({ treasury: cl.treasury }).eq('id', clanId); await saveAgent(); return { success: true }; }
-    catch (e) { return { success: false, error: 'Ошибка' }; }
+    try {
+        await supabase.from('clans').update({ treasury: cl.treasury }).eq('id', clanId);
+        await saveAgent();
+        return { success: true };
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
+}
+
+// МОДАЛКА ПОПОЛНЕНИЯ КАЗНЫ
+export function showDonateModal(clanId) {
+    let existing = document.getElementById('modal-donate-clan');
+    if (existing) existing.remove();
+    let modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'modal-donate-clan';
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    modal.innerHTML = '<div class="modal-box"><div class="modal-title">💰 ПОПОЛНИТЬ КАЗНУ</div>' +
+        '<div style="color:#cc0000;">Ваш баланс: ' + (CA?.crystals || 0) + ' ТК</div>' +
+        '<input type="number" class="modal-input" id="donate-amount" placeholder="СУММА" min="1" max="' + (CA?.crystals || 0) + '">' +
+        '<button class="modal-btn" id="donate-confirm-btn" style="width:100%;">ПОПОЛНИТЬ</button>' +
+        '<button class="modal-btn" onclick="this.closest(\'.modal-overlay\').remove()" style="width:100%;">ОТМЕНА</button></div>';
+    document.body.appendChild(modal);
+    setTimeout(() => {
+        document.getElementById('donate-confirm-btn').addEventListener('click', async function() {
+            let amt = parseInt(document.getElementById('donate-amount').value);
+            if (!amt || amt < 1) return notif('⛔ НЕВЕРНАЯ СУММА');
+            let r = await donateToClan(clanId, amt);
+            if (r.success) {
+                notif('💰 +' + amt + ' ТК В КАЗНУ');
+                modal.remove();
+                if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
+                renderClans();
+            } else {
+                notif(r.error);
+            }
+        });
+    }, 10);
+}
+
+// МОДАЛКА ВЫБОРА ЦЕЛИ ДЛЯ ВОЙНЫ
+export function openWarTargetModal(clanId) {
+    let myClan = clans.find(c => c.id == clanId);
+    if (!myClan || myClan.leader !== CA.name) return;
+    if ((myClan.treasury || 0) < 500) return notif('⚠ У ВАШЕГО ОТРЯДА НЕТ 500 ТК В КАЗНЕ!');
+    let alreadyAtWar = clanWars.some(w => !w.resolved && (w.attacker_tag === myClan.tag || w.defender_tag === myClan.tag));
+    if (alreadyAtWar) return notif('⚠ ВЫ УЖЕ ВЕДЁТЕ ВОЙНУ!');
+
+    let targets = clans.filter(c =>
+        c.id !== clanId &&
+        Math.abs((c.members?.length || 0) - (myClan.members?.length || 0)) <= 2 &&
+        (c.treasury || 0) >= 500 &&
+        !clanWars.some(w => !w.resolved && ((w.attacker_tag === myClan.tag && w.defender_tag === c.tag) || (w.attacker_tag === c.tag && w.defender_tag === myClan.tag)))
+    );
+
+    let modal = document.getElementById('modal-war-target');
+    let listDiv = document.getElementById('war-target-list');
+    if (!modal || !listDiv) return;
+
+    listDiv.innerHTML = '<div style="color:#ffd700;margin-bottom:15px;padding:10px;border:1px solid #ffd700;font-size:0.9rem;">⚔️ <b>ПРАВИЛА ВОЙНЫ:</b><br>• Война длится 24 часа<br>• Каждый час начисляются очки за онлайн участников и их репутацию<br>• Победитель получает банк 1000 ТК и +50 рейтинга<br>• Проигравший теряет -50 рейтинга<br>• С каждой стороны списывается 500 ТК в банк</div>';
+
+    if (targets.length === 0) {
+        listDiv.innerHTML += '<div style="color:#cc0000;padding:20px;text-align:center;">⚠ НЕТ ДОСТУПНЫХ ЦЕЛЕЙ<br><small>Разница ≤2 участников, казна ≥500 ТК, нет активной войны</small></div>';
+    } else {
+        listDiv.innerHTML += targets.map(c => '<div class="admin-row"><span>' + c.emoji + ' ' + c.name + ' [' + c.tag + '] (' + c.members?.length + ' уч., ' + c.treasury + ' ТК)</span><button class="modal-btn" data-attack-target="' + c.id + '">⚔️ НАПАСТЬ</button></div>').join('');
+        setTimeout(() => {
+            document.querySelectorAll('[data-attack-target]').forEach(btn => {
+                btn.addEventListener('click', async function(e) {
+                    e.stopPropagation();
+                    let targetClanId = parseInt(this.dataset.attackTarget);
+                    let r = await declareWar(clanId, targetClanId);
+                    if (r.success) {
+                        notif('⚔️ ВОЙНА ОБЪЯВЛЕНА!');
+                        closeModal('modal-war-target');
+                        await loadClans();
+                        await loadClanWars();
+                        renderClans();
+                    } else {
+                        notif(r.error);
+                    }
+                });
+            });
+        }, 10);
+    }
+
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('show'), 10);
 }
 
 export async function autoDistributeTreasury() {
@@ -169,7 +266,10 @@ export async function autoDistributeTreasury() {
         if (totalBonus > total) continue;
         cl.treasury -= totalBonus;
         for (let m of cl.members) {
-            try { let { data } = await supabase.from('agents').select('crystals').eq('name', m.name).maybeSingle(); if (data) { let nc = (data.crystals || 0) + bonus; await supabase.from('agents').update({ crystals: nc }).eq('name', m.name); } } catch (e) {}
+            try {
+                let { data } = await supabase.from('agents').select('crystals').eq('name', m.name).maybeSingle();
+                if (data) { let nc = (data.crystals || 0) + bonus; await supabase.from('agents').update({ crystals: nc }).eq('name', m.name); }
+            } catch (e) {}
         }
         await supabase.from('clans').update({ treasury: cl.treasury }).eq('id', cl.id);
     }
@@ -185,19 +285,27 @@ export async function acceptJoinRequest(clanId, name) {
     try {
         await supabase.from('clans').update({ members: cl.members, rating: cl.rating }).eq('id', clanId);
         await supabase.from('clan_join_requests').delete().eq('clan_id', clanId).eq('requester', name);
-        await loadClans(); return { success: true };
+        await loadClans();
+        return { success: true };
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export async function renderClans() {
-    await loadClans(); await loadClanWars();
+    await loadClans();
+    await loadClanWars();
     let c = document.getElementById('clans-content');
     if (!CA || !c) return;
     let myClan = clans.find(cl => cl.members && cl.members.find(m => m.name === CA.name));
     let html = '';
     if (myClan) {
         let { data: reqs } = await supabase.from('clan_join_requests').select('*').eq('clan_id', myClan.id);
-        if (reqs) reqs.forEach(r => { if (!clanJoinRequests.some(j => j.clanId === r.clan_id && j.requester === r.requester)) clanJoinRequests.push({ clanId: r.clan_id, requester: r.requester }); });
+        if (reqs) {
+            reqs.forEach(r => {
+                if (!clanJoinRequests.some(j => j.clanId === r.clan_id && j.requester === r.requester)) {
+                    clanJoinRequests.push({ clanId: r.clan_id, requester: r.requester });
+                }
+            });
+        }
         let activeWars = clanWars.filter(w => (w.attacker_tag === myClan.tag || w.defender_tag === myClan.tag) && !w.resolved);
         html += '<div class="clan-info-block"><div style="font-size:1.5rem;">' + myClan.emoji + ' ' + myClan.name + ' <span style="color:#cc0000;">[' + myClan.tag + ']</span></div><div style="color:#cc0000;">' + (myClan.description || '') + '</div><div>👑 ' + myClan.leader + ' | 💰 ' + (myClan.treasury || 0) + ' ТК | ⭐ ' + (myClan.rating || 0) + ' | 👥 ' + (myClan.members?.length || 0) + '</div>';
         if (activeWars.length > 0) {
@@ -243,15 +351,15 @@ export async function renderClans() {
     }
     c.innerHTML = html;
     setTimeout(() => {
-        document.getElementById('create-clan-btn')?.addEventListener('click', () => { if (typeof showCreateClan === 'function') showCreateClan(); });
-        document.querySelectorAll('[data-clan-info]').forEach(b => b.addEventListener('click', function() { if (typeof showClanInfo === 'function') showClanInfo(parseInt(this.dataset.clanInfo)); }));
+        document.getElementById('create-clan-btn')?.addEventListener('click', () => { if (typeof window.showCreateClan === 'function') window.showCreateClan(); });
+        document.querySelectorAll('[data-clan-info]').forEach(b => b.addEventListener('click', function() { if (typeof window.showClanInfo === 'function') window.showClanInfo(parseInt(this.dataset.clanInfo)); }));
         document.querySelectorAll('[data-cr]').forEach(b => b.addEventListener('click', function() { changeClanRole(parseInt(this.dataset.cr), this.dataset.crn, this.dataset.crr); }));
         document.querySelectorAll('[data-kick]').forEach(b => b.addEventListener('click', function() { kickClanMember(parseInt(this.dataset.kick), this.dataset.kickn); }));
-        document.querySelectorAll('[data-donate]').forEach(b => b.addEventListener('click', function() { if (typeof donateToClanModal === 'function') donateToClanModal(parseInt(this.dataset.donate)); }));
-        document.querySelectorAll('[data-war]').forEach(b => b.addEventListener('click', function() { if (typeof openWarTargetModal === 'function') openWarTargetModal(parseInt(this.dataset.war)); }));
-        document.querySelectorAll('[data-delclan]').forEach(b => b.addEventListener('click', function() { deleteClan(parseInt(this.dataset.delclan)); }));
-        document.querySelectorAll('[data-leave]').forEach(b => b.addEventListener('click', function() { leaveClan(parseInt(this.dataset.leave)); }));
-        document.querySelectorAll('[data-accept-join]').forEach(b => b.addEventListener('click', function() { acceptJoinRequest(parseInt(this.dataset.acceptJoin), this.dataset.acceptName); }));
+        document.querySelectorAll('[data-donate]').forEach(b => b.addEventListener('click', function() { showDonateModal(parseInt(this.dataset.donate)); }));
+        document.querySelectorAll('[data-war]').forEach(b => b.addEventListener('click', function() { openWarTargetModal(parseInt(this.dataset.war)); }));
+        document.querySelectorAll('[data-delclan]').forEach(b => b.addEventListener('click', function() { deleteClan(parseInt(this.dataset.delclan)).then(() => renderClans()); }));
+        document.querySelectorAll('[data-leave]').forEach(b => b.addEventListener('click', function() { leaveClan(parseInt(this.dataset.leave)).then(() => renderClans()); }));
+        document.querySelectorAll('[data-accept-join]').forEach(b => b.addEventListener('click', function() { acceptJoinRequest(parseInt(this.dataset.acceptJoin), this.dataset.acceptName).then(() => renderClans()); }));
     }, 10);
 }
 
@@ -262,7 +370,8 @@ export async function changeClanRole(clanId, name, role) {
     if (!m) return;
     m.role = role;
     await supabase.from('clans').update({ members: cl.members }).eq('id', clanId);
-    await loadClans(); renderClans();
+    await loadClans();
+    renderClans();
 }
 
 export async function kickClanMember(clanId, name) {
@@ -271,7 +380,9 @@ export async function kickClanMember(clanId, name) {
     cl.members = cl.members.filter(m => m.name !== name);
     cl.rating = Math.max(0, (cl.rating || 0) - 10);
     await supabase.from('clans').update({ members: cl.members, rating: cl.rating }).eq('id', clanId);
-    await loadClans(); renderClans(); notif('👢 ИСКЛЮЧЁН');
+    await loadClans();
+    renderClans();
+    notif('👢 ИСКЛЮЧЁН');
 }
 
 export { clans, clanWars, clanJoinRequests };

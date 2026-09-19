@@ -1,12 +1,15 @@
 // ============ GUIDES / ГАЙДЫ, МЕМЫ ============
 import { supabase, CA, saveAgent } from './auth.js';
-import { notif } from './utils.js';
+import { notif, closeModal } from './utils.js';
 
 let userGuides = [];
 let memes = [];
 
 export async function loadGuides() {
-    try { let { data } = await supabase.from('guides').select('*').order('created_at', { ascending: false }); if (data) userGuides = data; } catch (e) {}
+    try {
+        let { data } = await supabase.from('guides').select('*').order('created_at', { ascending: false });
+        if (data) userGuides = data;
+    } catch (e) {}
 }
 
 export async function createGuide(title, text) {
@@ -24,33 +27,53 @@ export async function createGuide(title, text) {
 }
 
 export async function deleteGuide(id) {
-    try { await supabase.from('guides').delete().eq('id', id); await loadGuides(); notif('🗑 ГАЙД УДАЛЁН'); return { success: true }; }
-    catch (e) { return { success: false, error: 'Ошибка' }; }
+    try {
+        await supabase.from('guides').delete().eq('id', id);
+        await loadGuides();
+        notif('🗑 ГАЙД УДАЛЁН');
+        return { success: true };
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
-export async function editGuide(id, title, text) {
-    try { await supabase.from('guides').update({ title, text }).eq('id', id); await loadGuides(); notif('✅ ГАЙД ОБНОВЛЁН'); return { success: true }; }
-    catch (e) { return { success: false, error: 'Ошибка' }; }
+export async function editGuide(id) {
+    let g = userGuides.find(x => x.id == id);
+    if (!g) return;
+    let btn = document.getElementById('create-guide-submit-btn');
+    if (btn) btn.dataset.editing = id;
+    document.getElementById('guide-title').value = g.title || '';
+    document.getElementById('guide-text').value = g.text || '';
+    document.getElementById('modal-create-title').textContent = '✏️ РЕДАКТИРОВАТЬ ГАЙД';
+    if (btn) btn.textContent = 'СОХРАНИТЬ';
+    let modal = document.getElementById('modal-create');
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('show'), 10);
 }
 
 export async function saveEditedGuide() {
-    let id = document.getElementById('create-guide-submit-btn').dataset.editing;
+    let btn = document.getElementById('create-guide-submit-btn');
+    let id = btn?.dataset.editing;
     let title = document.getElementById('guide-title')?.value?.trim();
     let text = document.getElementById('guide-text')?.value?.trim();
     if (!title || !text) return notif('⛔ ЗАПОЛНИ');
-    let result = await editGuide(id, title, text);
-    if (result.success) {
-        if (typeof closeModal === 'function') closeModal('modal-create');
-        let btn = document.getElementById('create-guide-submit-btn');
+    if (!id) return;
+    try {
+        await supabase.from('guides').update({ title, text }).eq('id', id);
+        await loadGuides();
+        notif('✅ ГАЙД ОБНОВЛЁН');
+        closeModal('modal-create');
         delete btn.dataset.editing;
         btn.textContent = 'ОПУБЛИКОВАТЬ';
+        document.getElementById('modal-create-title').textContent = '✏️ НОВЫЙ ГАЙД';
         renderGuides();
-    }
-    return result;
+        return { success: true };
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export async function loadMemes() {
-    try { let { data } = await supabase.from('memes').select('*').order('id', { ascending: false }).limit(50); if (data) memes = data; } catch (e) {}
+    try {
+        let { data } = await supabase.from('memes').select('*').order('id', { ascending: false }).limit(50);
+        if (data) memes = data;
+    } catch (e) {}
 }
 
 export async function createMeme(title, text, imageUrl) {
@@ -66,8 +89,12 @@ export async function createMeme(title, text, imageUrl) {
 }
 
 export async function deleteMeme(id) {
-    try { await supabase.from('memes').delete().eq('id', id); await loadMemes(); notif('🗑 МЕМ УДАЛЁН'); return { success: true }; }
-    catch (e) { return { success: false, error: 'Ошибка' }; }
+    try {
+        await supabase.from('memes').delete().eq('id', id);
+        await loadMemes();
+        notif('🗑 МЕМ УДАЛЁН');
+        return { success: true };
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export async function likeMeme(id) {
@@ -79,8 +106,12 @@ export async function likeMeme(id) {
     if (idx === -1) { likedBy.push(CA.name); meme.likes = (meme.likes || 0) + 1; }
     else { likedBy.splice(idx, 1); meme.likes = Math.max(0, (meme.likes || 0) - 1); }
     meme.liked_by = likedBy;
-    try { await supabase.from('memes').update({ likes: meme.likes, liked_by: likedBy }).eq('id', id); await loadMemes(); return { success: true }; }
-    catch (e) { return { success: false, error: 'Ошибка' }; }
+    try {
+        await supabase.from('memes').update({ likes: meme.likes, liked_by: likedBy }).eq('id', id);
+        await loadMemes();
+        renderMemes();
+        return { success: true };
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export function renderGuides() {
@@ -97,7 +128,7 @@ export function renderGuides() {
         div.className = 'guide-item ' + (g.pinned ? 'pinned' : '');
         div.style.cursor = 'pointer';
         div.innerHTML = '<div class="guide-title-row"><span>' + g.title + '</span><span class="guide-author">' + (g.author || '') + '</span></div>';
-        div.addEventListener('click', () => { if (typeof openGuideModal === 'function') openGuideModal(g); });
+        div.addEventListener('click', () => openGuideModal(g));
         list.appendChild(div);
     });
 }
@@ -115,11 +146,12 @@ export function renderMemes() {
             (m.image_url ? '<img class="meme-image" src="' + m.image_url + '" onerror="this.style.display=\'none\'">' : '') +
             '<div class="meme-author" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;">— ' + m.author + '</div>' +
             '<div class="meme-actions"><button class="meme-like-btn' + (iliked ? ' liked' : '') + '" data-meme-like="' + m.id + '">👍 ' + likes + '</button>' +
-            (CA && (CA.role === 'admin' || CA.role === 'moderator' || m.author === CA.name) ? '<button class="meme-like-btn" onclick="window.deleteMeme(' + m.id + ')" style="color:#ff0000;border-color:#ff0000;">🗑</button>' : '') +
+            (CA && (CA.role === 'admin' || CA.role === 'moderator' || m.author === CA.name) ? '<button class="meme-like-btn" data-meme-del="' + m.id + '" style="color:#ff0000;border-color:#ff0000;">🗑</button>' : '') +
             '</div></div>';
     }).join('');
     setTimeout(() => {
         document.querySelectorAll('[data-meme-like]').forEach(b => b.addEventListener('click', function() { likeMeme(parseInt(this.dataset.memeLike)); }));
+        document.querySelectorAll('[data-meme-del]').forEach(b => b.addEventListener('click', function() { deleteMeme(parseInt(this.dataset.memeDel)); }));
     }, 10);
 }
 
@@ -132,7 +164,11 @@ export function openGuideModal(guide) {
     textEl.style.overflowY = 'auto';
     let ad = document.getElementById('modal-guide-actions');
     ad.innerHTML = '';
-    if (guide.pinned) { document.getElementById('modal-guide-view').style.display = 'flex'; document.getElementById('modal-guide-view').classList.add('show'); return; }
+    if (guide.pinned) {
+        document.getElementById('modal-guide-view').style.display = 'flex';
+        document.getElementById('modal-guide-view').classList.add('show');
+        return;
+    }
     if (CA && (CA.role === 'admin' || CA.role === 'moderator' || guide.author === CA.name)) {
         if (guide.author === CA.name) ad.innerHTML += '<button class="modal-btn" style="font-size:1rem;" data-edit-guide="' + guide.id + '">✏️ РЕДАКТИРОВАТЬ</button>';
         ad.innerHTML += '<button class="modal-btn" style="font-size:1rem;" data-del-guide="' + guide.id + '">🗑 УДАЛИТЬ</button>';
@@ -140,8 +176,8 @@ export function openGuideModal(guide) {
     document.getElementById('modal-guide-view').style.display = 'flex';
     document.getElementById('modal-guide-view').classList.add('show');
     setTimeout(() => {
-        document.querySelector('[data-edit-guide="' + guide.id + '"]')?.addEventListener('click', () => { if (typeof editGuide === 'function') editGuide(guide.id); });
-        document.querySelector('[data-del-guide="' + guide.id + '"]')?.addEventListener('click', () => { if (typeof deleteGuide === 'function') deleteGuide(guide.id); });
+        document.querySelector('[data-edit-guide="' + guide.id + '"]')?.addEventListener('click', () => { closeModal('modal-guide-view'); editGuide(guide.id); });
+        document.querySelector('[data-del-guide="' + guide.id + '"]')?.addEventListener('click', () => { deleteGuide(guide.id); closeModal('modal-guide-view'); });
     }, 10);
 }
 

@@ -2,10 +2,14 @@
 
 export function notif(msg) {
     let n = document.createElement('div');
-    n.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a0000;border:2px solid #ff1744;padding:15px 30px;z-index:10000;font-family:VT323;color:#ff1744;font-size:1.3rem;';
+    n.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a0000;border:2px solid #ff1744;padding:15px 30px;z-index:10000;font-family:VT323;color:#ff1744;font-size:1.3rem;border-radius:8px;box-shadow:0 0 20px rgba(255,23,68,0.5);';
     n.textContent = msg;
     document.body.appendChild(n);
-    setTimeout(() => n.remove(), 2500);
+    setTimeout(() => {
+        n.style.opacity = '0';
+        n.style.transition = 'opacity 0.3s';
+        setTimeout(() => n.remove(), 300);
+    }, 2500);
 }
 
 export function closeModal(id) {
@@ -33,9 +37,7 @@ export function urlBase64ToUint8Array(base64String) {
     const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
     return outputArray;
 }
 
@@ -75,6 +77,7 @@ export function debounce(fn, delay) {
         timer = setTimeout(() => fn.apply(this, args), delay);
     };
 }
+
 export function glowIcon(id) {
     let el = document.getElementById(id);
     if (el) el.classList.add('new-badge-glow');
@@ -83,17 +86,4 @@ export function glowIcon(id) {
 export function stopGlowIcon(id) {
     let el = document.getElementById(id);
     if (el) el.classList.remove('new-badge-glow');
-}
-
-export function updateBadgeIcons() {
-    // Простая версия — без циклических зависимостей
-    let chatIcon = document.getElementById('icon-chat');
-    if (chatIcon && window.unreadMentions) {
-        let b = chatIcon.querySelector('.icon-badge');
-        let total = window.unreadMentions.chat + window.unreadMentions.clan;
-        if (total > 0) {
-            if (!b) { b = document.createElement('span'); b.className = 'icon-badge'; chatIcon.appendChild(b); }
-            b.textContent = total;
-        } else if (b) b.remove();
-    }
 }

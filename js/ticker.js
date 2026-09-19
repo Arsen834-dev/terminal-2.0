@@ -17,9 +17,7 @@ export function initTicker() {
 export function updateTicker() {
     if (window.innerWidth <= 768) return;
     let ticker = document.getElementById('header-ticker');
-    if (ticker) {
-        ticker.textContent = TICKER_TEXTS[currentTickerIndex % TICKER_TEXTS.length];
-    }
+    if (ticker) ticker.textContent = TICKER_TEXTS[currentTickerIndex % TICKER_TEXTS.length];
     let statusTicker = document.getElementById('ticker-text');
     if (statusTicker) {
         let allText = TICKER_TEXTS.join(' ⬡ ');
@@ -31,6 +29,4 @@ export function updateTicker() {
     }
 }
 
-export function getTickerTexts() {
-    return TICKER_TEXTS;
-}
+export function getTickerTexts() { return TICKER_TEXTS; }

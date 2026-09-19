@@ -18,13 +18,13 @@ export async function addLog(who, action, target) {
 
 export async function muteAgent(name) {
     if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) return { success: false, error: '⛔ НЕТ ПРАВ' };
+    if (name === CA.name) return { success: false, error: '⛔ НЕЛЬЗЯ СЕБЯ' };
     try {
         let { data } = await supabase.from('agents').select('muted').eq('name', name).maybeSingle();
         if (data) {
             let newMuted = !data.muted;
             await supabase.from('agents').update({ muted: newMuted }).eq('name', name);
             addLog(CA.name, newMuted ? 'mute' : 'unmute', name);
-            if (name === CA.name) CA.muted = newMuted;
             notif(newMuted ? '🔇 ' + name + ' ЗАМУЧЕН' : '🔊 ' + name + ' РАЗМУЧЕН');
             return { success: true, muted: newMuted };
         }
@@ -34,6 +34,7 @@ export async function muteAgent(name) {
 
 export async function banAgent(name) {
     if (!CA || CA.role !== 'admin') return { success: false, error: '⛔ ТОЛЬКО АДМИН' };
+    if (name === CA.name) return { success: false, error: '⛔ НЕЛЬЗЯ СЕБЯ' };
     try {
         let { data } = await supabase.from('agents').select('banned').eq('name', name).maybeSingle();
         if (data) {
@@ -48,7 +49,7 @@ export async function banAgent(name) {
 }
 
 export async function deleteAgent(name) {
-    if (!CA || CA.role !== 'admin' || name === 'admin') return { success: false, error: '⛔ НЕТ ПРАВ' };
+    if (!CA || CA.role !== 'admin' || name === 'admin' || name === CA.name) return { success: false, error: '⛔ НЕТ ПРАВ' };
     try {
         await supabase.from('agents').delete().eq('name', name);
         addLog(CA.name, 'delete', name);
@@ -59,6 +60,7 @@ export async function deleteAgent(name) {
 
 export async function changeAgentRole(name, newRole) {
     if (!CA || CA.role !== 'admin') return { success: false, error: '⛔ ТОЛЬКО АДМИН' };
+    if (name === 'admin') return { success: false, error: '⛔ НЕЛЬЗЯ ТРОГАТЬ ГЛАВНОГО' };
     try {
         await supabase.from('agents').update({ role: newRole }).eq('name', name);
         addLog(CA.name, 'role_change', name + ' → ' + newRole);
@@ -73,16 +75,15 @@ export async function renderAdminPanel() {
     let agents = await getAgents();
     let isAdmin = CA.role === 'admin';
     let isMod = isAdmin || CA.role === 'moderator';
-    
-    // Статистика
+
     let total = Object.keys(agents).length;
     let now = Date.now();
     let online = Object.values(agents).filter(a => a.last_seen && (now - new Date(a.last_seen).getTime()) < 300000).length;
     let banned = Object.values(agents).filter(a => a.banned).length;
     let muted = Object.values(agents).filter(a => a.muted).length;
-    
+
     let html = '<div class="admin-legend">👑 Админ | 🛡 Модер | 🎯 Агент | 🚫 Бан | 🔇 Мут</div>';
-    
+
     // Дашборд
     html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">';
     html += '<div style="border:2px solid #ff1744;padding:12px;text-align:center;"><div style="font-size:1.8rem;color:#ff1744;font-weight:bold;">' + total + '</div><div style="color:#880000;font-size:0.8rem;">ВСЕГО</div></div>';
@@ -90,47 +91,47 @@ export async function renderAdminPanel() {
     html += '<div style="border:2px solid #ff0000;padding:12px;text-align:center;"><div style="font-size:1.8rem;color:#ff0000;font-weight:bold;">' + banned + '</div><div style="color:#880000;font-size:0.8rem;">БАН</div></div>';
     html += '<div style="border:2px solid #ffd700;padding:12px;text-align:center;"><div style="font-size:1.8rem;color:#ffd700;font-weight:bold;">' + muted + '</div><div style="color:#880000;font-size:0.8rem;">МУТ</div></div>';
     html += '</div>';
-    
+
     // Таблица
     html += '<div class="admin-legend">УПРАВЛЕНИЕ АГЕНТАМИ</div>';
     Object.entries(agents).forEach(([name, data]) => {
         let roleBtns = '';
-        if (isAdmin && name !== 'admin') {
+        if (isAdmin && name !== 'admin' && name !== CA.name) {
             if (data.role === 'agent') {
                 roleBtns += '<button data-role-mod="' + name + '" style="background:transparent;border:1px solid #b388ff;color:#b388ff;padding:5px 10px;cursor:pointer;font-family:VT323;">🛡</button>';
                 roleBtns += '<button data-role-admin="' + name + '" style="background:transparent;border:1px solid #ffd700;color:#ffd700;padding:5px 10px;cursor:pointer;font-family:VT323;">👑</button>';
             } else if (data.role === 'moderator') {
                 roleBtns += '<button data-role-agent="' + name + '" style="background:transparent;border:1px solid #fff;color:#fff;padding:5px 10px;cursor:pointer;font-family:VT323;">⬇</button>';
                 roleBtns += '<button data-role-admin2="' + name + '" style="background:transparent;border:1px solid #ffd700;color:#ffd700;padding:5px 10px;cursor:pointer;font-family:VT323;">👑</button>';
-            } else if (data.role === 'admin' && name !== 'admin') {
+            } else if (data.role === 'admin') {
                 roleBtns += '<button data-role-agent2="' + name + '" style="background:transparent;border:1px solid #fff;color:#fff;padding:5px 10px;cursor:pointer;font-family:VT323;">⬇</button>';
             }
         }
         let avatarHtml = data.avatar_url ? '<img src="' + data.avatar_url + '" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:6px;">' : '';
-        html += '<div class="admin-row"><span>' + avatarHtml + name + ' (' + (data.role === 'admin' ? '👑' : data.role === 'moderator' ? '🛡' : '') + ' ' + (data.role || 'agent') + ')' + (data.banned ? ' 🚫' : '') + (data.muted ? ' 🔇' : '') + '</span><span>' + roleBtns;
+        html += '<div class="admin-row"><span>' + avatarHtml + name + ' (' + (data.role === 'admin' ? '👑' : data.role === 'moderator' ? '🛡' : '🎯') + ' ' + (data.role || 'agent') + ')' + (data.banned ? ' 🚫' : '') + (data.muted ? ' 🔇' : '') + '</span><span>' + roleBtns;
         if (isMod && name !== CA.name) {
             html += '<button data-mute="' + name + '" style="background:transparent;border:1px solid ' + (data.muted ? '#0f0' : '#ff0') + ';color:' + (data.muted ? '#0f0' : '#ff0') + ';padding:5px 10px;cursor:pointer;font-family:VT323;">' + (data.muted ? '🔊' : '🔇') + '</button>';
         }
         if (isAdmin && name !== CA.name) {
             html += '<button data-ban="' + name + '" style="background:transparent;border:1px solid ' + (data.banned ? '#0f0' : '#f00') + ';color:' + (data.banned ? '#0f0' : '#f00') + ';padding:5px 10px;cursor:pointer;font-family:VT323;">' + (data.banned ? '✅' : '🚫') + '</button>';
         }
-        if (isAdmin && name !== 'admin') {
+        if (isAdmin && name !== 'admin' && name !== CA.name) {
             html += '<button data-delete="' + name + '" style="background:transparent;border:1px solid #f00;color:#f00;padding:5px 10px;cursor:pointer;font-family:VT323;">🗑</button>';
         }
         html += '</span></div>';
     });
-    
+
     content.innerHTML = html;
-    
+
     setTimeout(() => {
-        document.querySelectorAll('[data-role-mod]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); changeAgentRole(this.dataset.roleMod, 'moderator').then(() => renderAdminPanel()); }));
-        document.querySelectorAll('[data-role-admin]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); changeAgentRole(this.dataset.roleAdmin, 'admin').then(() => renderAdminPanel()); }));
-        document.querySelectorAll('[data-role-agent]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); changeAgentRole(this.dataset.roleAgent, 'agent').then(() => renderAdminPanel()); }));
-        document.querySelectorAll('[data-role-agent2]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); changeAgentRole(this.dataset.roleAgent2, 'agent').then(() => renderAdminPanel()); }));
-        document.querySelectorAll('[data-role-admin2]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); changeAgentRole(this.dataset.roleAdmin2, 'admin').then(() => renderAdminPanel()); }));
-        document.querySelectorAll('[data-mute]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); muteAgent(this.dataset.mute).then(() => renderAdminPanel()); }));
-        document.querySelectorAll('[data-ban]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); banAgent(this.dataset.ban).then(() => renderAdminPanel()); }));
-        document.querySelectorAll('[data-delete]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); deleteAgent(this.dataset.delete).then(() => renderAdminPanel()); }));
+        document.querySelectorAll('[data-role-mod]').forEach(b => b.addEventListener('click', async function(e) { e.stopPropagation(); await changeAgentRole(this.dataset.roleMod, 'moderator'); renderAdminPanel(); }));
+        document.querySelectorAll('[data-role-admin]').forEach(b => b.addEventListener('click', async function(e) { e.stopPropagation(); await changeAgentRole(this.dataset.roleAdmin, 'admin'); renderAdminPanel(); }));
+        document.querySelectorAll('[data-role-agent]').forEach(b => b.addEventListener('click', async function(e) { e.stopPropagation(); await changeAgentRole(this.dataset.roleAgent, 'agent'); renderAdminPanel(); }));
+        document.querySelectorAll('[data-role-agent2]').forEach(b => b.addEventListener('click', async function(e) { e.stopPropagation(); await changeAgentRole(this.dataset.roleAgent2, 'agent'); renderAdminPanel(); }));
+        document.querySelectorAll('[data-role-admin2]').forEach(b => b.addEventListener('click', async function(e) { e.stopPropagation(); await changeAgentRole(this.dataset.roleAdmin2, 'admin'); renderAdminPanel(); }));
+        document.querySelectorAll('[data-mute]').forEach(b => b.addEventListener('click', async function(e) { e.stopPropagation(); await muteAgent(this.dataset.mute); renderAdminPanel(); }));
+        document.querySelectorAll('[data-ban]').forEach(b => b.addEventListener('click', async function(e) { e.stopPropagation(); await banAgent(this.dataset.ban); renderAdminPanel(); }));
+        document.querySelectorAll('[data-delete]').forEach(b => b.addEventListener('click', async function(e) { e.stopPropagation(); await deleteAgent(this.dataset.delete); renderAdminPanel(); }));
     }, 10);
 }
 

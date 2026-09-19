@@ -1,6 +1,4 @@
 // ============ LOADER / ЭКРАН ЗАГРУЗКИ ============
-import { playSound } from './sounds.js';
-
 const MODULES = [
     'ВЗЛОМ ПАРОЛЯ', 'ОБХОД ФАЕРВОЛА', 'ДЕШИФРОВКА AES', 'ПОДМЕНА MAC',
     'ПРОКСИ-ЦЕПЬ', 'СКАН ПОРТОВ', 'ИНЪЕКЦИЯ КОДА', 'ПЕРЕХВАТ ТРАФИКА',
@@ -54,7 +52,6 @@ function triggerErrorStorm() {
         audio.volume = 0.3;
         audio.play().catch(() => {});
     } catch (e) {}
-    playSound('alarm');
     setTimeout(() => {
         let eo = document.getElementById('error-overlay');
         let em = document.getElementById('error-message');
@@ -70,10 +67,13 @@ export function startLoading() {
     MODULES.forEach((n, i) => setTimeout(() => {
         document.getElementById('cell-' + n.replace(/\s/g, '_'))?.classList.add('active');
     }, i * 40));
+    loadProgress = 0;
+    if (loadingInterval) clearInterval(loadingInterval);
     updateMain();
 }
 
 export function recoverSystem(onComplete) {
+    if (loadingInterval) clearInterval(loadingInterval);
     document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
     let eo = document.getElementById('error-overlay');
     let em = document.getElementById('error-message');
@@ -93,6 +93,6 @@ export function recoverSystem(onComplete) {
     setTimeout(() => {
         let ls = document.getElementById('loader-screen');
         if (ls) ls.style.display = 'none';
-        if (onComplete) onComplete();
+        if (typeof onComplete === 'function') onComplete();
     }, 1500);
 }

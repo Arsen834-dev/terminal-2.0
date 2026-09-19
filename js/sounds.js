@@ -13,11 +13,22 @@ export function preloadSound(name, file) {
     } catch (e) {}
 }
 
+// Предзагрузка (если файлов нет — просто не будет звука)
+preloadSound('click', 'click.mp3');
+preloadSound('open', 'open.mp3');
+preloadSound('close', 'close.mp3');
+preloadSound('login', 'login.mp3');
+preloadSound('success', 'success.mp3');
+preloadSound('buy', 'buy.mp3');
+preloadSound('alarm', 'alarm.mp3');
+
 export function playSound(name) {
     if (!soundEnabled || !sounds[name]) return;
-    let s = sounds[name].cloneNode();
-    s.volume = 0.3;
-    s.play().catch(() => {});
+    try {
+        let s = sounds[name].cloneNode();
+        s.volume = 0.3;
+        s.play().catch(() => {});
+    } catch (e) {}
 }
 
 export function startBgMusic() {
@@ -45,6 +56,7 @@ function playNextBgTrack() {
     if (!soundEnabled || bgPlaylist.length === 0) return;
     if (bgMusic) { bgMusic.pause(); bgMusic = null; }
     bgMusic = bgPlaylist[bgTrackIndex];
+    if (!bgMusic) return;
     bgMusic.currentTime = 0;
     bgMusic.onended = function() {
         bgTrackIndex = (bgTrackIndex + 1) % bgPlaylist.length;
