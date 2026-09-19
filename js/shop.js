@@ -1,7 +1,7 @@
 // ============ SHOP / МАГАЗИН И ИНВЕНТАРЬ ============
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, saveAgent, setInventory } from './auth.js';
 import { REMOVED_ITEM_IDS } from './config.js';
-
+import { playSound } from './sounds.js';
 export const shopItems = {
     colors: [
         { id: 'c_red', name: 'Красный', price: 0, color: '#ff1744' },
@@ -438,6 +438,7 @@ export function buyItem(cat, id) {
     let discount = getItemDiscount(id);
     addShopLog(CA.name, 'buy', item.name + (discount > 0 ? ' (скидка ' + discount + '%)' : ''), actualPrice);
     window.notif('✅ КУПЛЕНО: ' + item.name);
+    playSound('buy');
 }
 
 export function applyItem(cat, id) {
@@ -483,6 +484,7 @@ export function applyItem(cat, id) {
         renderInventory();
         if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
         window.notif('⚡ АКТИВИРОВАН: ' + item.name);
+        playSound('buy');
         return;
     }
     if (cat === 'style') {

@@ -48,7 +48,7 @@ function triggerErrorStorm() {
         setTimeout(() => c.classList.add('error'), i * 30);
     });
     try {
-        let audio = new Audio('glitchcomp.mp3');
+        let audio = new Audio('assets/sounds/glitchcomp.mp3');
         audio.volume = 0.3;
         audio.play().catch(() => {});
     } catch (e) {}

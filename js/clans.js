@@ -2,6 +2,7 @@
 import { supabase, CA, getAgents, saveAgent } from './auth.js';
 import { addLog } from './admin.js';
 import { notif, closeModal } from './utils.js';
+import { playSound } from './sounds.js';
 
 let clans = [];
 let clanWars = [];
@@ -106,6 +107,7 @@ export async function declareWar(attackerClanId, targetClanId) {
         await supabase.from('clans').update({ treasury: d.treasury }).eq('id', d.id);
         await loadClanWars();
         addLog(CA.name, 'war_declare', a.tag + ' VS ' + d.tag);
+        playSound('war');
         return { success: true };
     } catch (e) { return { success: false, error: 'Ошибка войны' }; }
 }

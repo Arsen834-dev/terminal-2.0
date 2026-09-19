@@ -2,6 +2,7 @@
 import { CA, saveAgent } from './auth.js';
 import { ACHIEVEMENTS } from './config.js';
 import { notif } from './utils.js';
+import { playSound } from './sounds.js';
 
 export function getAchievements() { return ACHIEVEMENTS; }
 export function getUnlockedAchievements() { return CA?.achievements || []; }
@@ -12,6 +13,7 @@ export function unlockAchievement(id) {
     CA.achievements.push(id);
     let a = ACHIEVEMENTS.find(x => x.id === id);
     if (a) notif('🏆 ' + a.icon + ' ' + a.name);
+    playSound('achieve');
     saveAgent();
     return true;
 }

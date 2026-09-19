@@ -3,6 +3,7 @@ import { supabase, CA, activeItems, saveAgent, loadAgent, getAgents } from './au
 import { shopItems, getActiveColorClassForId } from './shop.js';
 import { clans } from './clans.js';
 import { notif, glowIcon, stopGlowIcon } from './utils.js';
+import { playSound } from './sounds.js';
 
 let chatMessages = [];
 let chatChannel = null;
@@ -48,6 +49,7 @@ export function subscribeChat() {
     if (chatChannel) supabase.removeChannel(chatChannel);
     chatChannel = supabase.channel('chat-room')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
+            if (payload.new.author !== CA?.name) playSound('receive');
             chatMessages.push(payload.new);
             if (chatMessages.length > 100) chatMessages.shift();
             checkMentions(payload.new.text);
@@ -91,6 +93,7 @@ export async function sendMessage() {
     };
     if (replyTo) { md.reply_to = replyTo.msgId; md.reply_author = replyTo.author; md.reply_text = replyTo.text; }
     try { await supabase.from('chat_messages').insert(md); } catch (e) {}
+    playSound('send');
     CA.chatCount = (CA.chatCount || 0) + 1;
     CA.crystals = (CA.crystals || 0) + 15;
     inp.value = ''; replyTo = null; cancelReply(); saveAgent(); hideMentionSuggestions();
@@ -281,6 +284,7 @@ export function subscribeDM() {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dm_messages' }, payload => {
             let msg = payload.new;
             if (msg.to_agent === CA?.name || msg.from_agent === CA?.name) {
+                if (msg.from_agent !== CA?.name) playSound('receive');
                 dmMessagesAll.push(msg);
                 if (msg.text && msg.text.includes('@' + CA.name)) { notif('📩 ВАС УПОМЯНУЛИ В ЛИЧКЕ'); unreadMentions.dm++; updateBadgeIcons(); }
                 glowIcon('icon-dm');
@@ -307,7 +311,6 @@ export function renderDMList() {
         if (m.from_agent === CA.name) agents.add(m.to_agent);
         if (m.to_agent === CA.name) agents.add(m.from_agent);
     });
-    // УБИРАЕМ W-C26 ИЗ ЛИЧКИ
     agents.delete('W-C26');
     list.innerHTML = '<div style="color:#ff1744;margin-bottom:10px;">ДИАЛОГИ</div>';
     if (agents.size === 0) {
@@ -374,6 +377,7 @@ export async function sendDM() {
     let md = { from_agent: CA.name, to_agent: currentDM, avatar_url: CA.avatar_url || '', text: msg, time: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow' }), author_color: activeItems.color, author_frame: activeItems.frame, author_badge: activeItems.badge, author_font: activeItems.font };
     if (dmReplyTo) { md.reply_to = dmReplyTo.msgId; md.reply_author = dmReplyTo.author; md.reply_text = dmReplyTo.text; }
     try { await supabase.from('dm_messages').insert(md); } catch (e) {}
+    playSound('send');
     inp.value = ''; dmReplyTo = null; cancelDmReply(); hideMentionSuggestions();
 }
 
@@ -427,6 +431,7 @@ export function subscribeClanChat(clanId) {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'clan_messages', filter: 'clan_id=eq.' + clanId }, payload => {
             if (!clanChats[clanId]) clanChats[clanId] = [];
             clanChats[clanId].push(payload.new);
+            if (payload.new.author !== CA?.name) playSound('receive');
             if (payload.new.text && payload.new.text.includes('@' + CA?.name) && payload.new.author !== CA?.name) { unreadMentions.clan++; updateBadgeIcons(); notif('📢 УПОМЯНУЛИ В ОТРЯДЕ'); }
             if (currentClanId == clanId && chatTabActive === 'clan') renderClanMessages();
         }).subscribe();
@@ -440,6 +445,7 @@ export async function sendClanMessage() {
     let md = { clan_id: currentClanId, author: CA.name, avatar_url: CA.avatar_url || '', text: msg, time: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow' }), author_color: activeItems.color, author_frame: activeItems.frame, author_badge: activeItems.badge, author_font: activeItems.font };
     if (replyTo) { md.reply_to = replyTo.msgId; md.reply_author = replyTo.author; md.reply_text = replyTo.text; }
     try { await supabase.from('clan_messages').insert(md); } catch (e) {}
+    playSound('send');
     CA.chatCount = (CA.chatCount || 0) + 1;
     CA.crystals = (CA.crystals || 0) + 15;
     inp.value = ''; replyTo = null; cancelReply(); saveAgent(); hideMentionSuggestions();
@@ -615,7 +621,6 @@ export async function editMessage(msgId) {
     renderChat();
 }
 
-// Хелпер — проверка активного клан-чата
 export function isClanChatActive() { return chatTabActive === 'clan' && currentClanId !== null; }
 
 export {

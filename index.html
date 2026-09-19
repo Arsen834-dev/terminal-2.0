@@ -543,8 +543,9 @@
             <button class="settings-btn" id="change-status-btn"><span>💬</span> СМЕНИТЬ СТАТУС</button>
             <button class="settings-btn" id="change-bio-btn"><span>📄</span> СМЕНИТЬ БИО</button>
             <button class="settings-btn" id="toggle-sound-btn"><span>🔊</span> ЗВУК: ВКЛ/ВЫКЛ</button>
+            <button class="settings-btn" id="toggle-music-btn"><span>🎵</span> МУЗЫКА: ВКЛ/ВЫКЛ</button>
+            <button class="settings-btn" id="next-track-btn"><span>⏭</span> СЛЕДУЮЩИЙ ТРЕК</button>
         </div>
-    </div>
     <div id="app-shop" class="app-screen"><div class="app-header"><span class="app-title">🛒 МАГАЗИН</span><button class="app-close" data-close="shop">ЗАКРЫТЬ</button></div><div class="app-content" id="shop-content"><div id="discount-container" style="display:none;"></div></div></div>
     <div id="app-inventory" class="app-screen"><div class="app-header"><span class="app-title">🎒 ИНВЕНТАРЬ</span><button class="app-close" data-close="inventory">ЗАКРЫТЬ</button></div><div class="app-content" id="inventory-content"></div></div>
     <div id="app-clans" class="app-screen"><div class="app-header"><span class="app-title">⚔️ ОТРЯДЫ</span><button class="app-close" data-close="clans">ЗАКРЫТЬ</button></div><div class="app-content" id="clans-content"></div></div>
@@ -611,11 +612,12 @@
         import { loadFriends, sendFriendRequest, acceptFriend, removeFriend, blockAgent, unblockAgent, getFriends, renderFriends } from './js/friends.js';
         import { loadGuides, createGuide, deleteGuide, editGuide, loadMemes, createMeme, deleteMeme, likeMeme, userGuides, memes, renderGuides, saveEditedGuide, renderMemes, openGuideModal } from './js/guides.js';
         import { loadAnnouncements, renderAnnounceApp } from './js/announcements.js';        import { showAgentInfo, createPost, changeCover } from './js/agents.js';
+        import { getAchievements, unlockAchievement, checkAchievements, renderAchievementsUI } from './js/achievements.js';
         import { muteAgent, banAgent, deleteAgent, changeAgentRole, renderAdminPanel, renderLogs } from './js/admin.js';
         import { changeName, changePassword, changeAvatar, changeStatus, changeBio } from './js/settings.js';
         import { wc26ChatHook, startWc26Timer, wc26Greet, wc26Remember } from './js/wc26.js';
         import { initTicker } from './js/ticker.js';
-        import { preloadSound, playSound, startBgMusic, stopBgMusic, toggleSound, getSoundEnabled } from './js/sounds.js';
+        import { preloadSound, playSound, startBgMusic, stopBgMusic, toggleSound, toggleMusic, getSoundEnabled, getMusicEnabled, nextBgTrack, setMusicVolume, getMusicVolume } from './js/sounds.js';
         import { startLoading, recoverSystem } from './js/loader.js';
         import { notif, closeModal, uploadFileAndInsert, glowIcon, stopGlowIcon } from './js/utils.js';        import { loadRpCharacters, createRpCharacter, updateRpCharacter, deleteRpCharacter, getRpCharacters, setCurrentRpChar, loadSavedRpChar, loadRpMessages, subscribeRpChat, sendRpMessage, switchRpRoom, loadRpScenes, createRpScene, renderRpScenes, rpCharacters, getCurrentRpChar, requireCharacter } from './js/rp.js';
 
@@ -1071,6 +1073,14 @@
             document.getElementById('change-status-btn')?.addEventListener('click', () => { document.getElementById('new-status').value = CA?.status_text || ''; let el = document.getElementById('modal-status'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
             document.getElementById('change-bio-btn')?.addEventListener('click', () => { document.getElementById('new-bio').value = CA?.bio || ''; let el = document.getElementById('modal-bio'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
             document.getElementById('toggle-sound-btn')?.addEventListener('click', () => { toggleSound(); notif(getSoundEnabled() ? '🔊 ВКЛ' : '🔇 ВЫКЛ'); });
+            document.getElementById('toggle-music-btn')?.addEventListener('click', () => {
+                let on = toggleMusic();
+                notif(on ? '🎵 МУЗЫКА ВКЛ' : '🎵 МУЗЫКА ВЫКЛ');
+            });
+            document.getElementById('next-track-btn')?.addEventListener('click', () => {
+                nextBgTrack();
+                notif('⏭ СЛЕДУЮЩИЙ ТРЕК');
+            });
             document.getElementById('save-name-btn')?.addEventListener('click', async () => { let nn = document.getElementById('new-name').value.trim(); if (!nn) return; let r = await changeName(nn); if (r.success) { updateStatusBar(); document.getElementById('desktop-agent-name').textContent = CA.name; closeModal('modal-name'); } else notif(r.error); });
             document.getElementById('save-pass-btn')?.addEventListener('click', async () => { let r = await changePassword(document.getElementById('old-pass').value, document.getElementById('new-pass').value); if (r.success) closeModal('modal-password'); else notif(r.error); });
             document.getElementById('upload-avatar-btn')?.addEventListener('click', async () => { let f = document.getElementById('avatar-file-input')?.files[0]; if (!f) return notif('⛔ Выбери файл'); let r = await changeAvatar(f); if (r.success) { updateStatusBar(); closeModal('modal-avatar'); } });
