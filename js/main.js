@@ -866,9 +866,14 @@ window.showClanInfo = function(clanId) {
         '<div style="margin-top:16px;text-align:right;"><button class="modal-btn secondary" onclick="this.closest(\'.modal-overlay\').remove()">ЗАКРЫТЬ</button></div>' +
         '</div>';
     document.body.appendChild(popup);
-    setTimeout(() => document.getElementById('join-clan-btn-' + cl.id)?.addEventListener('click', () => joinClan(cl.id).then(r => { if (r.success) { popup.remove(); renderClans(); notif('✅ Вступили'); } else notif(r.error); })), 10);
-};
-
+    setTimeout(() => {
+        document.getElementById('join-clan-btn-' + cl.id)?.addEventListener('click', () => {
+            joinClan(cl.id).then(r => {
+                if (r.success) { popup.remove(); renderClans(); notif('✅ Вступили'); }
+                else notif(r.error);
+            });
+        });
+    }, 10);
 window.showCreateAnnouncement = function() {
     document.getElementById('new-announce-title').value = '';
     document.getElementById('new-announce-text').value = '';
@@ -1154,4 +1159,4 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => { if (CA && currentView === 'feed') renderRightPanel(); }, 60000);
 
     console.log('✅ ТЕРМИНАЛ 2.4.1 ЗАГРУЖЕН');
-});
+})}
