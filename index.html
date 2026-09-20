@@ -3,18 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>ТЕРМИНАЛ СИНДИКАТА v2.4.1</title>
+<title>ТЕРМИНАЛ СИНДИКАТА v2.5.0</title>
 <link rel="icon" href="https://wiki.adven.space/items/contraband/pais.png">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#06060a">
 <style>
 /* ============================================================
-   ТЕРМИНАЛ СИНДИКАТА v2.4.1
-   Стиль: терминал, моноширинный, малиновый акцент
+   ТЕРМИНАЛ СИНДИКАТА v2.5.0
    ============================================================ */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* NEW: глобальный 14px через html */
+html { font-size: 14px; }
 
 :root {
     --bg: #06060a;
@@ -51,15 +53,12 @@ html, body {
     background: var(--bg);
     color: var(--text);
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: 1rem;        /* CHANGED: было 13px, теперь 1rem = 14px */
     line-height: 1.5;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
 }
 
-/* ============================================================
-   ФОН С ЭФФЕКТАМИ
-   ============================================================ */
 body::before {
     content: '';
     position: fixed;
@@ -98,9 +97,6 @@ body::after {
     mix-blend-mode: overlay;
 }
 
-/* ============================================================
-   СКРОЛЛБАР
-   ============================================================ */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-2); }
 ::-webkit-scrollbar-thumb {
@@ -109,9 +105,6 @@ body::after {
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-/* ============================================================
-   КУРСОР
-   ============================================================ */
 body, a, button, input, textarea, select, [role="button"], .clickable {
     cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><line x1='10' y1='0' x2='10' y2='7' stroke='%23ff1744' stroke-width='1.5'/><line x1='10' y1='13' x2='10' y2='20' stroke='%23ff1744' stroke-width='1.5'/><line x1='0' y1='10' x2='7' y2='10' stroke='%23ff1744' stroke-width='1.5'/><line x1='13' y1='10' x2='20' y2='10' stroke='%23ff1744' stroke-width='1.5'/><circle cx='10' cy='10' r='2' fill='%23ff1744'/></svg>") 10 10, crosshair;
 }
@@ -191,7 +184,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .loader-cell {
     border: 1px solid var(--border);
     padding: 5px;
-    font-size: 0.55rem;
+    font-size: 0.65rem;    /* CHANGED: было 0.55rem */
     color: var(--text-3);
     display: flex;
     flex-direction: column;
@@ -205,9 +198,9 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .loader-cell.error { border-color: var(--danger); color: var(--danger); animation: errorPulse 0.15s infinite; background: rgba(255, 0, 64, 0.05); }
 .loader-cell.success { border-color: var(--success); color: var(--success); }
 .cell-header { display: flex; justify-content: space-between; align-items: center; }
-.cell-title { font-weight: 600; text-transform: uppercase; font-size: 0.5rem; }
-.cell-status { font-size: 0.45rem; opacity: 0.7; }
-.cell-data { font-size: 0.5rem; margin-top: 2px; }
+.cell-title { font-weight: 600; text-transform: uppercase; font-size: 0.6rem; } /* CHANGED */
+.cell-status { font-size: 0.55rem; opacity: 0.7; }                               /* CHANGED */
+.cell-data { font-size: 0.6rem; margin-top: 2px; }                               /* CHANGED */
 .mini-bar { width: 100%; height: 2px; background: var(--border); }
 .mini-bar-fill { height: 100%; background: var(--accent); width: 0%; }
 @keyframes errorPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
@@ -300,7 +293,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .login-version {
     text-align: center;
     color: var(--text-3);
-    font-size: 0.7rem;
+    font-size: 0.75rem;   /* CHANGED */
     letter-spacing: 4px;
     margin-bottom: 32px;
     font-family: var(--font-digit);
@@ -308,7 +301,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .login-subtitle {
     text-align: center;
     color: var(--text-3);
-    font-size: 0.75rem;
+    font-size: 0.8rem;    /* CHANGED */
     letter-spacing: 3px;
     text-transform: uppercase;
     margin-bottom: 24px;
@@ -323,11 +316,11 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border: 1px solid var(--border-2);
     color: var(--text);
     font-family: var(--font-mono);
-    font-size: 0.9rem;
+    font-size: 0.95rem;   /* CHANGED */
     transition: all 0.15s;
     letter-spacing: 1px;
 }
-.login-input::placeholder { color: var(--text-4); letter-spacing: 2px; text-transform: uppercase; font-size: 0.75rem; }
+.login-input::placeholder { color: var(--text-4); letter-spacing: 2px; text-transform: uppercase; font-size: 0.8rem; }
 .login-input:focus {
     border-color: var(--accent);
     background: var(--bg-3);
@@ -340,7 +333,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     background: var(--accent-dark);
     color: var(--text);
     font-family: var(--font-mono);
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 4px;
@@ -354,7 +347,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .login-error {
     color: var(--danger);
     margin-top: 12px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;    /* CHANGED */
     min-height: 20px;
     text-align: center;
     text-transform: uppercase;
@@ -364,7 +357,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     text-align: center;
     margin-top: 24px;
     color: var(--text-3);
-    font-size: 0.8rem;
+    font-size: 0.85rem;   /* CHANGED */
     cursor: pointer;
     transition: color 0.15s;
     text-transform: uppercase;
@@ -416,7 +409,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 @keyframes blink { 0%, 90%, 100% { opacity: 1; } 95% { opacity: 0.3; } }
 .topbar-version {
-    font-size: 0.65rem;
+    font-size: 0.7rem;    /* CHANGED */
     color: var(--text-3);
     letter-spacing: 1px;
     font-family: var(--font-digit);
@@ -426,7 +419,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;    /* CHANGED */
     color: var(--text-2);
     font-family: var(--font-digit);
     letter-spacing: 1px;
@@ -523,7 +516,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .sidebar-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .sidebar-profile-name {
     margin-top: 6px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--text);
     white-space: nowrap;
@@ -531,7 +524,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     text-overflow: ellipsis;
 }
 .sidebar-profile-role {
-    font-size: 0.65rem;
+    font-size: 0.7rem;    /* CHANGED */
     color: var(--text-3);
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -547,7 +540,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .sidebar-group-title {
     padding: 6px 16px;
-    font-size: 0.6rem;
+    font-size: 0.7rem;    /* CHANGED */
     color: var(--text-4);
     letter-spacing: 3px;
     text-transform: uppercase;
@@ -555,7 +548,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     align-items: center;
     gap: 6px;
 }
-.sidebar-group-title::before { content: '▸'; color: var(--accent-dark); font-size: 0.55rem; }
+.sidebar-group-title::before { content: '▸'; color: var(--accent-dark); font-size: 0.65rem; }
 .sidebar-collapsed .sidebar-group-title { display: none; }
 
 .sidebar-item {
@@ -564,7 +557,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     gap: 12px;
     padding: 9px 16px;
     color: var(--text-2);
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     transition: all 0.1s;
     position: relative;
     cursor: pointer;
@@ -596,7 +589,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .sidebar-item-badge {
     background: var(--accent);
     color: #000;
-    font-size: 0.6rem;
+    font-size: 0.65rem;   /* CHANGED */
     font-weight: 700;
     padding: 1px 6px;
     border-radius: 2px;
@@ -609,7 +602,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     top: 4px;
     right: 6px;
     padding: 0 4px;
-    font-size: 0.55rem;
+    font-size: 0.6rem;
 }
 
 /* ============================================================
@@ -621,6 +614,51 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     background: var(--bg);
     position: relative;
 }
+
+/* NEW: МАТРИЧНЫЙ ФОН ДЛЯ ДОСЬЕ (SPACE-X стиль, приглушённый малиновый) */
+.matrix-bg {
+    position: relative;
+    overflow: hidden;
+}
+.matrix-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(
+            180deg,
+            transparent 0px,
+            transparent 2px,
+            rgba(255, 23, 68, 0.06) 2px,
+            rgba(255, 23, 68, 0.06) 3px
+        );
+    pointer-events: none;
+    z-index: 0;
+}
+.matrix-bg::after {
+    content: '01 10 01 11 00 10 01 01 10 00 11 01 10 01 00 11 10 01 01 00 10 11 01 01 10 00 11 01';
+    position: absolute;
+    inset: 0;
+    font-family: var(--font-digit);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: rgba(255, 23, 68, 0.12);
+    letter-spacing: 2px;
+    word-spacing: 8px;
+    text-shadow: 0 0 6px rgba(255, 23, 68, 0.25);
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+    padding: 8px;
+    animation: matrixScroll 20s linear infinite;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+@keyframes matrixScroll {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+}
+.matrix-bg > * { position: relative; z-index: 1; }
 
 /* ПРОФИЛЬ-БЛОК ВВЕРХУ ЛЕНТЫ */
 .feed-profile-block {
@@ -684,7 +722,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .feed-profile-name .color-red { color: var(--accent); text-shadow: 0 0 8px var(--accent); }
 .feed-profile-status {
-    font-size: 0.75rem;
+    font-size: 0.8rem;    /* CHANGED */
     color: var(--text-3);
     margin-top: 4px;
     text-transform: uppercase;
@@ -712,7 +750,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     text-shadow: 0 0 6px var(--accent);
 }
 .feed-profile-stat-label {
-    font-size: 0.6rem;
+    font-size: 0.7rem;    /* CHANGED */
     color: var(--text-4);
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -743,6 +781,81 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     text-shadow: 0 0 10px var(--accent);
     margin-bottom: 12px;
 }
+
+/* NEW: строка поиска по хэштегу */
+.feed-search-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.feed-search-input {
+    flex: 1;
+    min-width: 180px;
+    padding: 8px 12px;
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    transition: all 0.15s;
+}
+.feed-search-input::placeholder { color: var(--text-4); letter-spacing: 1px; }
+.feed-search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-dim);
+    outline: none;
+}
+.feed-search-clear {
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--border-2);
+    color: var(--text-3);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.feed-search-clear:hover { border-color: var(--accent); color: var(--accent); }
+
+/* NEW: чип активного хэштега */
+.hashtag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-digit);
+    font-size: 0.8rem;
+    border-radius: 3px;
+    margin-top: 6px;
+}
+.hashtag-chip span[data-remove-hashtag] {
+    cursor: pointer;
+    font-weight: 700;
+    transition: color 0.15s;
+}
+.hashtag-chip span[data-remove-hashtag]:hover { color: var(--danger); }
+
+/* Хэштег в тексте */
+.hashtag-link {
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 0 4px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+    font-family: var(--font-digit);
+}
+.hashtag-link:hover {
+    background: var(--accent);
+    color: #000;
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
 .feed-header-tabs {
     display: flex;
     gap: 4px;
@@ -757,7 +870,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border: 1px solid var(--border-2);
     color: var(--text-3);
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.8rem;    /* CHANGED */
     text-transform: uppercase;
     letter-spacing: 2px;
     transition: all 0.15s;
@@ -775,7 +888,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .feed-filters {
     display: flex;
     gap: 12px;
-    font-size: 0.7rem;
+    font-size: 0.75rem;   /* CHANGED */
     color: var(--text-3);
     flex-wrap: wrap;
 }
@@ -801,7 +914,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     text-align: center;
     padding: 60px 20px;
     color: var(--text-3);
-    font-size: 0.85rem;
+    font-size: 0.9rem;    /* CHANGED */
     text-transform: uppercase;
     letter-spacing: 2px;
 }
@@ -860,7 +973,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .card-avatar.lg { width: 56px; height: 56px; font-size: 1.8rem; }
 .card-author-block { flex: 1; min-width: 0; }
 .card-author {
-    font-size: 0.9rem;
+    font-size: 0.95rem;   /* CHANGED */
     font-weight: 600;
     color: var(--text);
     cursor: pointer;
@@ -868,7 +981,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .card-author:hover { color: var(--accent); text-shadow: 0 0 6px var(--accent); }
 .card-meta {
-    font-size: 0.7rem;
+    font-size: 0.75rem;   /* CHANGED */
     color: var(--text-3);
     margin-top: 2px;
     display: flex;
@@ -876,10 +989,10 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     align-items: center;
     flex-wrap: wrap;
 }
-.card-meta .role { color: var(--accent); text-transform: uppercase; letter-spacing: 1px; font-size: 0.65rem; }
+.card-meta .role { color: var(--accent); text-transform: uppercase; letter-spacing: 1px; font-size: 0.7rem; }
 .card-time { font-family: var(--font-digit); letter-spacing: 1px; }
 .card-title {
-    font-size: 0.95rem;
+    font-size: 1rem;      /* CHANGED */
     font-weight: 600;
     color: var(--text);
     margin-bottom: 6px;
@@ -893,7 +1006,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .card-text {
     color: var(--text-2);
     line-height: 1.6;
-    font-size: 0.85rem;
+    font-size: 0.9rem;    /* CHANGED */
     word-break: break-word;
 }
 .card-text img { max-width: 100%; max-height: 400px; border: 1px solid var(--border-2); margin-top: 8px; display: block; }
@@ -909,7 +1022,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     align-items: center;
     gap: 5px;
     color: var(--text-3);
-    font-size: 0.75rem;
+    font-size: 0.8rem;    /* CHANGED */
     transition: color 0.15s;
     cursor: pointer;
     font-family: var(--font-digit);
@@ -920,6 +1033,128 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .card-action:hover { color: var(--accent); text-shadow: 0 0 6px var(--accent); }
 .card-action.liked { color: var(--accent); text-shadow: 0 0 6px var(--accent); }
+
+/* NEW: репост-карточка */
+.repost-wrapper {
+    border-left-color: var(--accent) !important;
+}
+.repost-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-3);
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+    font-family: var(--font-digit);
+    letter-spacing: 1px;
+}
+.repost-header .repost-author {
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 600;
+}
+.repost-header .repost-author:hover { text-shadow: 0 0 6px var(--accent); }
+.repost-original {
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent-dark);
+    padding: 10px 12px;
+    background: var(--bg-3);
+    margin-top: 6px;
+    border-radius: 2px;
+}
+
+/* NEW: комментарии */
+.comments-section {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    display: none;
+}
+.comments-section.open { display: block; }
+.comment-item {
+    display: flex;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.comment-item:last-child { border-bottom: none; }
+.comment-avatar {
+    width: 26px; height: 26px;
+    border: 1px solid var(--accent-dark);
+    border-radius: 3px;
+    background: var(--bg-3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.comment-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.comment-body { flex: 1; min-width: 0; }
+.comment-author {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.comment-author:hover { color: var(--accent); }
+.comment-text {
+    color: var(--text-2);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin-top: 2px;
+    word-break: break-word;
+}
+.comment-meta {
+    color: var(--text-4);
+    font-size: 0.7rem;
+    margin-top: 3px;
+    font-family: var(--font-digit);
+    display: flex;
+    gap: 10px;
+}
+.comment-meta span { cursor: pointer; transition: color 0.15s; }
+.comment-meta span:hover { color: var(--accent); }
+.comment-input-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+.comment-input {
+    flex: 1;
+    padding: 7px 10px;
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+}
+.comment-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 10px var(--accent-dim); }
+.comment-send {
+    padding: 7px 14px;
+    background: var(--accent-dark);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.comment-send:hover { background: var(--accent); color: #000; }
+
+/* NEW: анимация лайка */
+@keyframes likePop {
+    0%   { transform: scale(1) translateY(0);   text-shadow: 0 0 6px var(--accent); }
+    40%  { transform: scale(1.4) translateY(-6px); text-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent); }
+    70%  { transform: scale(0.95) translateY(0); text-shadow: 0 0 10px var(--accent); }
+    100% { transform: scale(1) translateY(0);   text-shadow: 0 0 6px var(--accent); }
+}
+.card-action.liked.pop {
+    animation: likePop 0.4s ease-out;
+    color: var(--accent);
+}
+.card-action.pop {
+    animation: likePop 0.4s ease-out;
+}
 
 /* ============================================================
    ПРАВЫЙ SIDEBAR
@@ -939,7 +1174,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     padding: 12px;
 }
 .right-block-title {
-    font-size: 0.7rem;
+    font-size: 0.75rem;   /* CHANGED */
     font-weight: 700;
     letter-spacing: 3px;
     text-transform: uppercase;
@@ -963,7 +1198,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     padding: 6px;
     cursor: pointer;
     transition: background 0.15s;
-    font-size: 0.8rem;
+    font-size: 0.85rem;   /* CHANGED */
 }
 .online-item:hover { background: var(--surface-2); }
 .online-avatar {
@@ -992,7 +1227,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     align-items: center;
     gap: 8px;
     padding: 6px 0;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
 }
 .top-clan-rank {
     width: 20px;
@@ -1002,22 +1237,22 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     text-shadow: 0 0 6px var(--accent);
 }
 .top-clan-name { flex: 1; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.top-clan-rating { color: var(--text-3); font-size: 0.7rem; font-family: var(--font-digit); }
+.top-clan-rating { color: var(--text-3); font-size: 0.75rem; font-family: var(--font-digit); }
 .announce-mini {
     padding: 6px 0;
     border-bottom: 1px solid var(--border);
     cursor: pointer;
-    font-size: 0.78rem;
+    font-size: 0.82rem;   /* CHANGED */
     color: var(--text-2);
     line-height: 1.4;
     transition: color 0.15s;
 }
 .announce-mini:last-child { border-bottom: none; }
 .announce-mini:hover { color: var(--accent); }
-.announce-mini-time { font-size: 0.65rem; color: var(--text-4); margin-top: 2px; font-family: var(--font-digit); }
+.announce-mini-time { font-size: 0.7rem; color: var(--text-4); margin-top: 2px; font-family: var(--font-digit); }
 
 /* ============================================================
-   НИЖНЯЯ ПАНЕЛЬ (десктоп)
+   НИЖНЯЯ ПАНЕЛЬ
    ============================================================ */
 .bottombar {
     height: 22px;
@@ -1027,7 +1262,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     align-items: center;
     padding: 0 12px;
     gap: 16px;
-    font-size: 0.65rem;
+    font-size: 0.7rem;    /* CHANGED */
     color: var(--text-3);
     font-family: var(--font-digit);
     letter-spacing: 1px;
@@ -1051,7 +1286,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 
 /* ============================================================
-   МОБИЛЬНАЯ НИЖНЯЯ ПАНЕЛЬ
+   МОБИЛЬНАЯ НАВИГАЦИЯ
    ============================================================ */
 .mobile-nav {
     display: none;
@@ -1083,7 +1318,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border: none;
     color: var(--text-3);
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: 0.65rem;   /* CHANGED */
     text-transform: uppercase;
     letter-spacing: 1px;
     transition: all 0.15s;
@@ -1107,7 +1342,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     right: 20%;
     background: var(--accent);
     color: #000;
-    font-size: 0.55rem;
+    font-size: 0.6rem;    /* CHANGED */
     font-weight: 700;
     padding: 1px 4px;
     border-radius: 2px;
@@ -1195,7 +1430,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border: 1px solid var(--border-2);
     color: var(--text-3);
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.8rem;    /* CHANGED */
     text-transform: uppercase;
     letter-spacing: 2px;
     transition: all 0.15s;
@@ -1211,7 +1446,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .chat-online-bar {
     padding: 6px 16px;
     border-bottom: 1px solid var(--border);
-    font-size: 0.7rem;
+    font-size: 0.75rem;   /* CHANGED */
     color: var(--text-3);
     font-family: var(--font-digit);
     letter-spacing: 1px;
@@ -1248,7 +1483,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border: 1px solid var(--border-2);
     color: var(--text);
     font-family: var(--font-mono);
-    font-size: 0.85rem;
+    font-size: 0.9rem;    /* CHANGED */
     transition: all 0.15s;
 }
 .chat-input::placeholder { color: var(--text-4); letter-spacing: 1px; }
@@ -1344,19 +1579,19 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .chat-header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
 .chat-author {
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.9rem;    /* CHANGED */
     color: var(--text);
     cursor: pointer;
     transition: color 0.15s;
 }
 .chat-author:hover { color: var(--accent); }
-.chat-time { color: var(--text-4); font-size: 0.65rem; font-family: var(--font-digit); letter-spacing: 1px; }
-.chat-text { font-size: 0.85rem; line-height: 1.5; word-break: break-word; color: var(--text-2); }
+.chat-time { color: var(--text-4); font-size: 0.7rem; font-family: var(--font-digit); letter-spacing: 1px; }
+.chat-text { font-size: 0.9rem; line-height: 1.5; word-break: break-word; color: var(--text-2); } /* CHANGED */
 .chat-text img { max-width: 240px; border: 1px solid var(--border-2); margin: 6px 0; display: block; }
 .chat-text .mention { color: var(--accent); background: var(--accent-dim); padding: 1px 4px; cursor: pointer; }
 .chat-text .mention:hover { box-shadow: 0 0 8px var(--accent-dim); }
 
-/* ЦВЕТА ТЕКСТА */
+/* ЦВЕТА ТЕКСТА (без изменений) */
 .color-red { color: #ff1744; text-shadow: 0 0 6px #ff1744; }
 .color-blue { color: #448aff; text-shadow: 0 0 6px #448aff; }
 .color-green { color: #00ff41; text-shadow: 0 0 6px #00ff41; }
@@ -1385,8 +1620,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     50% { color: #448aff; } 66% { color: #b388ff; } 83% { color: #ff80ab; }
     100% { color: #ff1744; }
 }
-
-/* ШРИФТЫ */
 .font-cyber { font-family: 'Courier New', monospace; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 5px #00e5ff; }
 .font-typewriter { font-family: 'Special Elite', monospace; letter-spacing: 1px; }
 .font-western { font-family: 'Rye', serif; text-transform: uppercase; letter-spacing: 3px; }
@@ -1472,7 +1705,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border: 1px solid var(--border-2);
     color: var(--text);
     font-family: var(--font-mono);
-    font-size: 0.85rem;
+    font-size: 0.9rem;    /* CHANGED */
     transition: all 0.15s;
 }
 .modal-input:focus, .modal-textarea:focus, .modal-select:focus {
@@ -1488,7 +1721,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border: 1px solid var(--accent);
     color: var(--text);
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: 0.85rem;   /* CHANGED */
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -1510,7 +1743,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border: 1px solid var(--accent);
     color: var(--text);
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.8rem;    /* CHANGED */
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -1550,7 +1783,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border-left: 2px solid transparent;
     color: var(--text-3);
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: 0.83rem;   /* CHANGED */
     text-align: left;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -1591,9 +1824,108 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     justify-content: center;
     margin-bottom: 8px;
 }
-.shop-item-name { font-weight: 600; font-size: 0.8rem; margin: 6px 0; color: var(--text); }
-.shop-item-price { font-family: var(--font-digit); color: var(--accent); font-size: 0.85rem; font-weight: 700; text-shadow: 0 0 6px var(--accent); }
-.shop-item-badge { font-size: 0.65rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+.shop-item-name { font-weight: 600; font-size: 0.85rem; margin: 6px 0; color: var(--text); }
+.shop-item-price { font-family: var(--font-digit); color: var(--accent); font-size: 0.9rem; font-weight: 700; text-shadow: 0 0 6px var(--accent); }
+.shop-item-badge { font-size: 0.7rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+/* ============================================================
+   NEW: ПАУТИНА (СЕТЬ АГЕНТОВ)
+   ============================================================ */
+#web-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 44px - 22px - 60px);
+    min-height: 500px;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 30% 30%, rgba(255,23,68,0.04), transparent 50%),
+        radial-gradient(circle at 70% 70%, rgba(255,23,68,0.03), transparent 50%),
+        var(--bg);
+}
+@media (max-width: 768px) {
+    #web-canvas-wrap { height: calc(100vh - 44px - 60px - 60px); }
+}
+#web-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+.web-hint {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 14px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--accent-dark);
+    color: var(--text-3);
+    font-size: 0.75rem;
+    font-family: var(--font-digit);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    pointer-events: none;
+    border-radius: 3px;
+}
+.web-fallback {
+    display: none;
+    padding: 16px;
+}
+@media (max-width: 600px) {
+    .web-fallback { display: block; }
+}
+.web-fallback-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ============================================================
+   NEW: КАРУСЕЛЬ ОБЛОЖЕК СПЕКТАКЛЯ
+   ============================================================ */
+.cover-carousel {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+.cover-carousel-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.3s ease;
+}
+.cover-carousel-slide {
+    min-width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-3);
+    font-size: 0.9rem;
+}
+.cover-carousel-nav {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+}
+.cover-carousel-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.cover-carousel-dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+}
 
 /* ============================================================
    ПРОЧЕЕ
@@ -1602,7 +1934,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     text-align: center;
     padding: 40px 20px;
     color: var(--text-3);
-    font-size: 0.8rem;
+    font-size: 0.85rem;   /* CHANGED */
     text-transform: uppercase;
     letter-spacing: 2px;
 }
@@ -1621,7 +1953,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .mb-8 { margin-bottom: 8px; }
 .mb-16 { margin-bottom: 16px; }
 
-/* Плавающая кнопка создания поста */
 .floating-btn {
     position: fixed;
     bottom: 40px;
@@ -1632,7 +1963,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border: 1px solid var(--accent);
     color: var(--text);
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.8rem;    /* CHANGED */
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 3px;
@@ -1641,9 +1972,8 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     cursor: pointer;
 }
 .floating-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 40px var(--accent); }
-@media (max-width: 768px) { .floating-btn { bottom: 80px; right: 12px; padding: 10px 16px; font-size: 0.7rem; } }
+@media (max-width: 768px) { .floating-btn { bottom: 80px; right: 12px; padding: 10px 16px; font-size: 0.75rem; } }
 
-/* Реакции */
 .reaction-picker {
     position: fixed;
     background: var(--bg-2);
@@ -1664,7 +1994,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .reaction-picker span:hover { transform: scale(1.3); }
 
-/* Меню (⋯) */
 .chat-menu-wrap { position: relative; display: inline-block; margin-left: auto; }
 .chat-menu-btn {
     background: transparent;
@@ -1690,7 +2019,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .chat-menu-dropdown.open { display: block; }
 .chat-menu-item {
     padding: 8px 12px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;    /* CHANGED */
     color: var(--text-2);
     cursor: pointer;
     text-transform: uppercase;
@@ -1699,12 +2028,11 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .chat-menu-item:hover { background: var(--accent-dim); color: var(--accent); }
 
-/* Реакции */
 .chat-reactions { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
 .chat-reaction {
     border: 1px solid var(--border-2);
     padding: 2px 6px;
-    font-size: 0.7rem;
+    font-size: 0.75rem;   /* CHANGED */
     cursor: pointer;
     transition: all 0.15s;
     position: relative;
@@ -1721,14 +2049,13 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     background: var(--bg-2);
     border: 1px solid var(--accent);
     padding: 4px 8px;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     white-space: nowrap;
     z-index: 55;
     margin-bottom: 4px;
 }
 .chat-reaction:hover .chat-reaction-tooltip { display: block; }
 
-/* Меншн-подсказки */
 #mention-suggestions {
     position: fixed;
     background: var(--bg-2);
@@ -1742,20 +2069,19 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .mention-item {
     padding: 8px 12px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-2);
     cursor: pointer;
     transition: all 0.15s;
 }
 .mention-item:hover { background: var(--accent-dim); color: var(--accent); }
 
-/* Ответ-индикатор */
 .reply-indicator {
     padding: 8px 16px;
     background: var(--surface-2);
     border-top: 1px solid var(--border);
     border-left: 2px solid var(--accent);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1763,7 +2089,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .reply-indicator span[onclick] { color: var(--accent); cursor: pointer; }
 
-/* Новый бейдж */
 .new-badge-glow {
     animation: glowPulse 1s infinite !important;
     box-shadow: 0 0 15px var(--accent) !important;
@@ -1773,7 +2098,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     50% { box-shadow: 0 0 25px var(--accent), 0 0 40px var(--accent-dark); }
 }
 
-/* Аватарки для магазина */
 .avatar-square {
     width: 48px;
     height: 48px;
@@ -1788,11 +2112,8 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .avatar-square img { width: 100%; height: 100%; object-fit: cover; }
 
-/* ============================================================
-   РАЗНОЕ
-   ============================================================ */
-.text-tiny { font-size: 0.65rem; }
-.text-small { font-size: 0.75rem; }
+.text-tiny { font-size: 0.7rem; }
+.text-small { font-size: 0.8rem; }
 .text-dim { color: var(--text-3); }
 .text-accent { color: var(--accent); }
 .mono { font-family: var(--font-digit); letter-spacing: 1px; }
@@ -1873,7 +2194,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 <div id="login-screen">
     <div class="login-card">
         <div class="login-logo">СИНДИКАТ</div>
-        <div class="login-version">v2.4.1 · NT-405</div>
+        <div class="login-version">v2.5.0 · NT-405</div>
         <div class="login-subtitle">АВТОРИЗАЦИЯ</div>
         <input type="text" id="agent-name" class="login-input" placeholder="Кодовое имя" autocomplete="off">
         <input type="password" id="agent-pass" class="login-input" placeholder="Ключ доступа" autocomplete="new-password">
@@ -1886,13 +2207,12 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
 <div id="desktop">
 
-    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
     <header class="topbar">
         <div class="topbar-logo" id="topbar-logo">
             <span class="topbar-logo-icon">▣</span>
             <span>ТЕРМИНАЛ СИНДИКАТА</span>
         </div>
-        <span class="topbar-version">v2.4.1</span>
+        <span class="topbar-version">v2.5.0</span>
         <div class="topbar-spacer"></div>
         <div class="topbar-item"><span class="topbar-clock" id="topbar-clock">--:--:--</span></div>
         <span class="topbar-sep">│</span>
@@ -1912,10 +2232,8 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
         </div>
     </header>
 
-    <!-- ОСНОВНОЙ LAYOUT -->
     <div class="main-layout" id="main-layout">
 
-        <!-- ЛЕВЫЙ SIDEBAR -->
         <aside class="left-sidebar" id="left-sidebar">
             <div class="sidebar-profile" id="sidebar-profile" data-app="profile">
                 <div class="sidebar-profile-cover" id="sidebar-profile-cover"></div>
@@ -1928,12 +2246,10 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
             </div>
         </aside>
 
-        <!-- ЦЕНТР -->
         <main class="center-content" id="center-content">
             <div id="center-view"></div>
         </main>
 
-        <!-- ПРАВЫЙ SIDEBAR -->
         <aside class="right-panel" id="right-panel">
             <div class="right-block">
                 <div class="right-block-title">ОНЛАЙН</div>
@@ -1951,7 +2267,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 
     </div>
 
-    <!-- НИЖНЯЯ ПАНЕЛЬ -->
     <footer class="bottombar">
         <div class="bottombar-item" id="toggle-sidebar-btn">[ ◄ СВЕРНУТЬ ]</div>
         <div class="bottombar-spacer"></div>
@@ -1962,15 +2277,16 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 
 </div>
 
-<!-- ПЛАВАЮЩАЯ КНОПКА ПОСТА -->
 <button class="floating-btn" id="floating-create-post" style="display:none;">▸ НОВЫЙ ПОСТ</button>
 
-<!-- МОБИЛЬНАЯ НАВИГАЦИЯ -->
 <nav class="mobile-nav" id="mobile-nav">
     <div class="mobile-nav-inner" id="mobile-nav-inner"></div>
 </nav>
 
-<!-- ЭКРАНЫ ПРИЛОЖЕНИЙ -->
+<!-- ============================================================
+     ЭКРАНЫ ПРИЛОЖЕНИЙ
+     ============================================================ -->
+
 <div class="app-screen" id="app-chat">
     <div class="app-header">
         <div class="app-title">💬 ЧАТ</div>
@@ -2081,14 +2397,24 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     </div>
 </div>
 
+<!-- CHANGED: app-contacts теперь с паутиной -->
 <div class="app-screen" id="app-contacts">
     <div class="app-header">
         <div class="app-title">🌐 СЕТЬ АГЕНТОВ</div>
         <button class="app-close" data-close="contacts">✕</button>
     </div>
-    <div class="app-body" id="agents-list"></div>
+    <div class="app-body no-pad">
+        <div id="web-canvas-wrap">
+            <canvas id="web-canvas"></canvas>
+            <div class="web-hint">КЛИК — ПРОФИЛЬ · HOVER — СВЯЗИ</div>
+        </div>
+        <div class="web-fallback" id="web-fallback">
+            <div class="web-fallback-list" id="web-fallback-list"></div>
+        </div>
+    </div>
 </div>
 
+<!-- CHANGED: RP — только SPACE-X -->
 <div class="app-screen" id="app-rp">
     <div class="app-header">
         <div class="app-title">🎭 РП-ЧАТ</div>
@@ -2098,12 +2424,11 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
         <div class="chat-wrap">
             <div style="padding:10px 16px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border);background:var(--bg-2);">
                 <button class="btn secondary" id="rp-choose-char-btn">🎭 ПЕРСОНАЖ</button>
-                <div id="rp-current-char" style="color:var(--accent);font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;">⚠ НЕ ВЫБРАН</div>
+                <div id="rp-current-char" style="color:var(--accent);font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;">⚠ НЕ ВЫБРАН</div>
             </div>
             <div class="chat-tabs">
-                <button class="chat-tab active" data-rp-room="general">ОБЩИЙ</button>
-                <button class="chat-tab" data-rp-room="station">СТАНЦИЯ</button>
-                <button class="chat-tab" data-rp-room="bar">БАР</button>
+                <!-- REMOVED: general, station, bar -->
+                <button class="chat-tab active" data-rp-room="space-x">SPACE-X</button>
             </div>
             <div class="chat-messages" id="rp-messages"></div>
             <div class="chat-input-row">
@@ -2122,6 +2447,27 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     <div class="app-body">
         <button class="btn full" id="create-scene-btn">➕ СОЗДАТЬ СПЕКТАКЛЬ</button>
         <div id="rp-scenes-list" style="margin-top:16px;"></div>
+    </div>
+</div>
+
+<!-- NEW: чат спектакля -->
+<div class="app-screen" id="app-rp-scene">
+    <div class="app-header">
+        <div class="app-title" id="rp-scene-title">🎬 СПЕКТАКЛЬ</div>
+        <button class="app-close" data-close="rp-scene">✕</button>
+    </div>
+    <div class="app-body no-pad">
+        <div class="chat-wrap">
+            <div id="rp-scene-covers"></div>
+            <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg-2);">
+                <div id="rp-scene-desc" style="color:var(--text-2);font-size:0.85rem;line-height:1.5;"></div>
+            </div>
+            <div class="chat-messages" id="rp-scene-messages"></div>
+            <div class="chat-input-row">
+                <input type="text" class="chat-input" id="rp-scene-input" placeholder="ОТЫГРЫВАЙ РОЛЬ...">
+                <button class="chat-send-btn" id="rp-scene-send-btn">▶</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -2165,11 +2511,14 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     <div class="app-body" id="announce-content"></div>
 </div>
 
-<!-- МОДАЛКИ -->
+<!-- ============================================================
+     МОДАЛКИ
+     ============================================================ -->
+
 <div class="modal-overlay" id="modal-rules">
     <div class="modal-box">
         <div class="modal-title">ПРАВИЛА</div>
-        <div style="color:var(--text-2);line-height:1.7;font-size:0.85rem;">
+        <div style="color:var(--text-2);line-height:1.7;font-size:0.9rem;">
             1. Гайд должен быть полезным<br>
             2. Без оскорблений и спама<br>
             3. Пиши по делу<br>
@@ -2205,8 +2554,8 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 <div class="modal-overlay" id="modal-guide-view">
     <div class="modal-box">
         <div class="modal-title" id="modal-guide-title"></div>
-        <div style="color:var(--text-3);font-size:0.75rem;margin-bottom:12px;" id="modal-guide-author"></div>
-        <div style="color:var(--text-2);line-height:1.6;max-height:50vh;overflow-y:auto;font-size:0.85rem;" id="modal-guide-text"></div>
+        <div style="color:var(--text-3);font-size:0.8rem;margin-bottom:12px;" id="modal-guide-author"></div>
+        <div style="color:var(--text-2);line-height:1.6;max-height:50vh;overflow-y:auto;font-size:0.9rem;" id="modal-guide-text"></div>
         <div id="modal-guide-actions" style="margin-top:12px;"></div>
         <div style="margin-top:16px;text-align:right;">
             <button class="modal-btn secondary" data-close-modal="modal-guide-view">ЗАКРЫТЬ</button>
@@ -2248,7 +2597,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 <div class="modal-overlay" id="modal-avatar">
     <div class="modal-box">
         <div class="modal-title">СМЕНИТЬ АВАТАР</div>
-        <div style="color:var(--text-3);font-size:0.8rem;margin-bottom:12px;">ФАЙЛ ДО 2 МБ. КВАДРАТНЫЙ ФОРМАТ.</div>
+        <div style="color:var(--text-3);font-size:0.85rem;margin-bottom:12px;">ФАЙЛ ДО 2 МБ. КВАДРАТНЫЙ ФОРМАТ.</div>
         <input type="file" class="modal-input" id="avatar-file-input" accept="image/*">
         <div style="margin-top:16px;text-align:right;">
             <button class="modal-btn secondary" data-close-modal="modal-avatar">ОТМЕНА</button>
@@ -2332,7 +2681,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
         <div class="modal-title">НОВЫЙ ОТРЯД</div>
         <input type="text" class="modal-input" id="clan-name" placeholder="НАЗВАНИЕ">
         <input type="text" class="modal-input" id="clan-tag" placeholder="ТЕГ (до 6)" maxlength="6">
-        <div style="color:var(--text-3);font-size:0.75rem;margin:12px 0 6px;text-transform:uppercase;letter-spacing:2px;">ЭМБЛЕМА:</div>
+        <div style="color:var(--text-3);font-size:0.8rem;margin:12px 0 6px;text-transform:uppercase;letter-spacing:2px;">ЭМБЛЕМА:</div>
         <div id="clan-emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-height:180px;overflow-y:auto;"></div>
         <input type="hidden" id="clan-emoji" value="⚔️">
         <textarea class="modal-textarea" id="clan-desc" placeholder="ОПИСАНИЕ" style="min-height:80px;margin-top:8px;"></textarea>
@@ -2392,7 +2741,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
         <input type="text" class="modal-input" id="rp-char-role" placeholder="РОЛЬ / ПРОФЕССИЯ">
         <textarea class="modal-textarea" id="rp-char-character" placeholder="ХАРАКТЕР" style="min-height:80px;"></textarea>
         <textarea class="modal-textarea" id="rp-char-bio" placeholder="БИОГРАФИЯ" style="min-height:120px;"></textarea>
-        <div style="color:var(--text-3);font-size:0.75rem;margin:8px 0;text-transform:uppercase;letter-spacing:2px;">АВАТАР:</div>
+        <div style="color:var(--text-3);font-size:0.8rem;margin:8px 0;text-transform:uppercase;letter-spacing:2px;">АВАТАР:</div>
         <input type="file" class="modal-input" id="rp-char-avatar" accept="image/*">
         <div style="margin-top:16px;text-align:right;">
             <button class="modal-btn secondary" data-close-modal="modal-rp-char-create">ОТМЕНА</button>
@@ -2406,6 +2755,9 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
         <div class="modal-title">НОВЫЙ СПЕКТАКЛЬ</div>
         <input type="text" class="modal-input" id="scene-title" placeholder="НАЗВАНИЕ">
         <textarea class="modal-textarea" id="scene-desc" placeholder="СЮЖЕТ" style="min-height:150px;"></textarea>
+        <div style="color:var(--text-3);font-size:0.8rem;margin:12px 0 6px;text-transform:uppercase;letter-spacing:2px;">ОБЛОЖКИ (до 5):</div>
+        <input type="file" class="modal-input" id="scene-covers" accept="image/*" multiple>
+        <div id="scene-covers-preview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
         <div style="margin-top:16px;text-align:right;">
             <button class="modal-btn secondary" data-close-modal="modal-scene-create">ОТМЕНА</button>
             <button class="modal-btn" id="submit-scene-btn">СОЗДАТЬ</button>

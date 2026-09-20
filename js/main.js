@@ -1,16 +1,16 @@
 // ============================================================
-// ТЕРМИНАЛ СИНДИКАТА v2.4.1 — MAIN
+// ТЕРМИНАЛ СИНДИКАТА v2.5.0 — MAIN
 // ============================================================
 
 console.log('[MAIN] Модуль начал загрузку');
 
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, login, register, saveAgent, loadAgent, getAgents, translit } from './auth.js';
 import { loadDiscount, loadInventory, saveInventory, renderShop, renderShopItems, renderShopCategories, renderInventory, previewItem, buyItem, applyItem, resetItem, getItemDiscount, getDiscountedPrice, formatPrice, updateDiscountDisplay, generateNewDiscount, getActiveColorClass, getActiveColorClassForId, getActiveFrameClass, getActiveBadgeEmoji, getActiveFontClass, getBoosterTimeLeft, shopItems } from './shop.js';
-import { loadChatMessages, sendMessage, renderChat, subscribeChat, switchChatTab, loadDMMessages, sendDM, renderDMList, renderDMMessages, subscribeDM, openDM, startDM, loadMoreChatMessages, addReaction, addDMReaction, deleteMessage, pinChatMessage, replyToMessage, cancelReply, loadMentionAgents, showMentionSuggestions, hideMentionSuggestions, updateBadgeIcons, showReactionPickerUniversal, loadAdminMessages, sendAdminMessage, renderAdminChat, subscribeAdminChat, openClanChat, sendClanMessage, renderClanMessages, deleteClanMessage, addClanReaction, replyToClanMessage, loadClanMessages, subscribeClanChat, editMessage, chatMessages, currentClanId, currentDM, dmMessagesAll, unreadMentions, clanChats, isClanChatActive } from './chat.js';
+import { loadChatMessages, sendMessage, renderChat, subscribeChat, switchChatTab, loadDMMessages, sendDM, renderDMList, renderDMMessages, subscribeDM, openDM, startDM, loadMoreChatMessages, addReaction, addDMReaction, addAdminReaction, addClanReaction, deleteMessage, deleteClanMessage, deleteAdminMessage, pinChatMessage, pinClanMessage, editMessage, editClanMessage, replyToMessage, replyToClanMessage, cancelReply, loadMentionAgents, showMentionSuggestions, hideMentionSuggestions, updateBadgeIcons, showReactionPickerUniversal, loadAdminMessages, sendAdminMessage, renderAdminChat, subscribeAdminChat, openClanChat, sendClanMessage, renderClanMessages, loadClanMessages, subscribeClanChat, chatMessages, currentClanId, currentDM, dmMessagesAll, unreadMentions, clanChats, isClanChatActive } from './chat.js';
 import { loadClans, loadClanWars, createClan, joinClan, leaveClan, deleteClan, declareWar, donateToClan, acceptJoinRequest, checkCompletedWars, autoDistributeTreasury, renderClans, changeClanRole, kickClanMember, showDonateModal, openWarTargetModal, clans, clanWars } from './clans.js';
 import { loadFriends, sendFriendRequest, acceptFriend, removeFriend, blockAgent, unblockAgent, getFriends, renderFriends } from './friends.js';
 import { loadGuides, createGuide, deleteGuide, editGuide, loadMemes, createMeme, deleteMeme, likeMeme, userGuides, memes, renderGuides, saveEditedGuide, renderMemes, openGuideModal } from './guides.js';
-import { loadAnnouncements, renderAnnounceApp } from './announcements.js';
+import { loadAnnouncements, renderAnnounceApp, createAnnouncement } from './announcements.js';
 import { showAgentInfo, createPost, changeCover } from './agents.js';
 import { getAchievements, unlockAchievement, checkAchievements, renderAchievementsUI } from './achievements.js';
 import { muteAgent, banAgent, deleteAgent, changeAgentRole, renderAdminPanel, renderLogs } from './admin.js';
@@ -18,7 +18,10 @@ import { changeName, changePassword, changeAvatar } from './settings.js';
 import { playSound, startBgMusic, stopBgMusic, toggleSound, toggleMusic, getSoundEnabled, getMusicEnabled, nextBgTrack } from './sounds.js';
 import { recoverSystem } from './loader.js';
 import { notif, closeModal, uploadFileAndInsert, glowIcon, stopGlowIcon } from './utils.js';
-import { loadRpCharacters, createRpCharacter, updateRpCharacter, deleteRpCharacter, getRpCharacters, setCurrentRpChar, loadSavedRpChar, loadRpMessages, subscribeRpChat, sendRpMessage, switchRpRoom, loadRpScenes, createRpScene, renderRpScenes, rpCharacters, getCurrentRpChar, requireCharacter } from './rp.js';
+import { loadRpCharacters, createRpCharacter, updateRpCharacter, deleteRpCharacter, getRpCharacters, setCurrentRpChar, loadSavedRpChar, loadRpMessages, subscribeRpChat, sendRpMessage, loadRpScenes, createRpScene, renderRpScenes, rpCharacters, getCurrentRpChar, requireCharacter, addRpReaction, deleteRpMessage, editRpMessage, replyToRpMessage, cancelRpReply } from './rp.js';
+import { openSceneChat, closeSceneChat, sendSceneMessage, addSceneReaction, deleteSceneMessage, replyToSceneMessage } from './rp.js';
+import { renderPostCard as renderPostCardFeed, attachFeedHandlers } from './feed.js';
+import { initWebGraph, destroyWebGraph } from './web.js';
 
 console.log('[MAIN] Импорты загружены');
 
@@ -27,9 +30,57 @@ console.log('[MAIN] Импорты загружены');
 // ============================================================
 let currentFeedTab = 'all';
 let currentFeedFilter = 'fresh';
+let currentHashtag = null;
 let sidebarCollapsed = localStorage.getItem('syndicate_sidebar_collapsed') === 'true';
 let clockInterval = null;
 let currentView = 'feed';
+let feedAgentsCache = null;
+let feedOriginalsCache = null;
+
+// ============================================================
+// ЗВУК НА ВСЕ КНОПКИ (глобально)
+// ============================================================
+document.addEventListener('click', (e) => {
+    if (e.target.closest('input, textarea, select')) return;
+
+    let btn = e.target.closest('button, .btn, .modal-btn, .chat-icon-btn, .chat-send-btn, .app-close, .sidebar-item, .mobile-nav-btn, .feed-tab, .chat-tab, .card-action, .sidebar-profile, [data-app], .online-item, .top-clan-item, .announce-mini, .reaction-picker span, .emoji-cell, [data-emoji], .mention-item, .chat-reaction, [data-clan-emoji], [data-avatar], .hashtag-link, .cover-carousel-dot');
+    if (!btn) return;
+
+    if (btn.classList.contains('send-msg-btn') || btn.classList.contains('send-dm-btn')) return;
+    if (btn.id === 'rp-send-btn') return;
+    if (btn.id === 'rp-scene-send-btn') return;
+    if (btn.dataset && (btn.dataset.buy || btn.dataset.apply || btn.dataset.invApply || btn.dataset.invReset)) return;
+    if (btn.dataset && (btn.dataset.apply === 'booster' || btn.dataset.invApply === 'booster')) return;
+    if (btn.id === 'submit-post-btn' || btn.id === 'create-meme-submit-btn' || btn.id === 'create-guide-submit-btn') return;
+    if (btn.id === 'create-announce-submit-btn' || btn.id === 'submit-scene-btn') return;
+    if (btn.id === 'login-btn' || btn.id === 'register-link') return;
+    if (btn.classList.contains('app-close') && btn.dataset.close) return;
+    if (btn.id === 'rp-save-char-btn' || btn.id === 'rp-create-char-btn') return;
+    if (btn.id === 'submit-create-clan') return;
+    if (btn.classList.contains('chat-reaction')) return;
+    if (btn.dataset && btn.dataset.reaction) return;
+    if (btn.dataset && btn.dataset.reactionPicker) return;
+    if (btn.id === 'chat-emoji-btn' || btn.id === 'dm-emoji-btn' || btn.id === 'guide-emoji-btn') return;
+    if (btn.id === 'chat-file-btn' || btn.id === 'dm-file-btn' || btn.id === 'guide-file-btn') return;
+    if (btn.id === 'error-btn') return;
+    if (btn.classList.contains('hashtag-link')) return;
+    if (btn.classList.contains('comment-send')) return;
+    if (btn.dataset && btn.dataset.commentSend) return;
+    if (btn.dataset && btn.dataset.repostBtn) return;
+    if (btn.dataset && btn.dataset.commentsToggle) return;
+
+    playSound('click');
+}, true);
+
+// ============================================================
+// ГЛОБАЛЬНОЕ ДЕЛЕГИРОВАНИЕ data-close-modal
+// ============================================================
+document.addEventListener('click', (e) => {
+    let closeBtn = e.target.closest('[data-close-modal]');
+    if (!closeBtn) return;
+    let id = closeBtn.dataset.closeModal;
+    if (id) closeModal(id);
+});
 
 // ============================================================
 // ЧАСЫ
@@ -50,7 +101,7 @@ function startClock() {
 }
 
 // ============================================================
-// ЗАСТАВКА (короткая — 2.5 сек)
+// ЗАСТАВКА
 // ============================================================
 setTimeout(() => {
     const skull = document.getElementById('skull-ascii');
@@ -62,12 +113,12 @@ setTimeout(() => {
             let login = document.getElementById('login-screen');
             if (login) login.style.display = 'flex';
             console.log('[MAIN] Логин-экран показан');
-        }, 700);
+        }, 250);
     } else {
         let login = document.getElementById('login-screen');
         if (login) login.style.display = 'flex';
     }
-}, 2500);
+}, 1500);
 
 // ============================================================
 // SIDEBAR
@@ -75,7 +126,6 @@ setTimeout(() => {
 const SIDEBAR_STRUCTURE = [
     { title: 'ОСНОВНОЕ', items: [
         { id: 'feed', icon: '🏠', label: 'Лента' },
-        { id: 'profile', icon: '👤', label: 'Профиль' },
         { id: 'chat', icon: '💬', label: 'Чат' },
         { id: 'dm', icon: '📁', label: 'Личка' },
         { id: 'rp', icon: '🎭', label: 'РП-Чат' }
@@ -140,7 +190,6 @@ function buildSidebar() {
         el.addEventListener('click', () => {
             let id = el.dataset.app;
             if (id === 'feed') { openFeed(); return; }
-            if (id === 'profile') { openOwnProfile(); return; }
             openApp(id);
         });
     });
@@ -235,7 +284,7 @@ async function renderRightPanel() {
             .filter(([n, d]) => n !== 'W-C26' && d.last_seen && (now - new Date(d.last_seen).getTime()) < 300000)
             .slice(0, 12);
         if (onlineAgents.length === 0) {
-            online.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ АГЕНТОВ</div>';
+            online.innerHTML = '<div style="color:var(--text-3);font-size:0.8rem;padding:6px;">НЕТ АГЕНТОВ</div>';
         } else {
             online.innerHTML = onlineAgents.map(([name, d]) => {
                 let av = d.avatar_url ? '<img src="' + d.avatar_url + '">' : '🕶️';
@@ -255,7 +304,7 @@ async function renderRightPanel() {
         await loadClans();
         let sorted = [...clans].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 5);
         if (sorted.length === 0) {
-            topClans.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ ОТРЯДОВ</div>';
+            topClans.innerHTML = '<div style="color:var(--text-3);font-size:0.8rem;padding:6px;">НЕТ ОТРЯДОВ</div>';
         } else {
             topClans.innerHTML = sorted.map((cl, i) =>
                 '<div class="top-clan-item">' +
@@ -270,7 +319,7 @@ async function renderRightPanel() {
     if (announceMini) {
         let { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(4);
         if (!data || data.length === 0) {
-            announceMini.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ ОБЪЯВЛЕНИЙ</div>';
+            announceMini.innerHTML = '<div style="color:var(--text-3);font-size:0.8rem;padding:6px;">НЕТ ОБЪЯВЛЕНИЙ</div>';
         } else {
             announceMini.innerHTML = data.map(a =>
                 '<div class="announce-mini" data-announce-id="' + a.id + '">' +
@@ -295,6 +344,14 @@ function escapeHtml(s) {
     return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function linkifyHashtags(escapedText) {
+    if (!escapedText) return '';
+    return escapedText.replace(/(?:^|\s)#([\p{L}\p{N}_-]{1,32})/gu, (full, tag) => {
+        let prefix = full.startsWith(' ') ? ' ' : '';
+        return prefix + '<span class="hashtag-link" data-hashtag="' + tag.toLowerCase() + '">#' + tag + '</span>';
+    });
+}
+
 // ============================================================
 // ЛЕНТА
 // ============================================================
@@ -305,7 +362,12 @@ async function renderFeed() {
     let profileBlock = renderFeedProfileBlock();
     let header = '<div class="feed-header">' +
         '<div class="feed-header-title">▸ ЛЕНТА</div>' +
-        '<div class="feed-header-tabs">' +
+        '<div class="feed-search-row">' +
+        '<input type="text" class="feed-search-input" id="feed-search-input" placeholder="🔍 ПОИСК ПО ХЭШТЕГУ..." autocomplete="off">' +
+        '<button class="feed-search-clear" id="feed-search-clear" style="display:none;">✕ СБРОС</button>' +
+        '</div>' +
+        (currentHashtag ? '<div class="hashtag-chip">🏷 #' + escapeHtml(currentHashtag) + ' <span data-remove-hashtag>✕</span></div>' : '') +
+        '<div class="feed-header-tabs" style="margin-top:10px;">' +
         '<button class="feed-tab' + (currentFeedTab === 'all' ? ' active' : '') + '" data-feed-tab="all">ВСЁ</button>' +
         '<button class="feed-tab' + (currentFeedTab === 'posts' ? ' active' : '') + '" data-feed-tab="posts">ПОСТЫ</button>' +
         '<button class="feed-tab' + (currentFeedTab === 'memes' ? ' active' : '') + '" data-feed-tab="memes">МЕМЫ</button>' +
@@ -324,6 +386,41 @@ async function renderFeed() {
 
     view.innerHTML = profileBlock + header + feedHtml;
 
+    // NEW: если пришёл хэштег из профиля — подхватываем
+    if (window.__pendingHashtag) {
+        let tag = window.__pendingHashtag;
+        window.__pendingHashtag = null;
+        currentHashtag = tag;
+        let si = document.getElementById('feed-search-input');
+        if (si) si.value = '#' + tag;
+        let sc = document.getElementById('feed-search-clear');
+        if (sc) sc.style.display = 'inline-block';
+        // Перерисовываем чип + ленту
+        let chipWrap = view.querySelector('.feed-header');
+        if (chipWrap) {
+            let existing = chipWrap.querySelector('.hashtag-chip');
+            if (existing) existing.remove();
+            let chip = document.createElement('div');
+            chip.className = 'hashtag-chip';
+            chip.innerHTML = '🏷 #' + escapeHtml(tag) + ' <span data-remove-hashtag>✕</span>';
+            let tabs = chipWrap.querySelector('.feed-header-tabs');
+            if (tabs) tabs.parentNode.insertBefore(chip, tabs);
+            chip.querySelector('[data-remove-hashtag]')?.addEventListener('click', () => {
+                currentHashtag = null;
+                renderFeed();
+            });
+        }
+        await refreshFeedOnly();
+    }
+
+    // Восстанавливаем значение инпута из currentHashtag
+    let searchInput = document.getElementById('feed-search-input');
+    if (searchInput && currentHashtag) {
+        searchInput.value = '#' + currentHashtag;
+        let clearBtn = document.getElementById('feed-search-clear');
+        if (clearBtn) clearBtn.style.display = 'inline-block';
+    }
+
     setTimeout(() => {
         document.querySelectorAll('[data-feed-tab]').forEach(b => {
             b.addEventListener('click', () => {
@@ -337,24 +434,42 @@ async function renderFeed() {
                 renderFeed();
             });
         });
-        document.querySelectorAll('[data-show-agent]').forEach(el => {
-            el.addEventListener('click', () => showAgentInfo(el.dataset.showAgent));
+        document.querySelector('[data-remove-hashtag]')?.addEventListener('click', () => {
+            currentHashtag = null;
+            renderFeed();
         });
-        document.querySelectorAll('[data-like-post]').forEach(el => {
-            el.addEventListener('click', (e) => { e.stopPropagation(); likePost(parseInt(el.dataset.likePost)); });
-        });
-        document.querySelectorAll('[data-open-post-author]').forEach(el => {
-            el.addEventListener('click', () => showAgentInfo(el.dataset.openPostAuthor));
-        });
-        document.getElementById('feed-profile-actions')?.addEventListener('click', (e) => {
-            let t = e.target.closest('[data-action]');
-            if (!t) return;
-            let a = t.dataset.action;
-            if (a === 'post') window.showCreatePost();
-            if (a === 'dm') openApp('dm');
-            if (a === 'settings') openApp('settings');
-            if (a === 'profile') openOwnProfile();
-        });
+
+        let si = document.getElementById('feed-search-input');
+        let sc = document.getElementById('feed-search-clear');
+        if (si) {
+            si.addEventListener('input', () => {
+                let v = si.value.trim().replace(/^#/, '').toLowerCase();
+                currentHashtag = v || null;
+                if (sc) sc.style.display = v ? 'inline-block' : 'none';
+                refreshFeedOnly();
+            });
+        }
+        if (sc) {
+            sc.addEventListener('click', () => {
+                currentHashtag = null;
+                if (si) si.value = '';
+                sc.style.display = 'none';
+                renderFeed();
+            });
+        }
+
+        let feedEl = document.getElementById('feed');
+        if (feedEl && typeof attachFeedHandlers === 'function') {
+            attachFeedHandlers(feedEl, {
+                onHashtag: (tag) => {
+                    currentHashtag = tag;
+                    renderFeed();
+                },
+                onReposted: () => {
+                    renderFeed();
+                }
+            });
+        }
     }, 10);
 
     let fbtn = document.getElementById('floating-create-post');
@@ -362,6 +477,15 @@ async function renderFeed() {
         fbtn.style.display = 'block';
         fbtn.onclick = () => window.showCreatePost();
     }
+}
+
+async function refreshFeedOnly() {
+    let feedEl = document.getElementById('feed');
+    if (!feedEl) { renderFeed(); return; }
+    let items = await loadFeedItems();
+    feedEl.innerHTML = items.length === 0
+        ? '<div class="feed-empty">ПУСТО</div>'
+        : items.map(renderFeedCard).join('');
 }
 
 function renderFeedProfileBlock() {
@@ -378,7 +502,7 @@ function renderFeedProfileBlock() {
     let nameClass = CA.active_color ? getActiveColorClassForId(CA.active_color) : '';
     let badgeHtml = getActiveBadgeEmoji();
 
-    return '<div class="feed-profile-block">' +
+    return '<div class="feed-profile-block matrix-bg">' +
         '<div class="feed-profile-cover">' + coverHtml + '</div>' +
         '<div class="feed-profile-main">' +
         '<div class="feed-profile-avatar">' + avatarHtml + '</div>' +
@@ -416,6 +540,23 @@ async function loadFeedItems() {
         }
     } catch (e) { console.error(e); }
 
+    if (currentHashtag) {
+        let tag = currentHashtag.toLowerCase();
+        all = all.filter(item => {
+            let tags = item.data.hashtags;
+            let arr = [];
+            if (Array.isArray(tags)) arr = tags;
+            else if (typeof tags === 'string' && tags) {
+                try { let p = JSON.parse(tags); if (Array.isArray(p)) arr = p; } catch (e) {}
+            }
+            if (arr.length > 0) {
+                return arr.map(t => String(t).toLowerCase()).includes(tag);
+            }
+            let txt = (item.data.text || '') + ' ' + (item.data.title || '');
+            return new RegExp('#(' + tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')(?:\\s|$)', 'i').test(txt);
+        });
+    }
+
     if (currentFeedFilter === 'popular') {
         all.sort((a, b) => (b.likes || 0) - (a.likes || 0));
     } else {
@@ -426,35 +567,56 @@ async function loadFeedItems() {
 }
 
 function renderFeedCard(item) {
-    if (item.type === 'post') return renderPostCard(item.data);
+    if (item.type === 'post') return renderFeedPost(item.data);
     if (item.type === 'announce') return renderAnnounceCard(item.data);
     if (item.type === 'meme') return renderMemeCard(item.data);
     return '';
 }
 
-function renderPostCard(p) {
-    let avatarHtml = p.avatar_url ? '<img src="' + p.avatar_url + '">' : '🕶️';
-    let liked = p.liked_by && CA && p.liked_by.includes(CA.name);
-    let imgHtml = p.image_url ? '<img src="' + p.image_url + '" onerror="this.style.display=\'none\'">' : '';
-    return '<div class="card">' +
-        '<div class="card-header">' +
-        '<div class="card-avatar" data-show-agent="' + escapeHtml(p.author) + '">' + avatarHtml + '</div>' +
-        '<div class="card-author-block">' +
-        '<div class="card-author" data-open-post-author="' + escapeHtml(p.author) + '">' + escapeHtml(p.author) + '</div>' +
-        '<div class="card-meta"><span class="card-time">' + timeAgo(p.created_at) + '</span></div>' +
-        '</div></div>' +
-        (p.text ? '<div class="card-text">' + escapeHtml(p.text).replace(/\n/g, '<br>') + '</div>' : '') +
-        imgHtml +
-        '<div class="card-actions">' +
-        '<button class="card-action' + (liked ? ' liked' : '') + '" data-like-post="' + p.id + '">❤ ' + (p.likes || 0) + '</button>' +
-        '</div></div>';
+function renderFeedPost(post) {
+    if (!feedAgentsCache) feedAgentsCache = {};
+    if (!feedOriginalsCache) feedOriginalsCache = new Map();
+
+    let originalPost = null;
+    if (post.repost_of && feedOriginalsCache.has(post.repost_of)) {
+        originalPost = feedOriginalsCache.get(post.repost_of);
+    }
+
+    let html = renderPostCardFeed(post, {
+        agents: feedAgentsCache,
+        originalPost: originalPost
+    });
+
+    if (post.repost_of && !originalPost) {
+        supabase.from('profile_posts').select('*').eq('id', post.repost_of).maybeSingle().then(({ data }) => {
+            if (data) {
+                feedOriginalsCache.set(post.repost_of, data);
+                let card = document.querySelector('[data-post-id="' + post.id + '"]');
+                if (card) {
+                    let newHtml = renderPostCardFeed(post, {
+                        agents: feedAgentsCache,
+                        originalPost: data
+                    });
+                    let tmp = document.createElement('div');
+                    tmp.innerHTML = newHtml;
+                    card.replaceWith(tmp.firstElementChild);
+                }
+            }
+        });
+    }
+
+    return html;
 }
+
+getAgents().then(a => { feedAgentsCache = a; });
 
 function renderAnnounceCard(a) {
     let typeLabels = {
         news: '📰 НОВОСТЬ', event: '🎯 ИВЕНТ', auction: '💰 АУКЦИОН',
         update: '⚡ ОБНОВЛЕНИЕ', wanted: '🔍 РОЗЫСК'
     };
+    let titleHtml = a.title ? linkifyHashtags(escapeHtml(a.title)) : '';
+    let textHtml = a.text ? linkifyHashtags(escapeHtml(a.text)).replace(/\n/g, '<br>') : '';
     return '<div class="card" style="border-left-color:var(--accent);">' +
         '<div class="card-header">' +
         '<div class="card-avatar" style="background:var(--accent-dim);color:var(--accent);">📢</div>' +
@@ -462,14 +624,16 @@ function renderAnnounceCard(a) {
         '<div class="card-author">' + escapeHtml(a.author) + '</div>' +
         '<div class="card-meta"><span class="role">' + (typeLabels[a.type] || '📰') + '</span><span class="card-time">' + timeAgo(a.created_at) + '</span></div>' +
         '</div></div>' +
-        (a.title ? '<div class="card-title">' + escapeHtml(a.title) + '</div>' : '') +
-        (a.text ? '<div class="card-text">' + escapeHtml(a.text).replace(/\n/g, '<br>') + '</div>' : '') +
+        (titleHtml ? '<div class="card-title">' + titleHtml + '</div>' : '') +
+        (textHtml ? '<div class="card-text">' + textHtml + '</div>' : '') +
         '</div>';
 }
 
 function renderMemeCard(m) {
     let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '">' : '😂';
     let imgHtml = m.image_url ? '<img src="' + m.image_url + '" style="max-width:100%;max-height:400px;border:1px solid var(--border-2);margin-top:8px;display:block;" onerror="this.style.display=\'none\'">' : '';
+    let titleHtml = m.title ? linkifyHashtags(escapeHtml(m.title)) : '';
+    let textHtml = m.text ? linkifyHashtags(escapeHtml(m.text)).replace(/\n/g, '<br>') : '';
     return '<div class="card">' +
         '<div class="card-header">' +
         '<div class="card-avatar" data-show-agent="' + escapeHtml(m.author) + '">' + avatarHtml + '</div>' +
@@ -477,22 +641,10 @@ function renderMemeCard(m) {
         '<div class="card-author" data-open-post-author="' + escapeHtml(m.author) + '">' + escapeHtml(m.author) + '</div>' +
         '<div class="card-meta"><span class="role">😂 МЕМ</span><span class="card-time">' + timeAgo(m.created_at) + '</span></div>' +
         '</div></div>' +
-        (m.title ? '<div class="card-title">' + escapeHtml(m.title) + '</div>' : '') +
-        (m.text ? '<div class="card-text">' + escapeHtml(m.text).replace(/\n/g, '<br>') + '</div>' : '') +
+        (titleHtml ? '<div class="card-title">' + titleHtml + '</div>' : '') +
+        (textHtml ? '<div class="card-text">' + textHtml + '</div>' : '') +
         imgHtml +
         '<div class="card-actions"><span class="card-action">❤ ' + (m.likes || 0) + '</span></div></div>';
-}
-
-async function likePost(id) {
-    if (!CA) return;
-    let { data: post } = await supabase.from('profile_posts').select('*').eq('id', id).maybeSingle();
-    if (!post) return;
-    let likedBy = post.liked_by || [];
-    let idx = likedBy.indexOf(CA.name);
-    if (idx === -1) { likedBy.push(CA.name); post.likes = (post.likes || 0) + 1; }
-    else { likedBy.splice(idx, 1); post.likes = Math.max(0, (post.likes || 0) - 1); }
-    await supabase.from('profile_posts').update({ likes: post.likes, liked_by: likedBy }).eq('id', id);
-    renderFeed();
 }
 
 function openFeed() {
@@ -503,6 +655,9 @@ function openFeed() {
     document.querySelectorAll('[data-app]').forEach(el => el.classList.remove('active'));
     let feedNav = document.querySelector('[data-app="feed"]');
     if (feedNav) feedNav.classList.add('active');
+    feedAgentsCache = null;
+    feedOriginalsCache = null;
+    getAgents().then(a => { feedAgentsCache = a; });
     renderFeed();
 }
 
@@ -515,14 +670,15 @@ function openOwnProfile() {
 // ОТКРЫТИЕ ПРИЛОЖЕНИЙ
 // ============================================================
 function openApp(id) {
-    playSound('click');
+    playSound('open');
     currentView = id;
     let map = {
         chat: 'app-chat', dm: 'app-dm', shop: 'app-shop', inventory: 'app-inventory',
         clans: 'app-clans', friends: 'app-friends', achievements: 'app-achievements',
         guides: 'app-guides', memes: 'app-memes', contacts: 'app-contacts',
         admin: 'app-admin', logs: 'app-logs', announce: 'app-announce',
-        settings: 'app-settings', rp: 'app-rp', 'rp-community': 'app-rp-community'
+        settings: 'app-settings', rp: 'app-rp', 'rp-community': 'app-rp-community',
+        'rp-scene': 'app-rp-scene'
     };
     let el = document.getElementById(map[id]);
     if (!el) return;
@@ -544,7 +700,9 @@ function openApp(id) {
         loadChatMessages();
     }
     if (id === 'dm') { unreadMentions.dm = 0; updateBadgeIcons(); buildSidebar(); loadDMMessages(); }
-    if (id === 'contacts') renderAgentList();
+    if (id === 'contacts') {
+        if (typeof initWebGraph === 'function') initWebGraph();
+    }
     if (id === 'achievements') renderAchievementsUI();
     if (id === 'guides') { loadGuides().then(() => renderGuides()); }
     if (id === 'memes') { loadMemes().then(() => renderMemes()); }
@@ -559,11 +717,14 @@ function openApp(id) {
         loadSavedRpChar();
         loadRpCharacters().then(() => {
             updateRpCurrentChar();
-            loadRpMessages('general');
-            subscribeRpChat('general');
+            loadRpMessages('space-x');
+            subscribeRpChat('space-x');
         });
     }
     if (id === 'rp-community') loadRpScenes().then(() => renderRpScenes());
+    if (id === 'rp-scene') {
+        // логика в openSceneChat()
+    }
 
     if (CA) { CA.crystals = (CA.crystals || 0) + 2; updateTopbar(); saveAgent(); }
 }
@@ -576,10 +737,17 @@ function closeApp(id) {
         clans: 'app-clans', friends: 'app-friends', achievements: 'app-achievements',
         guides: 'app-guides', memes: 'app-memes', contacts: 'app-contacts',
         admin: 'app-admin', logs: 'app-logs', announce: 'app-announce',
-        settings: 'app-settings', rp: 'app-rp', 'rp-community': 'app-rp-community'
+        settings: 'app-settings', rp: 'app-rp', 'rp-community': 'app-rp-community',
+        'rp-scene': 'app-rp-scene'
     };
     let el = document.getElementById(map[id]);
     if (el) {
+        if (id === 'contacts' && typeof destroyWebGraph === 'function') {
+            destroyWebGraph();
+        }
+        if (id === 'rp-scene' && typeof closeSceneChat === 'function') {
+            closeSceneChat();
+        }
         el.classList.remove('show');
         setTimeout(() => {
             el.style.display = 'none';
@@ -590,25 +758,10 @@ function closeApp(id) {
 }
 
 // ============================================================
-// СПИСОК АГЕНТОВ
+// СПИСОК АГЕНТОВ (делегируем в web.js)
 // ============================================================
 async function renderAgentList() {
-    let list = document.getElementById('agents-list');
-    if (!list) return;
-    let agents = await getAgents();
-    let arr = Object.entries(agents).filter(([n]) => n !== 'W-C26');
-    if (arr.length === 0) { list.innerHTML = '<div class="empty-state">НЕТ АГЕНТОВ</div>'; return; }
-    list.innerHTML = arr.map(([name, d]) => {
-        let av = d.avatar_url ? '<img src="' + d.avatar_url + '">' : '🕶️';
-        let online = d.last_seen && (Date.now() - new Date(d.last_seen).getTime()) < 300000;
-        let roleIcon = d.role === 'admin' ? '👑' : d.role === 'moderator' ? '🛡' : '🎯';
-        return '<div class="card" style="cursor:pointer;margin-bottom:8px;" data-show-agent="' + name + '">' +
-            '<div style="display:flex;gap:12px;align-items:center;">' +
-            '<div class="card-avatar">' + av + '</div>' +
-            '<div><div class="card-author">' + name + ' ' + (online ? '<span style="color:var(--success);">●</span>' : '') + '</div>' +
-            '<div class="card-meta">' + roleIcon + ' ' + (d.role || 'agent').toUpperCase() + '</div></div></div></div>';
-    }).join('');
-    list.querySelectorAll('[data-show-agent]').forEach(el => el.addEventListener('click', () => showAgentInfo(el.dataset.showAgent)));
+    if (typeof initWebGraph === 'function') initWebGraph();
 }
 
 // ============================================================
@@ -632,8 +785,8 @@ function renderRpCharsList() {
             '<div class="card-avatar">' + av + '</div>' +
             '<div style="flex:1;"><div style="font-weight:600;">' + escapeHtml(c.name) + '</div>' +
             '<div class="card-meta">' + escapeHtml(c.role || '') + '</div></div>' +
-            '<button class="btn secondary" data-char-edit="' + c.id + '" style="padding:4px 8px;font-size:0.7rem;">✏</button>' +
-            '<button class="btn danger" data-char-del="' + c.id + '" style="padding:4px 8px;font-size:0.7rem;">✕</button>' +
+            '<button class="btn secondary" data-char-edit="' + c.id + '" style="padding:4px 8px;font-size:0.75rem;">✏</button>' +
+            '<button class="btn danger" data-char-del="' + c.id + '" style="padding:4px 8px;font-size:0.75rem;">✕</button>' +
             '</div></div>';
     }).join('');
     setTimeout(() => {
@@ -712,7 +865,7 @@ async function saveRpChar() {
                         let fn = 'rp_' + safeName + '_' + Date.now() + '.png';
                         let { error } = await supabase.storage.from('avatars').upload(fn, blob, { upsert: true, contentType: 'image/png' });
                         if (error) { r(''); return; }
-                        let { data } = supabase.storage.from('avatars').getPublicUrl(fn);
+                        let { data } = await supabase.storage.from('avatars').getPublicUrl(fn);
                         r(data.publicUrl);
                     }, 'image/png');
                 };
@@ -810,13 +963,14 @@ window.showClanInfo = function(clanId) {
     let popup = document.createElement('div');
     popup.className = 'modal-overlay show';
     popup.style.display = 'flex';
+    popup.id = 'modal-auto-clan';
     popup.innerHTML = '<div class="modal-box">' +
         '<div class="modal-title">' + cl.emoji + ' ' + escapeHtml(cl.name) + ' [' + cl.tag + ']</div>' +
-        '<div style="color:var(--text-2);margin-bottom:12px;font-size:0.85rem;">' + escapeHtml(cl.description || '') + '</div>' +
-        '<div style="color:var(--text-3);font-size:0.8rem;">👑 ' + escapeHtml(cl.leader) + ' · 💰 ' + (cl.treasury || 0) + ' ТК · ⭐ ' + (cl.rating || 0) + '</div>' +
+        '<div style="color:var(--text-2);margin-bottom:12px;font-size:0.9rem;">' + escapeHtml(cl.description || '') + '</div>' +
+        '<div style="color:var(--text-3);font-size:0.85rem;">👑 ' + escapeHtml(cl.leader) + ' · 💰 ' + (cl.treasury || 0) + ' ТК · ⭐ ' + (cl.rating || 0) + '</div>' +
         '<div style="margin-top:12px;font-size:0.85rem;">Участники: ' + (cl.members || []).map(m => escapeHtml(m.name)).join(', ') + '</div>' +
         (cl.members && !cl.members.find(m => m.name === CA?.name) && !clans.some(c => c.members?.some(m => m.name === CA?.name)) ? '<button class="btn full mt-16" id="join-clan-btn-' + cl.id + '">' + (cl.join_type === 'request' ? '📩 ОТПРАВИТЬ ЗАЯВКУ' : '✅ ВСТУПИТЬ') + '</button>' : '') +
-        '<div style="margin-top:16px;text-align:right;"><button class="modal-btn secondary" onclick="this.closest(\'.modal-overlay\').remove()">ЗАКРЫТЬ</button></div>' +
+        '<div style="margin-top:16px;text-align:right;"><button class="modal-btn secondary" data-close-modal="modal-auto-clan">ЗАКРЫТЬ</button></div>' +
         '</div>';
     document.body.appendChild(popup);
     setTimeout(() => {
@@ -839,6 +993,11 @@ window.showCreateAnnouncement = function() {
 window.showDonateModal = showDonateModal;
 window.openWarTargetModal = openWarTargetModal;
 
+window.openSceneChat = function(sceneId) {
+    openApp('rp-scene');
+    setTimeout(() => { if (typeof openSceneChat === 'function') openSceneChat(sceneId); }, 100);
+};
+
 // ============================================================
 // ЭМОДЗИ
 // ============================================================
@@ -855,6 +1014,7 @@ function toggleChatEmoji() {
                 let targetId = document.activeElement?.id || 'chat-input';
                 let inp = document.getElementById(targetId);
                 if (inp) inp.value += this.dataset.emoji;
+                playSound('send');
             };
         });
     }, 10);
@@ -869,6 +1029,20 @@ window.replyToDMMessage = function(msgId, author, text) {
 };
 window.cancelDmReply = function() { let ri = document.getElementById('dm-reply-indicator'); if (ri) ri.style.display = 'none'; };
 window.cancelReply = cancelReply;
+window.addRpReaction = addRpReaction;
+window.deleteRpMessage = deleteRpMessage;
+window.editRpMessage = editRpMessage;
+window.replyToRpMessage = replyToRpMessage;
+window.cancelRpReply = cancelRpReply;
+window.pinClanMessage = pinClanMessage;
+window.editClanMessage = editClanMessage;
+window.addAdminReaction = addAdminReaction;
+window.deleteAdminMessage = deleteAdminMessage;
+
+window.addSceneReaction = addSceneReaction;
+window.deleteSceneMessage = deleteSceneMessage;
+window.replyToSceneMessage = replyToSceneMessage;
+window.closeSceneChat = closeSceneChat;
 
 // ============================================================
 // ОТКРЫТИЕ РАБОЧЕГО СТОЛА
@@ -892,14 +1066,12 @@ function openDesktop() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[MAIN] DOMContentLoaded сработал');
 
-    // Логин
     document.getElementById('login-btn')?.addEventListener('click', async () => {
         console.log('[LOGIN] Кнопка нажата');
         try {
             let r = await login();
             console.log('[LOGIN] Результат:', r);
             if (r && r.CA) {
-                console.log('[LOGIN] Успех, открываю рабочий стол');
                 document.getElementById('login-screen').style.display = 'none';
                 openDesktop();
                 startBgMusic();
@@ -913,8 +1085,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (ab) ab.classList.remove('hidden');
                 }
                 renderRightPanel();
-            } else {
-                console.log('[LOGIN] Провал:', r);
             }
         } catch (e) {
             console.error('[LOGIN] Ошибка:', e);
@@ -924,10 +1094,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('agent-pass')?.addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('login-btn').click(); });
 
     document.getElementById('register-link')?.addEventListener('click', async () => {
-        console.log('[REGISTER] Кнопка нажата');
         try {
             let r = await register();
-            console.log('[REGISTER] Результат:', r);
             if (r && r.CA) {
                 document.getElementById('login-screen').style.display = 'none';
                 openDesktop();
@@ -938,10 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadFriends(); loadMentionAgents(); checkAchievements();
                 renderRightPanel();
             }
-        } catch (e) {
-            console.error('[REGISTER] Ошибка:', e);
-            notif('⛔ Ошибка: ' + e.message);
-        }
+        } catch (e) { console.error('[REGISTER] Ошибка:', e); }
     });
 
     document.getElementById('error-btn')?.addEventListener('click', () => recoverSystem(() => { document.getElementById('login-screen').style.display = 'flex'; }));
@@ -965,13 +1130,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Чаты
     document.querySelector('.send-msg-btn')?.addEventListener('click', e => { e.stopPropagation(); if (isClanChatActive()) sendClanMessage(); else sendMessage(); });
     document.querySelector('.send-dm-btn')?.addEventListener('click', e => { e.stopPropagation(); sendDM(); });
+    document.getElementById('rp-send-btn')?.addEventListener('click', sendRpMessage);
+    document.getElementById('rp-scene-send-btn')?.addEventListener('click', sendSceneMessage);
     document.querySelectorAll('.chat-tab[data-tab]').forEach(tab => tab.addEventListener('click', function() { switchChatTab(this.dataset.tab); }));
     document.getElementById('chat-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji(); });
     document.getElementById('dm-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji(); });
     document.getElementById('guide-emoji-btn')?.addEventListener('click', toggleChatEmoji);
-    document.getElementById('chat-file-btn')?.addEventListener('click', () => document.getElementById('chat-file-input').click());
-    document.getElementById('dm-file-btn')?.addEventListener('click', () => document.getElementById('dm-file-input').click());
-    document.getElementById('guide-file-btn')?.addEventListener('click', () => document.getElementById('guide-file-input').click());
+    document.getElementById('chat-file-btn')?.addEventListener('click', () => { document.getElementById('chat-file-input').click(); });
+    document.getElementById('dm-file-btn')?.addEventListener('click', () => { document.getElementById('dm-file-input').click(); });
+    document.getElementById('guide-file-btn')?.addEventListener('click', () => { document.getElementById('guide-file-input').click(); });
     document.getElementById('chat-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'chat-input'));
     document.getElementById('dm-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'dm-input'));
     document.getElementById('guide-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'guide-text'));
@@ -981,6 +1148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.activeElement === document.getElementById('chat-input')) { e.preventDefault(); if (isClanChatActive()) sendClanMessage(); else sendMessage(); }
             if (document.activeElement === document.getElementById('dm-input')) { e.preventDefault(); sendDM(); }
             if (document.activeElement === document.getElementById('rp-input')) { e.preventDefault(); sendRpMessage(); }
+            if (document.activeElement === document.getElementById('rp-scene-input')) { e.preventDefault(); sendSceneMessage(); }
         }
     });
     document.addEventListener('input', e => {
@@ -1007,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let t = document.getElementById('guide-title').value.trim(), x = document.getElementById('guide-text').value.trim();
             if (!t || !x) return notif('⛔ ЗАПОЛНИ');
             let r = await createGuide(t, x);
-            if (r.success) { closeModal('modal-create'); loadGuides().then(renderGuides); checkAchievements(); }
+            if (r.success) { playSound('send'); closeModal('modal-create'); loadGuides().then(renderGuides); checkAchievements(); }
         }
     });
 
@@ -1026,7 +1194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let url = '';
         if (f) { let r = new FileReader(); r.readAsDataURL(f); url = await new Promise(res => r.onload = () => res(r.result)); }
         let re = await createMeme(t, x, url);
-        if (re.success) { closeModal('modal-meme-create'); loadMemes().then(renderMemes); }
+        if (re.success) { playSound('send'); closeModal('modal-meme-create'); loadMemes().then(renderMemes); }
     });
 
     // Объявления
@@ -1034,7 +1202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let t = document.getElementById('new-announce-title').value.trim(), x = document.getElementById('new-announce-text').value.trim(), ty = document.getElementById('new-announce-type').value;
         if (!t || !x) return notif('⛔ ЗАПОЛНИ');
         let r = await createAnnouncement(t, x, ty);
-        if (r.success) { closeModal('modal-announce'); loadAnnouncements().then(renderAnnounceApp); }
+        if (r.success) { playSound('send'); closeModal('modal-announce'); loadAnnouncements().then(renderAnnounceApp); }
     });
 
     // Посты
@@ -1045,7 +1213,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (f) { let r = new FileReader(); r.readAsDataURL(f); url = await new Promise(res => r.onload = () => res(r.result)); }
         if (!t && !url) return notif('⛔ ПУСТО');
         let r = await createPost(t, url);
-        if (r.success) { closeModal('modal-create-post'); renderFeed(); checkAchievements(); }
+        if (r.success) {
+            playSound('send');
+            closeModal('modal-create-post');
+            feedAgentsCache = null;
+            feedOriginalsCache = null;
+            getAgents().then(a => { feedAgentsCache = a; });
+            renderFeed();
+            checkAchievements();
+        }
     });
 
     // Отряды
@@ -1053,48 +1229,72 @@ document.addEventListener('DOMContentLoaded', () => {
         let name = document.getElementById('clan-name').value.trim(), tag = document.getElementById('clan-tag').value.trim();
         if (!name || !tag) return notif('⛔ ЗАПОЛНИ');
         let r = await createClan(name, tag, document.getElementById('clan-emoji').value, document.getElementById('clan-desc').value.trim(), document.getElementById('clan-join-type').value);
-        if (r.success) { closeModal('modal-create-clan'); loadClans().then(renderClans); checkAchievements(); unlockAchievement('clan_creator'); }
+        if (r.success) { playSound('send'); closeModal('modal-create-clan'); loadClans().then(renderClans); checkAchievements(); unlockAchievement('clan_creator'); }
         else notif(r.error);
     });
 
     // РП
-    document.getElementById('rp-send-btn')?.addEventListener('click', sendRpMessage);
     document.getElementById('rp-choose-char-btn')?.addEventListener('click', () => { renderRpCharsList(); let el = document.getElementById('modal-rp-chars'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
     document.getElementById('rp-create-char-btn')?.addEventListener('click', () => openCharCreateModal());
     document.getElementById('rp-save-char-btn')?.addEventListener('click', saveRpChar);
-    document.querySelectorAll('[data-rp-room]').forEach(b => b.addEventListener('click', function() {
-        document.querySelectorAll('[data-rp-room]').forEach(x => x.classList.remove('active'));
-        this.classList.add('active');
-        switchRpRoom(this.dataset.rpRoom);
-    }));
     document.getElementById('create-scene-btn')?.addEventListener('click', () => {
         if (!requireCharacter()) return;
         document.getElementById('scene-title').value = '';
         document.getElementById('scene-desc').value = '';
+        document.getElementById('scene-covers').value = '';
+        document.getElementById('scene-covers-preview').innerHTML = '';
         let el = document.getElementById('modal-scene-create');
         el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10);
+    });
+    document.getElementById('scene-covers')?.addEventListener('change', function() {
+        let files = Array.from(this.files || []).slice(0, 5);
+        let preview = document.getElementById('scene-covers-preview');
+        if (!preview) return;
+        preview.innerHTML = '';
+        files.forEach(f => {
+            let r = new FileReader();
+            r.onload = e => {
+                let img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.cssText = 'width:60px;height:40px;object-fit:cover;border:1px solid var(--accent-dark);border-radius:3px;';
+                preview.appendChild(img);
+            };
+            r.readAsDataURL(f);
+        });
     });
     document.getElementById('submit-scene-btn')?.addEventListener('click', async () => {
         let t = document.getElementById('scene-title').value.trim(), d = document.getElementById('scene-desc').value.trim();
         if (!t) return notif('⛔ ВВЕДИ НАЗВАНИЕ');
-        let r = await createRpScene(t, d);
-        if (r.success) { closeModal('modal-scene-create'); loadRpScenes().then(renderRpScenes); }
+        let coverFiles = Array.from(document.getElementById('scene-covers')?.files || []);
+        let r = await createRpScene(t, d, coverFiles);
+        if (r.success) { playSound('send'); closeModal('modal-scene-create'); loadRpScenes().then(renderRpScenes); }
     });
 
     // Закрытие приложений
     document.querySelectorAll('.app-close[data-close]').forEach(btn => btn.addEventListener('click', function() { closeApp(this.dataset.close); }));
-    document.querySelectorAll('[data-close-modal]').forEach(btn => btn.addEventListener('click', function() { closeModal(this.dataset.closeModal); }));
 
-    // Делегирование кликов
+    // ДЕЛЕГИРОВАНИЕ
     document.addEventListener('click', e => {
         let reactBtn = e.target.closest('[data-reaction]');
-        if (reactBtn) { let t = reactBtn.dataset.reaction, id = reactBtn.dataset.msgid, em = reactBtn.dataset.emoji; if (t === 'chat') addReaction(id, em); else if (t === 'clan') addClanReaction(id, em); else if (t === 'dm') addDMReaction(id, em); return; }
+        if (reactBtn) {
+            let t = reactBtn.dataset.reaction, id = reactBtn.dataset.msgid, em = reactBtn.dataset.emoji;
+            if (t === 'chat') addReaction(id, em);
+            else if (t === 'clan') addClanReaction(id, em);
+            else if (t === 'dm') addDMReaction(id, em);
+            else if (t === 'admin') addAdminReaction(id, em);
+            else if (t === 'rp') addRpReaction(id, em);
+            else if (t === 'scene') addSceneReaction(id, em);
+            return;
+        }
         let pickerBtn = e.target.closest('[data-reaction-picker]');
         if (pickerBtn) {
             let t = pickerBtn.dataset.reactionPicker, id = pickerBtn.dataset.msgid;
             if (t === 'chat') showReactionPickerUniversal(id, pickerBtn, addReaction);
             else if (t === 'clan') showReactionPickerUniversal(id, pickerBtn, addClanReaction);
             else if (t === 'dm') showReactionPickerUniversal(id, pickerBtn, addDMReaction);
+            else if (t === 'admin') showReactionPickerUniversal(id, pickerBtn, addAdminReaction);
+            else if (t === 'rp') showReactionPickerUniversal(id, pickerBtn, addRpReaction);
+            else if (t === 'scene') showReactionPickerUniversal(id, pickerBtn, addSceneReaction);
             return;
         }
         let mb = e.target.closest('[data-menu-btn]');
@@ -1105,19 +1305,45 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rcb) { replyToClanMessage(rcb.dataset.replyClan, rcb.dataset.replyAuthor); return; }
         let rdb = e.target.closest('[data-reply-dm]');
         if (rdb) { let fn = window.replyToDMMessage; if (typeof fn === 'function') fn(rdb.dataset.replyDm, rdb.dataset.replyAuthor, rdb.dataset.replyText); return; }
+        let rrp = e.target.closest('[data-reply-rp]');
+        if (rrp) { replyToRpMessage(parseInt(rrp.dataset.replyRp), rrp.dataset.replyCharName, rrp.dataset.replyText); return; }
+        let rsc = e.target.closest('[data-reply-scene]');
+        if (rsc) { replyToSceneMessage(parseInt(rsc.dataset.replyScene), rsc.dataset.replyCharName, rsc.dataset.replyText); return; }
+        let rad = e.target.closest('[data-reply-admin]');
+        if (rad) {
+            let inp = document.getElementById('chat-input');
+            if (inp) { inp.value = '@' + rad.dataset.replyAuthor + ' '; inp.focus(); }
+            notif('↩ ОТВЕТ ДЛЯ ' + rad.dataset.replyAuthor);
+            return;
+        }
         let dmb = e.target.closest('[data-delete-dm-msg]');
         if (dmb) { supabase.from('dm_messages').delete().eq('id', parseInt(dmb.dataset.deleteDmMsg)).then(() => loadDMMessages()); return; }
-        let pinBtn = e.target.closest('[data-pin]');
-        if (pinBtn) { pinChatMessage(pinBtn.dataset.pin); return; }
+        let dcl = e.target.closest('[data-delete-clan-msg]');
+        if (dcl) { deleteClanMessage(dcl.dataset.deleteClanMsg); return; }
+        let dad = e.target.closest('[data-delete-admin-msg]');
+        if (dad) { deleteAdminMessage(dad.dataset.deleteAdminMsg); return; }
+        let drp = e.target.closest('[data-delete-rp-msg]');
+        if (drp) { deleteRpMessage(drp.dataset.deleteRpMsg); return; }
+        let dsc = e.target.closest('[data-delete-scene-msg]');
+        if (dsc) { deleteSceneMessage(dsc.dataset.deleteSceneMsg); return; }
+        let dl = e.target.closest('[data-delete-msg]');
+        if (dl) { let ct = dl.dataset.chatType; if (ct === 'clan') deleteClanMessage(dl.dataset.deleteMsg); else deleteMessage(dl.dataset.deleteMsg); return; }
+        let ecl = e.target.closest('[data-edit-clan-msg]');
+        if (ecl) { editClanMessage(ecl.dataset.editClanMsg); return; }
+        let erp = e.target.closest('[data-edit-rp-msg]');
+        if (erp) { editRpMessage(erp.dataset.editRpMsg); return; }
+        let ed = e.target.closest('[data-edit-msg]');
+        if (ed) { editMessage(ed.dataset.editMsg); return; }
+        let pcl = e.target.closest('[data-pin-clan]');
+        if (pcl) { pinClanMessage(pcl.dataset.pinClan); return; }
+        let pn = e.target.closest('[data-pin]');
+        if (pn) { pinChatMessage(pn.dataset.pin); return; }
         let muteBtn = e.target.closest('[data-mute]');
         if (muteBtn) { muteAgent(muteBtn.dataset.mute); return; }
         let banBtn = e.target.closest('[data-ban]');
         if (banBtn) { banAgent(banBtn.dataset.ban); return; }
-        let editBtn = e.target.closest('[data-edit-msg]');
-        if (editBtn) { editMessage(editBtn.dataset.editMsg); return; }
-        let delBtn = e.target.closest('[data-delete-msg]');
-        if (delBtn) { let ct = delBtn.dataset.chatType; if (ct === 'clan') deleteClanMessage(delBtn.dataset.deleteMsg); else deleteMessage(delBtn.dataset.deleteMsg); return; }
         if (!e.target.closest('#mention-suggestions') && !e.target.closest('.chat-input')) hideMentionSuggestions();
+        if (!e.target.closest('.chat-menu-wrap')) document.querySelectorAll('.chat-menu-dropdown.open').forEach(d => d.classList.remove('open'));
     });
 
     setInterval(() => { if (CA) { saveAgent(); updateTopbar(); } }, 60000);
@@ -1125,5 +1351,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateDiscountDisplay, 60000);
     setInterval(() => { if (CA && currentView === 'feed') renderRightPanel(); }, 60000);
 
-    console.log('✅ ТЕРМИНАЛ 2.4.1 ЗАГРУЖЕН');
+    console.log('✅ ТЕРМИНАЛ 2.5.0 ЗАГРУЖЕН');
 });

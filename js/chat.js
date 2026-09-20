@@ -109,6 +109,7 @@ export function renderChat(keepScroll = false) {
     c.innerHTML = msgs.map((m, i) => {
         let ri = m.role === 'admin' ? ' 👑' : m.role === 'moderator' ? ' 🛡' : '';
         let canMod = CA && (CA.role === 'admin' || CA.role === 'moderator');
+        let canDelete = canMod || m.author === CA?.name;
         let txt = (m.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
         txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid rgba(255,255,255,0.1);margin:5px 0;border-radius:12px;" onerror="this.style.display=\'none\'">');
         txt = txt.replace(/@all/g, '<span class="mention" style="color:#E91E63;font-weight:bold;">@all</span>');
@@ -128,14 +129,15 @@ export function renderChat(keepScroll = false) {
         });
         let menu = '';
         if (m.id) {
-            menu = '<span class="chat-menu-wrap"><button class="chat-menu-btn" data-menu-btn="' + m.id + '">⋯</button><div class="chat-menu-dropdown"><div class="chat-menu-item" data-reply="' + m.id + '" data-reply-author="' + m.author + '">↩ ОТВЕТИТЬ</div>';
+            menu = '<span class="chat-menu-wrap"><button class="chat-menu-btn" data-menu-btn="chat' + m.id + '">⋯</button><div class="chat-menu-dropdown">';
+            menu += '<div class="chat-menu-item" data-reply="' + m.id + '" data-reply-author="' + m.author + '">↩ ОТВЕТИТЬ</div>';
             if (canMod) {
                 menu += '<div class="chat-menu-item" data-pin="' + m.id + '">' + (m.pinned ? '📌 ОТКРЕПИТЬ' : '📌 ЗАКРЕПИТЬ') + '</div>';
                 if (m.author !== CA?.name) menu += '<div class="chat-menu-item" data-mute="' + m.author + '">🔇 МУТ</div>';
                 if (CA && CA.role === 'admin' && m.author !== CA.name) menu += '<div class="chat-menu-item" data-ban="' + m.author + '">🚫 БАН</div>';
             }
-            if (canMod || m.author === CA?.name) menu += '<div class="chat-menu-item" data-delete-msg="' + m.id + '">🗑 УДАЛИТЬ</div>';
-            if (m.author === CA?.name) menu += '<div class="chat-menu-item" data-edit-msg="' + m.id + '">✏️ РЕДАКТИРОВАТЬ</div>';
+            if (canDelete) menu += '<div class="chat-menu-item" data-delete-msg="' + m.id + '" data-chat-type="chat">🗑 УДАЛИТЬ</div>';
+            if (m.author === CA?.name) menu += '<div class="chat-menu-item" data-edit-msg="' + m.id + '" data-chat-type="chat">✏️ РЕДАКТИРОВАТЬ</div>';
             menu += '</div></span>';
         }
         let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : (m.avatar || '🕶️');
@@ -144,7 +146,7 @@ export function renderChat(keepScroll = false) {
             '<div class="chat-msg-right"><div class="chat-header-row">' +
             '<span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;">' + (m.author || '???') + ri + '</span>' + be +
             '<span class="chat-time">' + (m.time || '') + '</span>' + menu + '</div>' +
-            (m.pinned ? '<div class="chat-pin-info">📌 Закреплено' + (m.pinned_by ? ' агентом ' + m.pinned_by : '') + '</div>' : '') +
+            (m.pinned ? '<div class="chat-pin-info" style="color:var(--warning);font-size:0.75rem;">📌 Закреплено' + (m.pinned_by ? ' агентом ' + m.pinned_by : '') + '</div>' : '') +
             (m.reply_to ? '<div style="color:#880000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_author || '???') + ': ' + (m.reply_text || '...') + '</div>' : '') +
             '<div class="chat-text ' + fc + '">' + txt + '</div>' +
             '<div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="chat" data-msgid="' + m.id + '">+</span></div>' +
@@ -217,14 +219,11 @@ export function switchChatTab(tab) {
     document.querySelector('.chat-tab[data-tab="' + tab + '"]')?.classList.add('active');
     let cm = document.getElementById('chat-messages');
     let cir = document.getElementById('chat-input-row');
-    let ph = document.getElementById('chat-pinned-header');
     if (tab === 'general') {
         cm.style.display = 'block'; cir.style.display = 'flex'; currentClanId = null;
         renderChat();
-        if (ph) { let pinned = chatMessages.filter(m => m.pinned); ph.style.display = pinned.length > 0 ? 'block' : 'none'; }
     } else if (tab === 'clan') {
         cm.style.display = 'block'; cir.style.display = 'flex';
-        if (ph) ph.style.display = 'none';
         renderClanList();
     } else if (tab === 'admin') {
         if (CA.role !== 'admin' && CA.role !== 'moderator') { cm.style.display = 'none'; cir.style.display = 'none'; notif('⛔ ТОЛЬКО ДЛЯ АДМИНОВ'); return; }
@@ -251,8 +250,9 @@ export async function sendAdminMessage() {
     let inp = document.getElementById('chat-input');
     let msg = inp?.value?.trim();
     if (!msg || !CA || (CA.role !== 'admin' && CA.role !== 'moderator')) return;
-    let md = { author: CA.name, avatar_url: CA.avatar_url || '', text: msg, time: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow' }) };
+    let md = { author: CA.name, avatar_url: CA.avatar_url || '', text: msg, time: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow' }), reactions: {} };
     try { await supabase.from('admin_messages').insert(md); } catch (e) {}
+    playSound('send');
     inp.value = '';
 }
 
@@ -264,9 +264,45 @@ export function renderAdminChat() {
     c.innerHTML = msgs.map(m => {
         let txt = (m.text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
         let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : '🕶️';
-        return '<div class="chat-msg"><div class="chat-msg-left"><span class="chat-avatar-frame f-default"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right"><div class="chat-header-row"><span class="chat-author">' + m.author + '</span><span class="chat-time">' + m.time + '</span></div><div class="chat-text">' + txt + '</div></div></div>';
+        let react = m.reactions || {}, rh = '';
+        Object.keys(react).forEach(k => {
+            if (k.endsWith('_by')) return;
+            let ua = react[k + '_by'];
+            let us = Array.isArray(ua) ? ua.join(', ') : '';
+            let ia = Array.isArray(ua) && CA && ua.includes(CA.name);
+            rh += '<span class="chat-reaction ' + (ia ? 'active' : '') + '" data-reaction="admin" data-msgid="' + m.id + '" data-emoji="' + k + '">' + k + ' ' + react[k] + '<span class="chat-reaction-tooltip">' + (us || '...') + '</span></span>';
+        });
+        let menu = '';
+        if (m.id) {
+            menu = '<span class="chat-menu-wrap"><button class="chat-menu-btn" data-menu-btn="admin' + m.id + '">⋯</button><div class="chat-menu-dropdown">';
+            menu += '<div class="chat-menu-item" data-reply-admin="' + m.id + '" data-reply-author="' + m.author + '">↩ ОТВЕТИТЬ</div>';
+            if (m.author === CA?.name) menu += '<div class="chat-menu-item" data-delete-admin-msg="' + m.id + '">🗑 УДАЛИТЬ</div>';
+            menu += '</div></span>';
+        }
+        return '<div class="chat-msg"><div class="chat-msg-left"><span class="chat-avatar-frame f-default"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right"><div class="chat-header-row"><span class="chat-author">' + m.author + '</span><span class="chat-time">' + m.time + '</span>' + menu + '</div><div class="chat-text">' + txt + '</div><div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="admin" data-msgid="' + m.id + '">+</span></div></div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
+}
+
+export async function addAdminReaction(msgId, emoji) {
+    let msg = adminMessages.find(m => m.id == msgId);
+    if (!msg || !CA) return;
+    if (!msg.reactions) msg.reactions = {};
+    let key = emoji + '_by';
+    if (!msg.reactions[key]) msg.reactions[key] = [];
+    let ui = msg.reactions[key].indexOf(CA.name);
+    if (ui !== -1) { msg.reactions[key].splice(ui, 1); msg.reactions[emoji] = Math.max(0, (msg.reactions[emoji] || 1) - 1); }
+    else { msg.reactions[key].push(CA.name); msg.reactions[emoji] = (msg.reactions[emoji] || 0) + 1; }
+    await supabase.from('admin_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
+    renderAdminChat();
+}
+
+export async function deleteAdminMessage(msgId) {
+    if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) return;
+    await supabase.from('admin_messages').delete().eq('id', parseInt(msgId));
+    adminMessages = adminMessages.filter(m => String(m.id) !== String(msgId));
+    renderAdminChat();
+    notif('🗑 УДАЛЕНО');
 }
 
 // ==================== ЛС ====================
@@ -356,13 +392,21 @@ export function renderDMMessages() {
         let fc = m.author_font ? { 'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune', 'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western', 'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil', 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon', 'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic' }[m.author_font] || '' : '';
         let frc = m.author_frame ? (shopItems.frames.find(f => f.id === m.author_frame)?.cssClass || 'f-default') : 'f-default';
         let replyText = (m.text || '').substring(0, 50).replace(/'/g, "\\'");
+        let react = m.reactions || {}, rh = '';
+        Object.keys(react).forEach(k => {
+            if (k.endsWith('_by')) return;
+            let ua = react[k + '_by'];
+            let us = Array.isArray(ua) ? ua.join(', ') : '';
+            let ia = Array.isArray(ua) && CA && ua.includes(CA.name);
+            rh += '<span class="chat-reaction ' + (ia ? 'active' : '') + '" data-reaction="dm" data-msgid="' + m.id + '" data-emoji="' + k + '">' + k + ' ' + react[k] + '<span class="chat-reaction-tooltip">' + (us || '...') + '</span></span>';
+        });
         let menu = '<span class="chat-menu-wrap"><button class="chat-menu-btn" data-menu-btn="dm' + m.id + '">⋯</button><div class="chat-menu-dropdown"><div class="chat-menu-item" data-reply-dm="' + m.id + '" data-reply-author="' + m.from_agent + '" data-reply-text="' + replyText + '">↩ ОТВЕТИТЬ</div>' + (m.from_agent === CA?.name ? '<div class="chat-menu-item" data-delete-dm-msg="' + m.id + '">🗑 УДАЛИТЬ</div>' : '') + '</div></span>';
         let txt = (m.text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
         txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid rgba(255,255,255,0.1);margin:5px 0;border-radius:12px;" onerror="this.style.display=\'none\'">');
         txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
         let replyHtml = m.reply_to ? '<div style="color:#880000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_author || '???') + ': ' + (m.reply_text || '...') + '</div>' : '';
         let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : '🕶️';
-        return '<div class="chat-msg"><div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right">' + replyHtml + '<div class="chat-header-row"><span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.from_agent + '\')" style="cursor:pointer;">' + m.from_agent + '</span><span class="chat-time">' + m.time + '</span>' + menu + '</div><div class="chat-text ' + fc + '">' + txt + '</div></div></div>';
+        return '<div class="chat-msg"><div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right">' + replyHtml + '<div class="chat-header-row"><span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.from_agent + '\')" style="cursor:pointer;">' + m.from_agent + '</span><span class="chat-time">' + m.time + '</span>' + menu + '</div><div class="chat-text ' + fc + '">' + txt + '</div><div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="dm" data-msgid="' + m.id + '">+</span></div></div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
 }
@@ -442,7 +486,7 @@ export async function sendClanMessage() {
     let msg = inp?.value?.trim();
     if (!msg || !CA || !currentClanId) return;
     if (CA.muted) return notif('🔇 ВЫ ЗАМУЧЕНЫ');
-    let md = { clan_id: currentClanId, author: CA.name, avatar_url: CA.avatar_url || '', text: msg, time: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow' }), author_color: activeItems.color, author_frame: activeItems.frame, author_badge: activeItems.badge, author_font: activeItems.font };
+    let md = { clan_id: currentClanId, author: CA.name, avatar_url: CA.avatar_url || '', text: msg, time: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow' }), author_color: activeItems.color, author_frame: activeItems.frame, author_badge: activeItems.badge, author_font: activeItems.font, reactions: {} };
     if (replyTo) { md.reply_to = replyTo.msgId; md.reply_author = replyTo.author; md.reply_text = replyTo.text; }
     try { await supabase.from('clan_messages').insert(md); } catch (e) {}
     playSound('send');
@@ -457,7 +501,13 @@ export function renderClanMessages() {
     c.style.display = 'block';
     let msgs = clanChats[currentClanId] || [];
     if (msgs.length === 0) { c.innerHTML = '<div style="text-align:center;color:#880000;padding:20px;">НЕТ СООБЩЕНИЙ</div>'; return; }
+    let myClan = clans.find(cl => cl.id == currentClanId);
+    let isLeader = myClan && myClan.leader === CA?.name;
+    let isOfficer = myClan && myClan.members && myClan.members.find(m => m.name === CA?.name && m.role === 'officer');
     let canMod = CA && (CA.role === 'admin' || CA.role === 'moderator');
+    let canPin = isLeader || isOfficer || canMod;
+    let canDeleteOther = isLeader || canMod;
+
     c.innerHTML = msgs.map(m => {
         let cs = m.author_color ? getActiveColorClassForId(m.author_color) : '';
         let fc = m.author_font ? { 'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune', 'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western', 'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil', 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon', 'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic' }[m.author_font] || '' : '';
@@ -466,15 +516,27 @@ export function renderClanMessages() {
         txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid rgba(255,255,255,0.1);margin:5px 0;border-radius:12px;" onerror="this.style.display=\'none\'">');
         txt = txt.replace(/@all/g, '<span class="mention" style="color:#E91E63;font-weight:bold;">@all</span>');
         txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
+        let react = m.reactions || {}, rh = '';
+        Object.keys(react).forEach(k => {
+            if (k.endsWith('_by')) return;
+            let ua = react[k + '_by'];
+            let us = Array.isArray(ua) ? ua.join(', ') : '';
+            let ia = Array.isArray(ua) && CA && ua.includes(CA.name);
+            rh += '<span class="chat-reaction ' + (ia ? 'active' : '') + '" data-reaction="clan" data-msgid="' + m.id + '" data-emoji="' + k + '">' + k + ' ' + react[k] + '<span class="chat-reaction-tooltip">' + (us || '...') + '</span></span>';
+        });
+        let isOwn = m.author === CA?.name;
         let menu = '';
         if (m.id) {
-            menu = '<span class="chat-menu-wrap"><button class="chat-menu-btn" data-menu-btn="' + m.id + '">⋯</button><div class="chat-menu-dropdown"><div class="chat-menu-item" data-reply-clan="' + m.id + '" data-reply-author="' + m.author + '">↩ ОТВЕТИТЬ</div>';
-            if (canMod) { if (m.author !== CA?.name) menu += '<div class="chat-menu-item" data-mute="' + m.author + '">🔇 МУТ</div>'; if (CA && CA.role === 'admin' && m.author !== CA.name) menu += '<div class="chat-menu-item" data-ban="' + m.author + '">🚫 БАН</div>'; }
-            if (canMod || m.author === CA?.name) menu += '<div class="chat-menu-item" data-delete-msg="' + m.id + '" data-chat-type="clan">🗑 УДАЛИТЬ</div>';
+            menu = '<span class="chat-menu-wrap"><button class="chat-menu-btn" data-menu-btn="clan' + m.id + '">⋯</button><div class="chat-menu-dropdown">';
+            menu += '<div class="chat-menu-item" data-reply-clan="' + m.id + '" data-reply-author="' + m.author + '">↩ ОТВЕТИТЬ</div>';
+            if (canPin) menu += '<div class="chat-menu-item" data-pin-clan="' + m.id + '">' + (m.pinned ? '📌 ОТКРЕПИТЬ' : '📌 ЗАКРЕПИТЬ') + '</div>';
+            if (canDeleteOther && !isOwn) menu += '<div class="chat-menu-item" data-delete-clan-msg="' + m.id + '">🗑 УДАЛИТЬ</div>';
+            if (isOwn) menu += '<div class="chat-menu-item" data-edit-clan-msg="' + m.id + '">✏️ РЕДАКТИРОВАТЬ</div>';
+            if (isOwn) menu += '<div class="chat-menu-item" data-delete-clan-msg="' + m.id + '">🗑 УДАЛИТЬ</div>';
             menu += '</div></span>';
         }
         let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : '🕶️';
-        return '<div class="chat-msg" data-msg-id="' + m.id + '"><div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right"><div class="chat-header-row"><span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;">' + (m.author || '???') + '</span><span class="chat-time">' + (m.time || '') + '</span>' + menu + '</div><div class="chat-text ' + fc + '">' + txt + '</div></div></div>';
+        return '<div class="chat-msg' + (m.pinned ? ' pinned' : '') + '" data-msg-id="' + m.id + '"><div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right"><div class="chat-header-row"><span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;">' + (m.author || '???') + '</span><span class="chat-time">' + (m.time || '') + '</span>' + menu + '</div>' + (m.pinned ? '<div style="color:var(--warning);font-size:0.75rem;">📌 Закреплено</div>' : '') + '<div class="chat-text ' + fc + '">' + txt + '</div><div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="clan" data-msgid="' + m.id + '">+</span></div></div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
 }
@@ -484,6 +546,30 @@ export async function deleteClanMessage(msgId) {
     await supabase.from('clan_messages').delete().eq('id', parseInt(msgId));
     if (clanChats[currentClanId]) clanChats[currentClanId] = clanChats[currentClanId].filter(m => String(m.id) !== String(msgId));
     renderClanMessages(); notif('🗑 УДАЛЕНО');
+}
+
+export async function pinClanMessage(msgId) {
+    if (!currentClanId) return;
+    let msgs = clanChats[currentClanId] || [];
+    let msg = msgs.find(m => String(m.id) === String(msgId));
+    if (!msg) return;
+    let np = !msg.pinned;
+    await supabase.from('clan_messages').update({ pinned: np }).eq('id', parseInt(msgId));
+    clanChats[currentClanId] = msgs.map(m => String(m.id) === String(msgId) ? { ...m, pinned: np } : m);
+    renderClanMessages();
+    notif(np ? '📌 ЗАКРЕПЛЕНО' : '📌 ОТКРЕПЛЕНО');
+}
+
+export async function editClanMessage(msgId) {
+    let msgs = clanChats[currentClanId] || [];
+    let msg = msgs.find(m => String(m.id) === String(msgId));
+    if (!msg || msg.author !== CA?.name) return;
+    let inp = document.getElementById('chat-input');
+    inp.value = msg.text; inp.focus();
+    replyTo = null; cancelReply();
+    await supabase.from('clan_messages').delete().eq('id', parseInt(msgId));
+    clanChats[currentClanId] = clanChats[currentClanId].filter(m => String(m.id) !== String(msgId));
+    renderClanMessages();
 }
 
 export async function addClanReaction(msgId, emoji) {
