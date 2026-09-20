@@ -2,6 +2,8 @@
 // ТЕРМИНАЛ СИНДИКАТА v2.4.1 — MAIN
 // ============================================================
 
+console.log('[MAIN] Модуль начал загрузку');
+
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, login, register, saveAgent, loadAgent, getAgents, translit } from './auth.js';
 import { loadDiscount, loadInventory, saveInventory, renderShop, renderShopItems, renderShopCategories, renderInventory, previewItem, buyItem, applyItem, resetItem, getItemDiscount, getDiscountedPrice, formatPrice, updateDiscountDisplay, generateNewDiscount, getActiveColorClass, getActiveColorClassForId, getActiveFrameClass, getActiveBadgeEmoji, getActiveFontClass, getBoosterTimeLeft, shopItems } from './shop.js';
 import { loadChatMessages, sendMessage, renderChat, subscribeChat, switchChatTab, loadDMMessages, sendDM, renderDMList, renderDMMessages, subscribeDM, openDM, startDM, loadMoreChatMessages, addReaction, addDMReaction, deleteMessage, pinChatMessage, replyToMessage, cancelReply, loadMentionAgents, showMentionSuggestions, hideMentionSuggestions, updateBadgeIcons, showReactionPickerUniversal, loadAdminMessages, sendAdminMessage, renderAdminChat, subscribeAdminChat, openClanChat, sendClanMessage, renderClanMessages, deleteClanMessage, addClanReaction, replyToClanMessage, loadClanMessages, subscribeClanChat, editMessage, chatMessages, currentClanId, currentDM, dmMessagesAll, unreadMentions, clanChats, isClanChatActive } from './chat.js';
@@ -13,10 +15,12 @@ import { showAgentInfo, createPost, changeCover } from './agents.js';
 import { getAchievements, unlockAchievement, checkAchievements, renderAchievementsUI } from './achievements.js';
 import { muteAgent, banAgent, deleteAgent, changeAgentRole, renderAdminPanel, renderLogs } from './admin.js';
 import { changeName, changePassword, changeAvatar } from './settings.js';
-import { preloadSound, playSound, startBgMusic, stopBgMusic, toggleSound, toggleMusic, getSoundEnabled, getMusicEnabled, nextBgTrack } from './sounds.js';
-import { startLoading, recoverSystem } from './loader.js';
+import { playSound, startBgMusic, stopBgMusic, toggleSound, toggleMusic, getSoundEnabled, getMusicEnabled, nextBgTrack } from './sounds.js';
+import { recoverSystem } from './loader.js';
 import { notif, closeModal, uploadFileAndInsert, glowIcon, stopGlowIcon } from './utils.js';
 import { loadRpCharacters, createRpCharacter, updateRpCharacter, deleteRpCharacter, getRpCharacters, setCurrentRpChar, loadSavedRpChar, loadRpMessages, subscribeRpChat, sendRpMessage, switchRpRoom, loadRpScenes, createRpScene, renderRpScenes, rpCharacters, getCurrentRpChar, requireCharacter } from './rp.js';
+
+console.log('[MAIN] Импорты загружены');
 
 // ============================================================
 // СОСТОЯНИЕ
@@ -25,37 +29,7 @@ let currentFeedTab = 'all';
 let currentFeedFilter = 'fresh';
 let sidebarCollapsed = localStorage.getItem('syndicate_sidebar_collapsed') === 'true';
 let clockInterval = null;
-let currentView = 'feed'; // feed | profile | app
-
-// ============================================================
-// NOISE CANVAS (шум на фоне)
-// ============================================================
-function initNoise() {
-    let canvas = document.getElementById('noise-canvas');
-    if (!canvas) return;
-    let ctx = canvas.getContext('2d');
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-    function drawNoise() {
-        let w = canvas.width, h = canvas.height;
-        let imageData = ctx.createImageData(w, h);
-        let data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            let v = Math.random() * 255;
-            data[i] = v;
-            data[i + 1] = v;
-            data[i + 2] = v;
-            data[i + 3] = 255;
-        }
-        ctx.putImageData(imageData, 0, 0);
-        setTimeout(drawNoise, 100);
-    }
-    if (window.innerWidth > 768) drawNoise();
-}
+let currentView = 'feed';
 
 // ============================================================
 // ЧАСЫ
@@ -76,26 +50,24 @@ function startClock() {
 }
 
 // ============================================================
-// ЗАСТАВКА
+// ЗАСТАВКА (короткая — 2.5 сек)
 // ============================================================
 setTimeout(() => {
     const skull = document.getElementById('skull-ascii');
     if (skull) {
         skull.classList.add('eating');
         setTimeout(() => {
-            document.getElementById('start-screen').style.display = 'none';
-            if (window.innerWidth <= 768) {
-                document.getElementById('login-screen').style.display = 'flex';
-            } else {
-                startLoading();
-                setTimeout(() => {
-                    document.getElementById('loader-screen').style.display = 'none';
-                    document.getElementById('login-screen').style.display = 'flex';
-                }, 6000);
-            }
-        }, 1000);
+            let start = document.getElementById('start-screen');
+            if (start) start.style.display = 'none';
+            let login = document.getElementById('login-screen');
+            if (login) login.style.display = 'flex';
+            console.log('[MAIN] Логин-экран показан');
+        }, 700);
+    } else {
+        let login = document.getElementById('login-screen');
+        if (login) login.style.display = 'flex';
     }
-}, 5500);
+}, 2500);
 
 // ============================================================
 // SIDEBAR
@@ -162,11 +134,8 @@ function buildSidebar() {
     });
 
     nav.innerHTML = html;
-
-    // Профиль-блок
     updateSidebarProfile();
 
-    // Клики
     nav.querySelectorAll('[data-app]').forEach(el => {
         el.addEventListener('click', () => {
             let id = el.dataset.app;
@@ -176,7 +145,6 @@ function buildSidebar() {
         });
     });
 
-    // Свернуть
     applySidebarState();
 }
 
@@ -206,6 +174,7 @@ function applySidebarState() {
     let layout = document.getElementById('main-layout');
     let sidebar = document.getElementById('left-sidebar');
     let btn = document.getElementById('toggle-sidebar-btn');
+    if (!layout || !sidebar) return;
     if (sidebarCollapsed) {
         layout.classList.add('sidebar-collapsed');
         sidebar.classList.add('sidebar-collapsed');
@@ -258,7 +227,6 @@ function buildMobileNav() {
 // ПРАВЫЙ SIDEBAR
 // ============================================================
 async function renderRightPanel() {
-    // Онлайн
     let online = document.getElementById('online-list');
     if (online) {
         let agents = await getAgents();
@@ -282,7 +250,6 @@ async function renderRightPanel() {
         }
     }
 
-    // Топ отряды
     let topClans = document.getElementById('top-clans');
     if (topClans) {
         await loadClans();
@@ -290,7 +257,7 @@ async function renderRightPanel() {
         if (sorted.length === 0) {
             topClans.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ ОТРЯДОВ</div>';
         } else {
-            topClans.innerHTML = sorted.map((cl, i) => 
+            topClans.innerHTML = sorted.map((cl, i) =>
                 '<div class="top-clan-item">' +
                 '<span class="top-clan-rank">#' + (i + 1) + '</span>' +
                 '<span class="top-clan-name">' + cl.emoji + ' ' + cl.name + '</span>' +
@@ -299,14 +266,13 @@ async function renderRightPanel() {
         }
     }
 
-    // Объявления мини
     let announceMini = document.getElementById('announce-mini');
     if (announceMini) {
         let { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(4);
         if (!data || data.length === 0) {
             announceMini.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ ОБЪЯВЛЕНИЙ</div>';
         } else {
-            announceMini.innerHTML = data.map(a => 
+            announceMini.innerHTML = data.map(a =>
                 '<div class="announce-mini" data-announce-id="' + a.id + '">' +
                 '<div>' + (a.title || '').substring(0, 60) + '</div>' +
                 '<div class="announce-mini-time">' + timeAgo(a.created_at) + '</div></div>'
@@ -336,10 +302,7 @@ async function renderFeed() {
     let view = document.getElementById('center-view');
     if (!view || !CA) return;
 
-    // Профиль-блок сверху
     let profileBlock = renderFeedProfileBlock();
-
-    // Заголовок с вкладками
     let header = '<div class="feed-header">' +
         '<div class="feed-header-title">▸ ЛЕНТА</div>' +
         '<div class="feed-header-tabs">' +
@@ -354,15 +317,13 @@ async function renderFeed() {
         '<span class="feed-filter' + (currentFeedFilter === 'mine' ? ' active' : '') + '" data-feed-filter="mine">👤 МОИ</span>' +
         '</div></div>';
 
-    // Контент
     let feedItems = await loadFeedItems();
-    let feedHtml = '<div class="feed" id="feed">' + 
+    let feedHtml = '<div class="feed" id="feed">' +
         (feedItems.length === 0 ? '<div class="feed-empty">ПУСТО</div>' : feedItems.map(renderFeedCard).join('')) +
         '</div>';
 
     view.innerHTML = profileBlock + header + feedHtml;
 
-    // Обработчики
     setTimeout(() => {
         document.querySelectorAll('[data-feed-tab]').forEach(b => {
             b.addEventListener('click', () => {
@@ -385,7 +346,6 @@ async function renderFeed() {
         document.querySelectorAll('[data-open-post-author]').forEach(el => {
             el.addEventListener('click', () => showAgentInfo(el.dataset.openPostAuthor));
         });
-        // Профиль-блок
         document.getElementById('feed-profile-actions')?.addEventListener('click', (e) => {
             let t = e.target.closest('[data-action]');
             if (!t) return;
@@ -397,7 +357,6 @@ async function renderFeed() {
         });
     }, 10);
 
-    // Кнопка создания поста
     let fbtn = document.getElementById('floating-create-post');
     if (fbtn) {
         fbtn.style.display = 'block';
@@ -457,7 +416,6 @@ async function loadFeedItems() {
         }
     } catch (e) { console.error(e); }
 
-    // Сортировка
     if (currentFeedFilter === 'popular') {
         all.sort((a, b) => (b.likes || 0) - (a.likes || 0));
     } else {
@@ -548,9 +506,6 @@ function openFeed() {
     renderFeed();
 }
 
-// ============================================================
-// ПРОФИЛЬ (свой)
-// ============================================================
 function openOwnProfile() {
     if (!CA) return;
     showAgentInfo(CA.name);
@@ -576,7 +531,6 @@ function openApp(id) {
     el.style.display = 'flex';
     setTimeout(() => el.classList.add('show'), 10);
 
-    // Активный пункт sidebar
     document.querySelectorAll('.sidebar-item').forEach(x => x.classList.remove('active'));
     let navItem = document.querySelector('.sidebar-item[data-app="' + id + '"]');
     if (navItem) navItem.classList.add('active');
@@ -789,7 +743,6 @@ function updateTopbar() {
     let r = document.getElementById('topbar-rep');
     if (c) c.textContent = CA.crystals || 0;
     if (r) r.textContent = CA.rep || 0;
-    // Обновить также профиль-блок ленты, если он открыт
     let ps = document.querySelectorAll('.feed-profile-stat-value');
     if (ps.length >= 2) {
         ps[0].textContent = CA.crystals || 0;
@@ -874,6 +827,8 @@ window.showClanInfo = function(clanId) {
             });
         });
     }, 10);
+};
+
 window.showCreateAnnouncement = function() {
     document.getElementById('new-announce-title').value = '';
     document.getElementById('new-announce-text').value = '';
@@ -907,7 +862,6 @@ function toggleChatEmoji() {
     el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10);
 }
 
-// Ответ на ЛС
 window.replyToDMMessage = function(msgId, author, text) {
     let inp = document.getElementById('dm-input');
     if (inp) { inp.value = '@' + author + ' '; inp.focus(); }
@@ -929,56 +883,71 @@ function openDesktop() {
     renderRightPanel();
     checkCompletedWars();
     autoDistributeTreasury();
-    initNoise();
+    console.log('[MAIN] Рабочий стол открыт');
 }
 
 // ============================================================
 // DOM READY
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('[MAIN] DOMContentLoaded сработал');
 
     // Логин
     document.getElementById('login-btn')?.addEventListener('click', async () => {
-        let r = await login();
-        if (r && r.CA) {
-            document.getElementById('login-screen').style.display = 'none';
-            openDesktop();
-            startBgMusic();
-            subscribeChat(); subscribeDM(); subscribeAdminChat();
-            loadChatMessages(); loadDMMessages();
-            loadGuides(); loadMemes(); loadAnnouncements();
-            loadClans(); loadClanWars(); loadFriends();
-            loadMentionAgents(); checkAchievements();
-            if (CA.role === 'admin' || CA.role === 'moderator') {
-                let ab = document.getElementById('admin-tab-btn');
-                if (ab) ab.classList.remove('hidden');
+        console.log('[LOGIN] Кнопка нажата');
+        try {
+            let r = await login();
+            console.log('[LOGIN] Результат:', r);
+            if (r && r.CA) {
+                console.log('[LOGIN] Успех, открываю рабочий стол');
+                document.getElementById('login-screen').style.display = 'none';
+                openDesktop();
+                startBgMusic();
+                subscribeChat(); subscribeDM(); subscribeAdminChat();
+                loadChatMessages(); loadDMMessages();
+                loadGuides(); loadMemes(); loadAnnouncements();
+                loadClans(); loadClanWars(); loadFriends();
+                loadMentionAgents(); checkAchievements();
+                if (CA.role === 'admin' || CA.role === 'moderator') {
+                    let ab = document.getElementById('admin-tab-btn');
+                    if (ab) ab.classList.remove('hidden');
+                }
+                renderRightPanel();
+            } else {
+                console.log('[LOGIN] Провал:', r);
             }
-            renderRightPanel();
+        } catch (e) {
+            console.error('[LOGIN] Ошибка:', e);
+            notif('⛔ Ошибка: ' + e.message);
         }
     });
     document.getElementById('agent-pass')?.addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('login-btn').click(); });
 
     document.getElementById('register-link')?.addEventListener('click', async () => {
-        let r = await register();
-        if (r && r.CA) {
-            document.getElementById('login-screen').style.display = 'none';
-            openDesktop();
-            startBgMusic();
-            subscribeChat(); subscribeDM();
-            loadChatMessages(); loadDMMessages();
-            loadAnnouncements(); loadClans(); loadClanWars();
-            loadFriends(); loadMentionAgents(); checkAchievements();
-            renderRightPanel();
+        console.log('[REGISTER] Кнопка нажата');
+        try {
+            let r = await register();
+            console.log('[REGISTER] Результат:', r);
+            if (r && r.CA) {
+                document.getElementById('login-screen').style.display = 'none';
+                openDesktop();
+                startBgMusic();
+                subscribeChat(); subscribeDM();
+                loadChatMessages(); loadDMMessages();
+                loadAnnouncements(); loadClans(); loadClanWars();
+                loadFriends(); loadMentionAgents(); checkAchievements();
+                renderRightPanel();
+            }
+        } catch (e) {
+            console.error('[REGISTER] Ошибка:', e);
+            notif('⛔ Ошибка: ' + e.message);
         }
     });
 
     document.getElementById('error-btn')?.addEventListener('click', () => recoverSystem(() => { document.getElementById('login-screen').style.display = 'flex'; }));
 
-    // Свернуть sidebar
     document.getElementById('toggle-sidebar-btn')?.addEventListener('click', toggleSidebar);
     document.getElementById('topbar-logo')?.addEventListener('click', openFeed);
-
-    // Профиль-блок
     document.getElementById('sidebar-profile')?.addEventListener('click', openOwnProfile);
 
     // Настройки
@@ -1118,7 +1087,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Делегирование кликов
     document.addEventListener('click', e => {
-        // Реакции
         let reactBtn = e.target.closest('[data-reaction]');
         if (reactBtn) { let t = reactBtn.dataset.reaction, id = reactBtn.dataset.msgid, em = reactBtn.dataset.emoji; if (t === 'chat') addReaction(id, em); else if (t === 'clan') addClanReaction(id, em); else if (t === 'dm') addDMReaction(id, em); return; }
         let pickerBtn = e.target.closest('[data-reaction-picker]');
@@ -1152,11 +1120,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!e.target.closest('#mention-suggestions') && !e.target.closest('.chat-input')) hideMentionSuggestions();
     });
 
-    // Интервалы
     setInterval(() => { if (CA) { saveAgent(); updateTopbar(); } }, 60000);
     setInterval(() => { if (CA && document.visibilityState === 'visible') supabase.from('agents').update({ last_seen: new Date().toISOString() }).eq('name', CA.name); }, 30000);
     setInterval(updateDiscountDisplay, 60000);
     setInterval(() => { if (CA && currentView === 'feed') renderRightPanel(); }, 60000);
 
     console.log('✅ ТЕРМИНАЛ 2.4.1 ЗАГРУЖЕН');
-})}
+});
