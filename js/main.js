@@ -845,7 +845,7 @@ window.showCreateClan = function() {
             document.getElementById('clan-emoji').value = this.dataset.clanEmoji;
             document.querySelectorAll('#clan-emoji-grid [data-clan-emoji]').forEach(x => x.style.borderColor = 'transparent');
             this.style.borderColor = 'var(--accent)';
-        };
+        })
     }, 10);
     let el = document.getElementById('modal-create-clan');
     el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10);
