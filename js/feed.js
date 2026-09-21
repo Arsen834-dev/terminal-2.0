@@ -1,23 +1,17 @@
 // ============================================================
-// FEED / ЛЕНТА — репосты, комментарии, хэштеги
+// FEED / ЛЕНТА — репосты, комментарии, хэштеги, эффекты
 // ============================================================
 
 import { supabase, CA, getAgents, saveAgent } from './auth.js';
 import { notif } from './utils.js';
 import { playSound } from './sounds.js';
+import { shopItems, getActiveColorClassForId } from './shop.js';
 
 // ============================================================
 // ХЭШТЕГИ
 // ============================================================
-
-/**
- * Парсит хэштеги из текста.
- * Поддерживает: #tag, #тег, #tag_123, #тег-слово
- * Возвращает массив БЕЗ #, в нижнем регистре, без дублей.
- */
 export function parseHashtags(text) {
     if (!text) return [];
-    // \p{L} — любая буква (вкл. кириллицу), \p{N} — цифры, _ и -
     let regex = /(?:^|\s)#([\p{L}\p{N}_-]{1,32})/gu;
     let found = [];
     let m;
@@ -28,23 +22,14 @@ export function parseHashtags(text) {
     return found;
 }
 
-/**
- * Извлекает уникальные хэштеги из массива объектов (постов/мемов/объявлений).
- * Поле с текстом передаётся параметром.
- */
 export function extractHashtags(items, textField = 'text') {
     let all = new Set();
     (items || []).forEach(item => {
         let tags = item.hashtags;
-        if (Array.isArray(tags)) {
-            tags.forEach(t => all.add(String(t).toLowerCase()));
-        } else if (typeof tags === 'string' && tags) {
-            try {
-                let parsed = JSON.parse(tags);
-                if (Array.isArray(parsed)) parsed.forEach(t => all.add(String(t).toLowerCase()));
-            } catch (e) {}
+        if (Array.isArray(tags)) tags.forEach(t => all.add(String(t).toLowerCase()));
+        else if (typeof tags === 'string' && tags) {
+            try { let p = JSON.parse(tags); if (Array.isArray(p)) p.forEach(t => all.add(String(t).toLowerCase())); } catch (e) {}
         }
-        // На случай, если поле hashtags пустое, но в тексте есть теги
         if (!tags || (Array.isArray(tags) && tags.length === 0)) {
             parseHashtags(item[textField] || '').forEach(t => all.add(t));
         }
@@ -52,9 +37,6 @@ export function extractHashtags(items, textField = 'text') {
     return Array.from(all).sort();
 }
 
-/**
- * Фильтрует массив постов по хэштегу.
- */
 export function filterByHashtag(items, tag) {
     if (!tag) return items;
     let target = tag.toLowerCase();
@@ -65,18 +47,11 @@ export function filterByHashtag(items, tag) {
         else if (typeof tags === 'string' && tags) {
             try { let p = JSON.parse(tags); if (Array.isArray(p)) arr = p; } catch (e) {}
         }
-        if (arr.length > 0) {
-            return arr.map(t => String(t).toLowerCase()).includes(target);
-        }
-        // fallback — ищем в тексте
+        if (arr.length > 0) return arr.map(t => String(t).toLowerCase()).includes(target);
         return parseHashtags(item.text || '').includes(target);
     });
 }
 
-/**
- * Превращает #tag в тексте в кликабельные ссылки.
- * Возвращает готовый HTML (неэкранированный — экранирование до вызова).
- */
 export function linkifyHashtags(escapedText) {
     if (!escapedText) return '';
     return escapedText.replace(/(?:^|\s)#([\p{L}\p{N}_-]{1,32})/gu, (full, tag) => {
@@ -86,25 +61,47 @@ export function linkifyHashtags(escapedText) {
 }
 
 // ============================================================
-// РЕНДЕР КАРТОЧКИ ПОСТА (с репостом)
+// ЭФФЕКТЫ (из кэша agents)
 // ============================================================
+function getAgentEffects(name, agents) {
+    let a = agents[name] || {};
+    let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
+    let fontCls = '';
+    if (a.active_font) {
+        let map = {
+            'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
+            'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
+            'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
+            'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
+            'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
+        };
+        fontCls = map[a.active_font] || '';
+    }
+    let frameCls = 'f-default';
+    if (a.active_frame && shopItems.frames) {
+        let f = shopItems.frames.find(x => x.id === a.active_frame);
+        if (f) frameCls = f.cssClass || 'f-default';
+    }
+    let badgeHtml = '';
+    if (a.active_badge && a.active_badge !== 'b_none' && shopItems.badges) {
+        let b = shopItems.badges.find(x => x.id === a.active_badge);
+        if (b && b.image) badgeHtml = '<img src="' + b.image + '" style="width:16px;height:16px;vertical-align:middle;margin-left:4px;">';
+        else if (b && b.emoji) badgeHtml = '<span style="font-size:0.85rem;margin-left:4px;">' + b.emoji + '</span>';
+    }
+    return { colorCls, fontCls, frameCls, badgeHtml, avatar: a.avatar_url || '' };
+}
 
-/**
- * @param {Object} post      — запись из profile_posts
- * @param {Object} opts      — { originalPost, agents, compact }
- *   originalPost — объект оригинального поста (если это репост)
- *   agents       — кэш агентов для аватарок
- *   compact      — если true, не показываем кнопки действий (для вложенного оригинала)
- */
+// ============================================================
+// РЕНДЕР ПОСТА
+// ============================================================
 export function renderPostCard(post, opts = {}) {
     let agents = opts.agents || {};
     let originalPost = opts.originalPost;
     let compact = opts.compact || false;
 
-    let authorData = agents[post.author] || {};
-    let avatarHtml = (post.avatar_url || authorData.avatar_url)
-        ? '<img src="' + (post.avatar_url || authorData.avatar_url) + '">'
-        : '🕶️';
+    let fx = getAgentEffects(post.author, agents);
+    let avatarUrl = post.avatar_url || fx.avatar;
+    let avatarHtml = avatarUrl ? '<img src="' + avatarUrl + '">' : '🕶️';
 
     let liked = post.liked_by && CA && (Array.isArray(post.liked_by) ? post.liked_by : []).includes(CA.name);
     let imgHtml = post.image_url
@@ -115,12 +112,11 @@ export function renderPostCard(post, opts = {}) {
         ? linkifyHashtags(escapeHtml(post.text)).replace(/\n/g, '<br>')
         : '';
 
-    // ============ Если это репост ============
+    // ============ РЕПОСТ ============
     if (post.repost_of && originalPost) {
-        let origAuthor = agents[originalPost.author] || {};
-        let origAvatar = (originalPost.avatar_url || origAuthor.avatar_url)
-            ? '<img src="' + (originalPost.avatar_url || origAuthor.avatar_url) + '">'
-            : '🕶️';
+        let ofx = getAgentEffects(originalPost.author, agents);
+        let oAvatarUrl = originalPost.avatar_url || ofx.avatar;
+        let origAvatar = oAvatarUrl ? '<img src="' + oAvatarUrl + '">' : '🕶️';
         let origText = originalPost.text
             ? linkifyHashtags(escapeHtml(originalPost.text)).replace(/\n/g, '<br>')
             : '';
@@ -131,36 +127,38 @@ export function renderPostCard(post, opts = {}) {
         return '<div class="card repost-wrapper" data-post-id="' + post.id + '">' +
             '<div class="repost-header">' +
             '<span>🔁</span>' +
-            '<span class="repost-author" data-show-agent="' + escapeHtml(post.author) + '">' + escapeHtml(post.author) + '</span>' +
+            '<span class="repost-author ' + fx.colorCls + ' ' + fx.fontCls + '" data-show-agent="' + escapeHtml(post.author) + '">' + escapeHtml(post.author) + '</span>' +
+            fx.badgeHtml +
             '<span>репостнул от</span>' +
-            '<span class="repost-author" data-show-agent="' + escapeHtml(originalPost.author) + '">' + escapeHtml(originalPost.author) + '</span>' +
+            '<span class="repost-author ' + ofx.colorCls + ' ' + ofx.fontCls + '" data-show-agent="' + escapeHtml(originalPost.author) + '">' + escapeHtml(originalPost.author) + '</span>' +
+            ofx.badgeHtml +
             '<span style="margin-left:auto;">' + timeAgo(post.created_at) + '</span>' +
             '</div>' +
             '<div class="repost-original">' +
             '<div class="card-header" style="margin-bottom:6px;">' +
-            '<div class="card-avatar" data-show-agent="' + escapeHtml(originalPost.author) + '">' + origAvatar + '</div>' +
+            '<div class="card-avatar ' + ofx.frameCls + '" data-show-agent="' + escapeHtml(originalPost.author) + '">' + origAvatar + '</div>' +
             '<div class="card-author-block">' +
-            '<div class="card-author" data-open-post-author="' + escapeHtml(originalPost.author) + '">' + escapeHtml(originalPost.author) + '</div>' +
+            '<div class="card-author ' + ofx.colorCls + ' ' + ofx.fontCls + '" data-open-post-author="' + escapeHtml(originalPost.author) + '">' + escapeHtml(originalPost.author) + ofx.badgeHtml + '</div>' +
             '<div class="card-meta"><span class="card-time">' + timeAgo(originalPost.created_at) + '</span></div>' +
             '</div></div>' +
-            (origText ? '<div class="card-text">' + origText + '</div>' : '') +
+            (origText ? '<div class="card-text ' + ofx.fontCls + '">' + origText + '</div>' : '') +
             origImg +
             '</div>' +
-            (post.text ? '<div class="card-text" style="margin-top:8px;color:var(--text-3);font-style:italic;">' + textHtml + '</div>' : '') +
+            (post.text ? '<div class="card-text ' + fx.fontCls + '" style="margin-top:8px;color:var(--text-3);font-style:italic;">' + textHtml + '</div>' : '') +
             renderPostActions(post, compact) +
             renderCommentsSection(post) +
             '</div>';
     }
 
-    // ============ Обычный пост ============
+    // ============ ОБЫЧНЫЙ ПОСТ ============
     return '<div class="card" data-post-id="' + post.id + '">' +
         '<div class="card-header">' +
-        '<div class="card-avatar" data-show-agent="' + escapeHtml(post.author) + '">' + avatarHtml + '</div>' +
+        '<div class="card-avatar ' + fx.frameCls + '" data-show-agent="' + escapeHtml(post.author) + '">' + avatarHtml + '</div>' +
         '<div class="card-author-block">' +
-        '<div class="card-author" data-open-post-author="' + escapeHtml(post.author) + '">' + escapeHtml(post.author) + '</div>' +
+        '<div class="card-author ' + fx.colorCls + ' ' + fx.fontCls + '" data-open-post-author="' + escapeHtml(post.author) + '">' + escapeHtml(post.author) + fx.badgeHtml + '</div>' +
         '<div class="card-meta"><span class="card-time">' + timeAgo(post.created_at) + '</span></div>' +
         '</div></div>' +
-        (textHtml ? '<div class="card-text">' + textHtml + '</div>' : '') +
+        (textHtml ? '<div class="card-text ' + fx.fontCls + '">' + textHtml + '</div>' : '') +
         imgHtml +
         renderPostActions(post, compact) +
         renderCommentsSection(post) +
@@ -182,7 +180,7 @@ function renderPostActions(post, compact) {
 function renderCommentsSection(post) {
     return '<div class="comments-section" data-comments-for="' + post.id + '">' +
         '<div class="comments-list" data-comments-list="' + post.id + '">' +
-        '<div style="color:var(--text-3);font-size:0.8rem;padding:6px 0;">Загрузка...</div>' +
+        '<div style="color:var(--text-3);font-size:0.75rem;padding:6px 0;">Загрузка...</div>' +
         '</div>' +
         '<div class="comment-input-row">' +
         '<input type="text" class="comment-input" data-comment-input="' + post.id + '" placeholder="Комментарий..." maxlength="500">' +
@@ -191,23 +189,21 @@ function renderCommentsSection(post) {
 }
 
 // ============================================================
-// РЕНДЕР КОММЕНТАРИЕВ
+// КОММЕНТАРИИ (с эффектами)
 // ============================================================
-
 export function renderComment(comment, agents) {
-    let authorData = agents[comment.author] || {};
-    let avatarHtml = authorData.avatar_url
-        ? '<img src="' + authorData.avatar_url + '">'
-        : '🕶️';
+    let fx = getAgentEffects(comment.author, agents);
+    let avatarUrl = comment.avatar_url || fx.avatar;
+    let avatarHtml = avatarUrl ? '<img src="' + avatarUrl + '">' : '🕶️';
     let liked = comment.liked_by && CA && (Array.isArray(comment.liked_by) ? comment.liked_by : []).includes(CA.name);
     let text = linkifyHashtags(escapeHtml(comment.text || '')).replace(/\n/g, '<br>');
     let canDel = CA && (CA.role === 'admin' || CA.role === 'moderator' || comment.author === CA.name);
 
     return '<div class="comment-item" data-comment-id="' + comment.id + '">' +
-        '<div class="comment-avatar" data-show-agent="' + escapeHtml(comment.author) + '">' + avatarHtml + '</div>' +
+        '<div class="comment-avatar ' + fx.frameCls + '" data-show-agent="' + escapeHtml(comment.author) + '">' + avatarHtml + '</div>' +
         '<div class="comment-body">' +
-        '<div class="comment-author" data-show-agent="' + escapeHtml(comment.author) + '">' + escapeHtml(comment.author) + '</div>' +
-        '<div class="comment-text">' + text + '</div>' +
+        '<div class="comment-author ' + fx.colorCls + ' ' + fx.fontCls + '" data-show-agent="' + escapeHtml(comment.author) + '">' + escapeHtml(comment.author) + fx.badgeHtml + '</div>' +
+        '<div class="comment-text ' + fx.fontCls + '">' + text + '</div>' +
         '<div class="comment-meta">' +
         '<span data-comment-like="' + comment.id + '" style="' + (liked ? 'color:var(--accent);' : '') + '">❤ ' + (comment.likes || 0) + '</span>' +
         '<span>' + timeAgo(comment.created_at) + '</span>' +
@@ -221,10 +217,7 @@ export async function loadComments(postId) {
             .select('*').eq('post_id', postId)
             .order('created_at', { ascending: true }).limit(100);
         return data || [];
-    } catch (e) {
-        console.error('[FEED] loadComments error:', e);
-        return [];
-    }
+    } catch (e) { return []; }
 }
 
 export async function addComment(postId, text) {
@@ -239,19 +232,12 @@ export async function addComment(postId, text) {
             liked_by: []
         }).select().single();
         if (error) return { success: false, error: error.message };
-
-        // Обновляем счётчик
         await incrementCommentsCount(postId, 1);
-
-        // Награда автору коммента
         CA.crystals = (CA.crystals || 0) + 2;
         saveAgent();
-
         playSound('send');
         return { success: true, comment: data };
-    } catch (e) {
-        return { success: false, error: 'Ошибка' };
-    }
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export async function deleteComment(commentId) {
@@ -259,15 +245,11 @@ export async function deleteComment(commentId) {
     try {
         let { data: c } = await supabase.from('profile_comments').select('post_id, author').eq('id', commentId).maybeSingle();
         if (!c) return { success: false, error: 'Не найден' };
-        if (c.author !== CA.name && CA.role !== 'admin' && CA.role !== 'moderator') {
-            return { success: false, error: 'Нет прав' };
-        }
+        if (c.author !== CA.name && CA.role !== 'admin' && CA.role !== 'moderator') return { success: false, error: 'Нет прав' };
         await supabase.from('profile_comments').delete().eq('id', commentId);
         await incrementCommentsCount(c.post_id, -1);
         return { success: true, postId: c.post_id };
-    } catch (e) {
-        return { success: false, error: 'Ошибка' };
-    }
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export async function likeComment(commentId) {
@@ -281,9 +263,7 @@ export async function likeComment(commentId) {
         else { likedBy.splice(idx, 1); c.likes = Math.max(0, (c.likes || 0) - 1); }
         await supabase.from('profile_comments').update({ likes: c.likes, liked_by: likedBy }).eq('id', commentId);
         return { success: true, likes: c.likes, likedBy };
-    } catch (e) {
-        return { success: false };
-    }
+    } catch (e) { return { success: false }; }
 }
 
 async function incrementCommentsCount(postId, delta) {
@@ -299,7 +279,6 @@ async function incrementCommentsCount(postId, delta) {
 // ============================================================
 // РЕПОСТЫ
 // ============================================================
-
 export async function createRepost(originalPostId, commentText = '') {
     if (!CA) return { success: false, error: 'Не авторизован' };
     try {
@@ -307,7 +286,6 @@ export async function createRepost(originalPostId, commentText = '') {
         if (!orig) return { success: false, error: 'Пост не найден' };
         if (orig.author === CA.name) return { success: false, error: 'Нельзя репостить себя' };
 
-        // Проверяем, не репостил ли уже
         let { data: existing } = await supabase.from('profile_posts')
             .select('id').eq('author', CA.name).eq('repost_of', originalPostId).maybeSingle();
         if (existing) return { success: false, error: 'Уже репостнуто' };
@@ -324,16 +302,12 @@ export async function createRepost(originalPostId, commentText = '') {
         }).select().single();
         if (error) return { success: false, error: error.message };
 
-        // Увеличиваем счётчик
         await incrementRepostsCount(originalPostId, 1);
-
         CA.crystals = (CA.crystals || 0) + 3;
         saveAgent();
         playSound('send');
         return { success: true, post: data };
-    } catch (e) {
-        return { success: false, error: 'Ошибка' };
-    }
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 async function incrementRepostsCount(postId, delta) {
@@ -349,7 +323,6 @@ async function incrementRepostsCount(postId, delta) {
 // ============================================================
 // ЛАЙК ПОСТА (с анимацией)
 // ============================================================
-
 export async function likePost(postId, buttonEl) {
     if (!CA) return;
     try {
@@ -358,23 +331,12 @@ export async function likePost(postId, buttonEl) {
         let likedBy = Array.isArray(post.liked_by) ? post.liked_by : [];
         let idx = likedBy.indexOf(CA.name);
         let nowLiked;
-        if (idx === -1) {
-            likedBy.push(CA.name);
-            post.likes = (post.likes || 0) + 1;
-            nowLiked = true;
-        } else {
-            likedBy.splice(idx, 1);
-            post.likes = Math.max(0, (post.likes || 0) - 1);
-            nowLiked = false;
-        }
+        if (idx === -1) { likedBy.push(CA.name); post.likes = (post.likes || 0) + 1; nowLiked = true; }
+        else { likedBy.splice(idx, 1); post.likes = Math.max(0, (post.likes || 0) - 1); nowLiked = false; }
         await supabase.from('profile_posts').update({ likes: post.likes, liked_by: likedBy }).eq('id', postId);
-
-        // Анимация на кнопке
         if (buttonEl) {
             buttonEl.classList.add('pop');
-            if (nowLiked) buttonEl.classList.add('liked');
-            else buttonEl.classList.remove('liked');
-            let countText = buttonEl.textContent.replace(/[^\d]/g, '') || '0';
+            if (nowLiked) buttonEl.classList.add('liked'); else buttonEl.classList.remove('liked');
             buttonEl.textContent = '❤ ' + post.likes;
             setTimeout(() => buttonEl.classList.remove('pop'), 450);
         }
@@ -385,7 +347,6 @@ export async function likePost(postId, buttonEl) {
 // ============================================================
 // УТИЛИТЫ
 // ============================================================
-
 function escapeHtml(s) {
     return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -403,57 +364,30 @@ function timeAgo(d) {
 // ============================================================
 // ДЕЛЕГИРОВАННЫЕ ОБРАБОТЧИКИ
 // ============================================================
-
-/**
- * Навешивает делегированные обработчики на контейнер ленты.
- * Вызывается один раз после рендера.
- */
 export function attachFeedHandlers(container, callbacks = {}) {
     if (!container || container.dataset.feedAttached === '1') return;
     container.dataset.feedAttached = '1';
 
     container.addEventListener('click', async (e) => {
-        // Клик по хэштегу
         let ht = e.target.closest('[data-hashtag]');
-        if (ht) {
-            e.stopPropagation();
-            if (callbacks.onHashtag) callbacks.onHashtag(ht.dataset.hashtag);
-            return;
-        }
+        if (ht) { e.stopPropagation(); if (callbacks.onHashtag) callbacks.onHashtag(ht.dataset.hashtag); return; }
 
-        // Показать профиль
         let sa = e.target.closest('[data-show-agent]');
-        if (sa) {
-            e.stopPropagation();
-            if (typeof window.showAgentInfo === 'function') window.showAgentInfo(sa.dataset.showAgent);
-            return;
-        }
+        if (sa) { e.stopPropagation(); if (typeof window.showAgentInfo === 'function') window.showAgentInfo(sa.dataset.showAgent); return; }
 
-        // Лайк поста
         let like = e.target.closest('[data-like-post]');
-        if (like) {
-            e.stopPropagation();
-            let r = await likePost(parseInt(like.dataset.likePost), like);
-            if (r) playSound('click');
-            return;
-        }
+        if (like) { e.stopPropagation(); let r = await likePost(parseInt(like.dataset.likePost), like); if (r) playSound('click'); return; }
 
-        // Репост
         let rp = e.target.closest('[data-repost-btn]');
         if (rp) {
             e.stopPropagation();
             let pid = parseInt(rp.dataset.repostBtn);
             let r = await createRepost(pid, '');
-            if (r.success) {
-                notif('🔁 Репостнут');
-                if (callbacks.onReposted) callbacks.onReposted();
-            } else {
-                notif('⛔ ' + r.error);
-            }
+            if (r.success) { notif('🔁 Репостнут'); if (callbacks.onReposted) callbacks.onReposted(); }
+            else notif('⛔ ' + r.error);
             return;
         }
 
-        // Комментарии: раскрыть/свернуть
         let ct = e.target.closest('[data-comments-toggle]');
         if (ct) {
             e.stopPropagation();
@@ -468,14 +402,13 @@ export function attachFeedHandlers(container, callbacks = {}) {
                 let list = section.querySelector('[data-comments-list="' + pid + '"]');
                 if (list) {
                     list.innerHTML = comments.length === 0
-                        ? '<div style="color:var(--text-3);font-size:0.8rem;padding:6px 0;">Комментариев нет</div>'
+                        ? '<div style="color:var(--text-3);font-size:0.75rem;padding:6px 0;">Комментариев нет</div>'
                         : comments.map(c => renderComment(c, agents)).join('');
                 }
             }
             return;
         }
 
-        // Отправить комментарий
         let cs = e.target.closest('[data-comment-send]');
         if (cs) {
             e.stopPropagation();
@@ -488,26 +421,18 @@ export function attachFeedHandlers(container, callbacks = {}) {
                 let agents = await getAgents();
                 let list = container.querySelector('[data-comments-list="' + pid + '"]');
                 if (list) {
-                    // Добавляем в конец
-                    if (list.querySelector('.comment-item')) {
-                        list.insertAdjacentHTML('beforeend', renderComment(r.comment, agents));
-                    } else {
-                        list.innerHTML = renderComment(r.comment, agents);
-                    }
+                    if (list.querySelector('.comment-item')) list.insertAdjacentHTML('beforeend', renderComment(r.comment, agents));
+                    else list.innerHTML = renderComment(r.comment, agents);
                 }
-                // Обновляем счётчик на кнопке
                 let btn = container.querySelector('[data-comments-toggle="' + pid + '"]');
                 if (btn) {
                     let n = (parseInt(btn.textContent.replace(/[^\d]/g, '')) || 0) + 1;
                     btn.textContent = '💬 ' + n;
                 }
-            } else {
-                notif('⛔ ' + r.error);
-            }
+            } else notif('⛔ ' + r.error);
             return;
         }
 
-        // Лайк комментария
         let cl = e.target.closest('[data-comment-like]');
         if (cl) {
             e.stopPropagation();
@@ -519,7 +444,6 @@ export function attachFeedHandlers(container, callbacks = {}) {
             return;
         }
 
-        // Удалить комментарий
         let cd = e.target.closest('[data-comment-del]');
         if (cd) {
             e.stopPropagation();
@@ -528,14 +452,11 @@ export function attachFeedHandlers(container, callbacks = {}) {
                 let item = cd.closest('.comment-item');
                 if (item) item.remove();
                 notif('🗑 Удалено');
-            } else {
-                notif('⛔ ' + r.error);
-            }
+            } else notif('⛔ ' + r.error);
             return;
         }
     });
 
-    // Enter в поле комментария
     container.addEventListener('keydown', async (e) => {
         if (e.key !== 'Enter' || e.shiftKey) return;
         let inp = e.target.closest('[data-comment-input]');
@@ -547,19 +468,13 @@ export function attachFeedHandlers(container, callbacks = {}) {
     });
 }
 
-/**
- * Готовит данные для рендера: подтягивает оригиналы репостов.
- * @param {Array} posts — массив постов
- * @returns {Object} { originals: Map, agents: Object }
- */
 export async function prepareFeedData(posts) {
     let agents = await getAgents();
     let originals = new Map();
     let repostIds = posts.filter(p => p.repost_of).map(p => p.repost_of);
     if (repostIds.length > 0) {
         try {
-            let { data } = await supabase.from('profile_posts')
-                .select('*').in('id', repostIds);
+            let { data } = await supabase.from('profile_posts').select('*').in('id', repostIds);
             (data || []).forEach(p => originals.set(p.id, p));
         } catch (e) {}
     }

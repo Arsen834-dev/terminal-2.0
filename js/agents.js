@@ -1,6 +1,6 @@
 // ============================================================
 // AGENTS / ПРОФИЛИ АГЕНТОВ
-// v2.5.0: матричный фон, репосты, комментарии
+// v2.5.1: скролл, пагинация, эффекты, без матрицы
 // ============================================================
 
 import { supabase, CA, loadAgent, getAgents, saveAgent } from './auth.js';
@@ -9,8 +9,15 @@ import { getFriends, sendFriendRequest, removeFriend, blockAgent } from './frien
 import { getAchievements } from './achievements.js';
 import { clans } from './clans.js';
 import { notif, closeModal, timeAgo } from './utils.js';
-// NEW: лента — рендер постов/комментариев
 import { renderPostCard as renderPostCardFeed, attachFeedHandlers } from './feed.js';
+
+// Кэш загруженных постов стены в текущей сессии модалки
+let wallPosts = [];
+let wallPage = 0;
+let wallTotal = 0;
+let wallAgentName = null;
+let wallLoaded = false;
+const WALL_PAGE_SIZE = 10;
 
 // ============================================================
 // ПОКАЗ ПРОФИЛЯ
@@ -24,15 +31,14 @@ export async function showAgentInfo(name) {
         const agent = await loadAgent(name);
         if (!agent) { notif('⛔ Агент не найден'); return; }
 
-        // ============ Данные агента ============
-        let posts = [];
-        try {
-            let { data } = await supabase.from('profile_posts')
-                .select('*').eq('author', name)
-                .order('created_at', { ascending: false }).limit(20);
-            if (data) posts = data;
-        } catch (e) {}
+        // Сброс стены
+        wallPosts = [];
+        wallPage = 0;
+        wallTotal = 0;
+        wallAgentName = name;
+        wallLoaded = false;
 
+        // ============ Подписки ============
         let subscribersCount = 0, followingCount = 0, iAmSubscribed = false;
         try {
             let { data: subs } = await supabase.from('subscriptions').select('*').eq('target', name);
@@ -42,7 +48,7 @@ export async function showAgentInfo(name) {
             if (CA && subs) iAmSubscribed = subs.some(s => s.subscriber === CA.name);
         } catch (e) {}
 
-        // ============ Аватар / обложка / бейджи ============
+        // ============ Аватар / обложка ============
         let coverUrl = agent.cover_url || '';
         let avatarHtml = agent.avatar_url
             ? '<img src="' + agent.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">'
@@ -50,10 +56,27 @@ export async function showAgentInfo(name) {
 
         let colorClass = agent.active_color ? getActiveColorClassForId(agent.active_color) : '';
 
+        // Эффекты (рамка/шрифт/бейдж)
+        let frameCls = 'f-default';
+        if (agent.active_frame && shopItems.frames) {
+            let f = shopItems.frames.find(x => x.id === agent.active_frame);
+            if (f) frameCls = f.cssClass || 'f-default';
+        }
+        let fontCls = '';
+        if (agent.active_font) {
+            let map = {
+                'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
+                'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
+                'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
+                'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
+                'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
+            };
+            fontCls = map[agent.active_font] || '';
+        }
         let badgeHtml = '';
         if (agent.active_badge && agent.active_badge !== 'b_none') {
             let b = shopItems.badges.find(x => x.id === agent.active_badge);
-            if (b && b.image) badgeHtml = '<img src="' + b.image + '" style="width:24px;height:24px;">';
+            if (b && b.image) badgeHtml = '<img src="' + b.image + '" style="width:24px;height:24px;vertical-align:middle;">';
             else if (b && b.emoji) badgeHtml = '<span style="font-size:1.2rem;">' + b.emoji + '</span>';
         }
 
@@ -72,36 +95,36 @@ export async function showAgentInfo(name) {
         let isMe = agent.name === CA?.name;
         let html = '';
 
-        // ============ Обложка с матричным фоном ============
-        html += '<div style="position:relative;height:160px;background:' + (coverUrl ? 'url(' + coverUrl + ') center/cover' : 'linear-gradient(135deg,#1a0000,var(--accent-dark),#1a0000)') + ';">';
-        // NEW: матричный оверлей
-        html += '<div class="matrix-bg" style="position:absolute;inset:0;pointer-events:none;"></div>';
-        if (isMe) html += '<button class="btn btn-secondary" style="position:absolute;top:12px;right:12px;font-size:0.8rem;padding:6px 12px;z-index:3;" onclick="window.changeCover()">📷 Обложка</button>';
+        // ============ Обложка ============
+        html += '<div style="position:relative;height:160px;background:' + (coverUrl ? 'url(' + coverUrl + ') center/cover' : 'linear-gradient(135deg,#1a0000,var(--accent-dark),#1a0000)') + ';flex-shrink:0;">';
+        if (isMe) html += '<button class="btn btn-secondary" style="position:absolute;top:12px;right:12px;font-size:0.75rem;padding:6px 12px;z-index:3;" onclick="window.changeCover()">📷 Обложка</button>';
         html += '</div>';
 
         // ============ Аватар ============
         html += '<div style="padding:0 20px;">';
-        html += '<div style="width:100px;height:100px;margin-top:-50px;border-radius:12px;background:var(--bg-3);border:3px solid var(--bg-2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:2.5rem;position:relative;z-index:2;">' + avatarHtml + '</div>';
+        html += '<div class="card-avatar ' + frameCls + '" style="width:100px;height:100px;margin-top:-50px;border-radius:12px;background:var(--bg-3);border:3px solid var(--bg-2);overflow:visible;display:flex;align-items:center;justify-content:center;font-size:2.5rem;position:relative;z-index:2;">';
+        html += '<div style="width:100%;height:100%;overflow:hidden;border-radius:9px;display:flex;align-items:center;justify-content:center;">' + avatarHtml + '</div>';
+        html += '</div>';
         html += '</div>';
 
         // ============ Имя / роль / клан ============
         html += '<div style="padding:16px 20px;">';
         html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-        html += '<span class="' + colorClass + '" style="font-size:1.4rem;font-weight:700;">' + agent.name + '</span>';
+        html += '<span class="' + colorClass + ' ' + fontCls + '" style="font-size:1.4rem;font-weight:700;">' + agent.name + '</span>';
         html += badgeHtml;
         html += '</div>';
-        html += '<div style="color:var(--text-3);font-size:0.9rem;margin-top:4px;">' + roleText + ' · ' + statusHtml + '</div>';
-        if (agent.status_text) html += '<div style="color:var(--text-2);font-size:0.85rem;margin-top:6px;font-style:italic;">«' + agent.status_text + '»</div>';
-        if (agent.bio) html += '<div style="color:var(--text-2);font-size:0.85rem;margin-top:6px;">' + agent.bio + '</div>';
-        html += '<div style="color:var(--text-3);font-size:0.85rem;margin-top:6px;">⚔️ Отряд: ' + clanName + '</div>';
+        html += '<div style="color:var(--text-3);font-size:0.85rem;margin-top:4px;">' + roleText + ' · ' + statusHtml + '</div>';
+        if (agent.status_text) html += '<div style="color:var(--text-2);font-size:0.8rem;margin-top:6px;font-style:italic;">«' + agent.status_text + '»</div>';
+        if (agent.bio) html += '<div style="color:var(--text-2);font-size:0.8rem;margin-top:6px;">' + agent.bio + '</div>';
+        html += '<div style="color:var(--text-3);font-size:0.8rem;margin-top:6px;">⚔️ Отряд: ' + clanName + '</div>';
         html += '</div>';
 
         // ============ Статистика ============
         html += '<div style="display:flex;gap:24px;padding:12px 20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap;">';
-        html += '<div><div style="font-weight:700;color:var(--text);">' + subscribersCount + '</div><div style="color:var(--text-3);font-size:0.75rem;">подписчики</div></div>';
-        html += '<div><div style="font-weight:700;color:var(--text);">' + followingCount + '</div><div style="color:var(--text-3);font-size:0.75rem;">подписки</div></div>';
-        html += '<div><div style="font-weight:700;color:var(--accent);">' + (agent.crystals || 0) + '</div><div style="color:var(--text-3);font-size:0.75rem;">ТК</div></div>';
-        html += '<div><div style="font-weight:700;color:var(--text);">' + (agent.rep || 0) + '</div><div style="color:var(--text-3);font-size:0.75rem;">репа</div></div>';
+        html += '<div><div style="font-weight:700;color:var(--text);">' + subscribersCount + '</div><div style="color:var(--text-3);font-size:0.7rem;">подписчики</div></div>';
+        html += '<div><div style="font-weight:700;color:var(--text);">' + followingCount + '</div><div style="color:var(--text-3);font-size:0.7rem;">подписки</div></div>';
+        html += '<div><div style="font-weight:700;color:var(--accent);">' + (agent.crystals || 0) + '</div><div style="color:var(--text-3);font-size:0.7rem;">ТК</div></div>';
+        html += '<div><div style="font-weight:700;color:var(--text);">' + (agent.rep || 0) + '</div><div style="color:var(--text-3);font-size:0.7rem;">репа</div></div>';
         html += '</div>';
 
         // ============ Кнопки ============
@@ -123,30 +146,13 @@ export async function showAgentInfo(name) {
         html += '<div style="padding:0 20px 20px;">';
         html += '<div style="font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">';
         html += '<span>📝 Стена</span>';
-        html += '<span style="color:var(--text-3);font-size:0.8rem;">' + posts.length + ' записей</span>';
+        html += '<span id="wall-count-label" style="color:var(--text-3);font-size:0.75rem;">... записей</span>';
         html += '</div>';
         html += '<div id="profile-wall">';
-        if (!posts || posts.length === 0) {
-            html += '<div class="empty-state">Постов пока нет</div>';
-        } else {
-            // Рендерим через feed.js
-            let agentsCache = await getAgents();
-            let originals = new Map();
-            let repostIds = posts.filter(p => p.repost_of).map(p => p.repost_of);
-            if (repostIds.length > 0) {
-                try {
-                    let { data } = await supabase.from('profile_posts').select('*').in('id', repostIds);
-                    (data || []).forEach(p => originals.set(p.id, p));
-                } catch (e) {}
-            }
-            posts.forEach(p => {
-                html += renderPostCardFeed(p, {
-                    agents: agentsCache,
-                    originalPost: originals.get(p.repost_of) || null
-                });
-            });
-        }
-        html += '</div></div>';
+        html += '<div style="color:var(--text-3);font-size:0.75rem;padding:10px 0;">Загрузка...</div>';
+        html += '</div>';
+        html += '<div id="profile-wall-more" style="margin-top:12px;text-align:center;"></div>';
+        html += '</div>';
 
         // ============ Кнопка закрытия ============
         html += '<div style="padding:0 20px 20px;"><button class="btn secondary full" data-close-modal="modal-agent-profile">Закрыть</button></div>';
@@ -159,22 +165,27 @@ export async function showAgentInfo(name) {
         }
         content.innerHTML = html;
 
+        // Модалка — фиксированная высота, скролл внутри #profile-content
         let modalBox = modal.querySelector('.modal-box');
         if (modalBox) {
             modalBox.style.padding = '0';
             modalBox.style.overflow = 'hidden';
             modalBox.style.maxWidth = '600px';
+            modalBox.style.maxHeight = '85vh';
+            modalBox.style.display = 'flex';
+            modalBox.style.flexDirection = 'column';
         }
+        content.style.overflowY = 'auto';
+        content.style.flex = '1';
+        content.style.minHeight = '0';
 
         // ============ Обработчики ============
         setTimeout(() => {
-            // Личка
             document.getElementById('profile-dm-btn')?.addEventListener('click', function() {
                 closeModal('modal-agent-profile');
                 if (typeof window.startDM === 'function') window.startDM(agent.name);
             });
 
-            // Подписка
             document.getElementById('profile-sub-btn')?.addEventListener('click', async function() {
                 if (iAmSubscribed) {
                     await supabase.from('subscriptions').delete().eq('subscriber', CA.name).eq('target', name);
@@ -187,7 +198,6 @@ export async function showAgentInfo(name) {
                 setTimeout(() => showAgentInfo(name), 300);
             });
 
-            // Друзья
             document.getElementById('profile-add-friend-btn')?.addEventListener('click', async function() {
                 let friendsList = getFriends();
                 let isFriend = friendsList.some(f =>
@@ -210,49 +220,49 @@ export async function showAgentInfo(name) {
                 setTimeout(() => showAgentInfo(name), 300);
             });
 
-            // Блокировка
             document.getElementById('profile-block-btn')?.addEventListener('click', async function() {
                 await blockAgent(agent.name);
                 notif('🚫 Заблокирован');
                 closeModal('modal-agent-profile');
             });
 
-            // Создать пост (свой профиль)
             document.getElementById('profile-create-post-btn')?.addEventListener('click', function() {
                 closeModal('modal-agent-profile');
                 if (typeof window.showCreatePost === 'function') window.showCreatePost();
             });
 
-            // ============ Стена: делегированные обработчики ============
+            // Загружаем первую страницу стены
+            loadWallPage(0);
+
+            // Делегированные обработчики стены
             let wall = document.getElementById('profile-wall');
             if (wall) {
                 attachFeedHandlers(wall, {
                     onHashtag: (tag) => {
                         closeModal('modal-agent-profile');
-                        // Прокидываем хэштег в ленту
-                        if (typeof window.openApp === 'function') window.openApp('feed');
-                        // main.js ловит через window.__pendingHashtag
                         window.__pendingHashtag = tag;
+                        if (typeof window.openApp === 'function') window.openApp('feed');
+                        // main.js подхватит через renderFeed()
                         setTimeout(() => {
                             let inp = document.getElementById('feed-search-input');
-                            if (inp) {
-                                inp.value = '#' + tag;
-                                inp.dispatchEvent(new Event('input', { bubbles: true }));
-                            }
-                        }, 200);
+                            if (inp) { inp.value = '#' + tag; inp.dispatchEvent(new Event('input', { bubbles: true })); }
+                        }, 250);
                     },
                     onReposted: () => {
                         notif('🔁 Репостнут');
+                        // Перезагружаем стену
+                        wallPosts = []; wallPage = 0; wallLoaded = false;
+                        document.getElementById('profile-wall').innerHTML = '';
+                        loadWallPage(0);
                     }
                 });
             }
         }, 50);
 
-        // ============ Показ модалки ============
         modal.style.display = 'flex';
         setTimeout(() => modal.classList.add('show'), 10);
 
-        // ============ Звук профиля ============
+        // Звук профиля
         if (agent.active_sound && agent.active_sound !== 'snd_default' && agent.active_sound !== 'snd_custom') {
             try {
                 let audio = new Audio(agent.active_sound);
@@ -268,12 +278,91 @@ export async function showAgentInfo(name) {
 }
 
 // ============================================================
+// ПАГИНАЦИЯ СТЕНЫ
+// ============================================================
+async function loadWallPage(page) {
+    if (!wallAgentName) return;
+    let wall = document.getElementById('profile-wall');
+    let moreWrap = document.getElementById('profile-wall-more');
+    let countLabel = document.getElementById('wall-count-label');
+    if (!wall) return;
+
+    // Общее количество
+    if (wallTotal === 0) {
+        try {
+            let { count } = await supabase.from('profile_posts')
+                .select('*', { count: 'exact', head: true })
+                .eq('author', wallAgentName);
+            wallTotal = count || 0;
+            if (countLabel) countLabel.textContent = wallTotal + ' записей';
+        } catch (e) {}
+    }
+
+    // Загрузка страницы
+    let from = page * WALL_PAGE_SIZE;
+    let to = from + WALL_PAGE_SIZE - 1;
+    let { data: posts } = await supabase.from('profile_posts')
+        .select('*').eq('author', wallAgentName)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+    if (!posts || posts.length === 0) {
+        if (page === 0) {
+            wall.innerHTML = '<div class="empty-state">Постов пока нет</div>';
+        }
+        if (moreWrap) moreWrap.innerHTML = '';
+        return;
+    }
+
+    // Подтягиваем оригиналы репостов
+    let agentsCache = await getAgents();
+    let originals = new Map();
+    let repostIds = posts.filter(p => p.repost_of).map(p => p.repost_of);
+    if (repostIds.length > 0) {
+        try {
+            let { data } = await supabase.from('profile_posts').select('*').in('id', repostIds);
+            (data || []).forEach(p => originals.set(p.id, p));
+        } catch (e) {}
+    }
+
+    // Убираем «Загрузка...» на первой странице
+    if (page === 0) wall.innerHTML = '';
+
+    // Добавляем посты
+    posts.forEach(p => {
+        wall.insertAdjacentHTML('beforeend', renderPostCardFeed(p, {
+            agents: agentsCache,
+            originalPost: originals.get(p.repost_of) || null
+        }));
+        wallPosts.push(p);
+    });
+
+    wallLoaded = true;
+    wallPage = page;
+
+    // Кнопка «Загрузить ещё»
+    let loadedCount = (page + 1) * WALL_PAGE_SIZE;
+    if (moreWrap) {
+        if (loadedCount < wallTotal) {
+            moreWrap.innerHTML = '<button class="btn secondary" id="wall-load-more-btn">▼ ЗАГРУЗИТЬ ЕЩЁ (' + (wallTotal - loadedCount) + ')</button>';
+            document.getElementById('wall-load-more-btn')?.addEventListener('click', () => {
+                moreWrap.innerHTML = '<span style="color:var(--text-3);font-size:0.75rem;">Загрузка...</span>';
+                loadWallPage(page + 1);
+            });
+        } else {
+            moreWrap.innerHTML = wallTotal > WALL_PAGE_SIZE
+                ? '<span style="color:var(--text-3);font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;">— КОНЕЦ —</span>'
+                : '';
+        }
+    }
+}
+
+// ============================================================
 // СОЗДАНИЕ ПОСТА
 // ============================================================
 export async function createPost(text, imageUrl) {
     if (!CA) return { success: false, error: 'Не авторизован' };
     try {
-        // NEW: парсим хэштеги
         let hashtags = [];
         if (text) {
             let regex = /(?:^|\s)#([\p{L}\p{N}_-]{1,32})/gu;
@@ -299,9 +388,7 @@ export async function createPost(text, imageUrl) {
         notif('✅ Пост опубликован');
         if (typeof window.checkAchievements === 'function') window.checkAchievements();
         return { success: true };
-    } catch (e) {
-        return { success: false, error: 'Ошибка' };
-    }
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 // ============================================================

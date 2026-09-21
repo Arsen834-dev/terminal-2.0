@@ -1,6 +1,6 @@
 // ============================================================
 // RP / ТЕКСТОВО-РОЛЕВОЙ ЧАТ + СПЕКТАКЛИ
-// Комната одна: space-x
+// v2.5.1: SPACE-X, редактирование/удаление спектаклей
 // ============================================================
 
 import { supabase, CA, getAgents } from './auth.js';
@@ -12,16 +12,16 @@ let rpCharacters = [];
 let rpMessages = [];
 let rpChannel = null;
 let currentRpChar = null;
-let currentRpRoom = 'space-x';   // FIXED: только space-x
+let currentRpRoom = 'space-x';
 let rpScenes = [];
 let rpReplyTo = null;
 
-// Чат спектакля
 let currentSceneId = null;
 let sceneMessages = [];
 let sceneChannel = null;
 let sceneReplyTo = null;
 let currentSceneData = null;
+let sceneCoverTimer = null;
 
 // ==================== ПЕРСОНАЖИ ====================
 export async function loadRpCharacters() {
@@ -56,9 +56,7 @@ export async function createRpCharacter(charData) {
         notif('✅ Персонаж создан');
         playSound('achieve');
         return { success: true, character: data };
-    } catch (e) {
-        return { success: false, error: 'Ошибка' };
-    }
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export async function updateRpCharacter(id, charData) {
@@ -77,9 +75,7 @@ export async function updateRpCharacter(id, charData) {
         await loadRpCharacters();
         notif('✅ Персонаж обновлён');
         return { success: true };
-    } catch (e) {
-        return { success: false, error: 'Ошибка' };
-    }
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export async function deleteRpCharacter(id) {
@@ -93,38 +89,29 @@ export async function deleteRpCharacter(id) {
         }
         notif('🗑 Персонаж удалён');
         return { success: true };
-    } catch (e) {
-        return { success: false, error: 'Ошибка' };
-    }
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 export function getRpCharacters() { return rpCharacters; }
 export function getCurrentRpChar() { return currentRpChar; }
-
 export function setCurrentRpChar(char) {
     currentRpChar = char;
     if (char) localStorage.setItem('syndicate_rp_char', JSON.stringify(char));
     else localStorage.removeItem('syndicate_rp_char');
 }
-
 export function loadSavedRpChar() {
     try {
         let saved = localStorage.getItem('syndicate_rp_char');
         if (saved) currentRpChar = JSON.parse(saved);
     } catch (e) {}
 }
-
 export function requireCharacter() {
-    if (!currentRpChar) {
-        notif('⚠ Сначала создай персонажа');
-        return false;
-    }
+    if (!currentRpChar) { notif('⚠ Сначала создай персонажа'); return false; }
     return true;
 }
 
 // ==================== РП-ЧАТ (SPACE-X) ====================
 export async function loadRpMessages(room = 'space-x') {
-    // FIXED: всегда space-x, параметр оставлен для совместимости
     try {
         let { data } = await supabase.from('rp_messages')
             .select('*').eq('room', 'space-x')
@@ -217,7 +204,7 @@ export function renderRpMessages() {
             '<div class="chat-msg-right">' + replyHtml +
             '<div class="chat-header-row">' +
             '<span class="chat-author" style="color:var(--accent);" onclick="window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + '</span>' +
-            '<span style="color:var(--text-3);font-size:0.75rem;">(' + m.owner + ')</span>' +
+            '<span style="color:var(--text-3);font-size:0.7rem;">(' + m.owner + ')</span>' +
             '<span class="chat-time">' + m.time + '</span>' + menu +
             '</div>' +
             '<div class="chat-text" style="font-style:italic;">' + txt + '</div>' +
@@ -295,19 +282,21 @@ export function cancelRpReply() {
     if (ri) ri.style.display = 'none';
 }
 
-// FIXED: заглушка — комната только одна
 export function switchRpRoom(room) {
     currentRpRoom = 'space-x';
     loadRpMessages('space-x');
     subscribeRpChat('space-x');
 }
 
-// ==================== СПЕКТАКЛИ (СПИСОК) ====================
+// ==================== СПЕКТАКЛИ ====================
 export async function loadRpScenes() {
     try {
         let { data } = await supabase.from('rp_scenes')
             .select('*').order('created_at', { ascending: false });
-        if (data) rpScenes = data;
+        if (data) {
+            rpScenes = data;
+            window.__rpScenes = data;  // для доступа из main.js
+        }
     } catch (e) {}
 }
 
@@ -317,9 +306,7 @@ export async function loadSceneCovers(sceneId) {
             .select('*').eq('scene_id', sceneId)
             .order('position', { ascending: true });
         return data || [];
-    } catch (e) {
-        return [];
-    }
+    } catch (e) { return []; }
 }
 
 export async function createRpScene(title, description, coverFiles) {
@@ -335,15 +322,13 @@ export async function createRpScene(title, description, coverFiles) {
         }).select().single();
         if (error) return { success: false, error: error.message };
 
-        // Загружаем обложки
+        // Обложки
         if (coverFiles && coverFiles.length > 0) {
             for (let i = 0; i < Math.min(coverFiles.length, 5); i++) {
                 let url = await uploadSceneCover(scene.id, coverFiles[i], i);
                 if (url) {
                     await supabase.from('rp_scene_images').insert({
-                        scene_id: scene.id,
-                        image_url: url,
-                        position: i
+                        scene_id: scene.id, image_url: url, position: i
                     });
                 }
             }
@@ -353,9 +338,63 @@ export async function createRpScene(title, description, coverFiles) {
         notif('✅ Спектакль создан');
         playSound('achieve');
         return { success: true, scene };
-    } catch (e) {
-        return { success: false, error: 'Ошибка' };
-    }
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
+}
+
+// NEW: редактирование спектакля
+export async function editRpScene(sceneId, title, description, coverFiles) {
+    if (!CA) return { success: false, error: 'Не авторизован' };
+    try {
+        // Проверяем авторство
+        let { data: scene } = await supabase.from('rp_scenes').select('*').eq('id', sceneId).maybeSingle();
+        if (!scene) return { success: false, error: 'Спектакль не найден' };
+        let canEdit = scene.author === CA.name || CA.role === 'admin' || CA.role === 'moderator';
+        if (!canEdit) return { success: false, error: 'Нет прав' };
+
+        // Обновляем основные поля
+        await supabase.from('rp_scenes').update({
+            title,
+            description
+        }).eq('id', sceneId);
+
+        // Если новые файлы выбраны — полная замена обложек
+        if (coverFiles && coverFiles.length > 0) {
+            // Удаляем старые записи
+            await supabase.from('rp_scene_images').delete().eq('scene_id', sceneId);
+            // Загружаем новые
+            for (let i = 0; i < Math.min(coverFiles.length, 5); i++) {
+                let url = await uploadSceneCover(sceneId, coverFiles[i], i);
+                if (url) {
+                    await supabase.from('rp_scene_images').insert({
+                        scene_id: sceneId, image_url: url, position: i
+                    });
+                }
+            }
+        }
+
+        await loadRpScenes();
+        notif('✅ Спектакль обновлён');
+        return { success: true };
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
+}
+
+// NEW: удаление спектакля
+export async function deleteRpScene(sceneId) {
+    if (!CA) return { success: false, error: 'Не авторизован' };
+    try {
+        let { data: scene } = await supabase.from('rp_scenes').select('*').eq('id', sceneId).maybeSingle();
+        if (!scene) return { success: false, error: 'Спектакль не найден' };
+        let canDel = scene.author === CA.name || CA.role === 'admin' || CA.role === 'moderator';
+        if (!canDel) return { success: false, error: 'Нет прав' };
+
+        // Удаляем обложки, сообщения, сам спектакль
+        await supabase.from('rp_scene_images').delete().eq('scene_id', sceneId);
+        await supabase.from('rp_scene_messages').delete().eq('scene_id', sceneId);
+        await supabase.from('rp_scenes').delete().eq('id', sceneId);
+
+        await loadRpScenes();
+        return { success: true };
+    } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
 async function uploadSceneCover(sceneId, file, position) {
@@ -366,7 +405,6 @@ async function uploadSceneCover(sceneId, file, position) {
             let img = new Image();
             img.onload = async () => {
                 let canvas = document.createElement('canvas');
-                // Обложка 800x400
                 canvas.width = 800;
                 canvas.height = 400;
                 let ctx = canvas.getContext('2d');
@@ -404,21 +442,35 @@ export function renderRpScenes() {
         let av = s.char_avatar_url
             ? '<img src="' + s.char_avatar_url + '" style="width:44px;height:44px;border-radius:12px;object-fit:cover;">'
             : '🎭';
+        let isMine = CA && (s.author === CA.name);
+        let canMod = CA && (CA.role === 'admin' || CA.role === 'moderator');
+        let canEdit = isMine || canMod;
+
+        let actions = '';
+        if (canEdit) {
+            actions = '<div style="display:flex;gap:4px;margin-left:auto;" onclick="event.stopPropagation();">' +
+                '<button class="btn secondary" data-edit-scene="' + s.id + '" style="padding:4px 8px;font-size:0.7rem;">✏</button>' +
+                '<button class="btn danger" data-delete-scene="' + s.id + '" style="padding:4px 8px;font-size:0.7rem;">🗑</button>' +
+                '</div>';
+        }
+
         return '<div class="card" style="padding:14px;margin-bottom:8px;cursor:pointer;" data-open-scene="' + s.id + '">' +
             '<div style="display:flex;gap:12px;align-items:center;">' +
             '<div>' + av + '</div>' +
-            '<div style="flex:1;">' +
-            '<div style="font-weight:700;">' + s.title + '</div>' +
-            '<div style="color:var(--text-3);font-size:0.8rem;">' + s.char_name + ' (' + s.author + ') · ' + timeAgo(s.created_at) + '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+            '<div style="font-weight:700;">' + escapeHtml(s.title) + '</div>' +
+            '<div style="color:var(--text-3);font-size:0.75rem;">' + escapeHtml(s.char_name || '') + ' (' + escapeHtml(s.author) + ') · ' + timeAgo(s.created_at) + '</div>' +
             '</div>' +
-            '<div style="color:var(--accent);font-size:1.2rem;">▸</div>' +
+            (canEdit ? '' : '<div style="color:var(--accent);font-size:1.2rem;">▸</div>') +
+            actions +
             '</div>' +
-            (s.description ? '<div style="color:var(--text-2);margin-top:8px;line-height:1.5;font-size:0.85rem;">' + s.description.substring(0, 150) + (s.description.length > 150 ? '...' : '') + '</div>' : '') +
+            (s.description ? '<div style="color:var(--text-2);margin-top:8px;line-height:1.5;font-size:0.8rem;">' + escapeHtml(s.description).substring(0, 150) + (s.description.length > 150 ? '...' : '') + '</div>' : '') +
             '</div>';
     }).join('');
     setTimeout(() => {
         document.querySelectorAll('[data-open-scene]').forEach(el => {
-            el.addEventListener('click', () => {
+            el.addEventListener('click', (e) => {
+                if (e.target.closest('[data-edit-scene]') || e.target.closest('[data-delete-scene]')) return;
                 let id = parseInt(el.dataset.openScene);
                 if (typeof window.openSceneChat === 'function') window.openSceneChat(id);
             });
@@ -426,12 +478,15 @@ export function renderRpScenes() {
     }, 10);
 }
 
+function escapeHtml(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // ==================== ЧАТ СПЕКТАКЛЯ ====================
 export async function openSceneChat(sceneId) {
     currentSceneId = sceneId;
     sceneReplyTo = null;
 
-    // Загружаем данные спектакля
     let scene = rpScenes.find(s => s.id === sceneId);
     if (!scene) {
         let { data } = await supabase.from('rp_scenes').select('*').eq('id', sceneId).maybeSingle();
@@ -439,31 +494,24 @@ export async function openSceneChat(sceneId) {
     }
     currentSceneData = scene;
 
-    // Заголовок
     let titleEl = document.getElementById('rp-scene-title');
     if (titleEl && scene) titleEl.textContent = '🎬 ' + scene.title;
 
-    // Описание
     let descEl = document.getElementById('rp-scene-desc');
     if (descEl && scene) {
-        descEl.innerHTML = '<b style="color:var(--accent);">Автор:</b> ' + (scene.char_name || scene.author) +
-            (scene.description ? '<br>' + scene.description.replace(/\n/g, '<br>') : '');
+        descEl.innerHTML = '<b style="color:var(--accent);">Автор:</b> ' + escapeHtml(scene.char_name || scene.author) +
+            (scene.description ? '<br>' + escapeHtml(scene.description).replace(/\n/g, '<br>') : '');
     }
 
-    // Обложки
     await renderSceneCovers(sceneId);
-
-    // Сообщения
     await loadSceneMessages(sceneId);
     subscribeSceneChat(sceneId);
     renderSceneMessages();
 }
 
 export function closeSceneChat() {
-    if (sceneChannel) {
-        supabase.removeChannel(sceneChannel);
-        sceneChannel = null;
-    }
+    if (sceneChannel) { supabase.removeChannel(sceneChannel); sceneChannel = null; }
+    if (sceneCoverTimer) { clearInterval(sceneCoverTimer); sceneCoverTimer = null; }
     currentSceneId = null;
     sceneMessages = [];
     sceneReplyTo = null;
@@ -473,11 +521,11 @@ export function closeSceneChat() {
 async function renderSceneCovers(sceneId) {
     let wrap = document.getElementById('rp-scene-covers');
     if (!wrap) return;
+    if (sceneCoverTimer) { clearInterval(sceneCoverTimer); sceneCoverTimer = null; }
+
     let covers = await loadSceneCovers(sceneId);
-    if (covers.length === 0) {
-        wrap.innerHTML = '';
-        return;
-    }
+    if (covers.length === 0) { wrap.innerHTML = ''; return; }
+
     let slides = covers.map(c => '<div class="cover-carousel-slide" style="background-image:url(' + c.image_url + ');"></div>').join('');
     let dots = covers.map((c, i) => '<div class="cover-carousel-dot' + (i === 0 ? ' active' : '') + '" data-cover-dot="' + i + '"></div>').join('');
     wrap.innerHTML = '<div class="cover-carousel">' +
@@ -485,27 +533,28 @@ async function renderSceneCovers(sceneId) {
         '<div class="cover-carousel-nav">' + dots + '</div>' +
         '</div>';
 
-    // Простая навигация: автопрокрутка каждые 4 сек
     let track = document.getElementById('scene-cover-track');
     let idx = 0;
-    if (covers.length > 1) {
-        setInterval(() => {
-            if (!track || currentSceneId !== sceneId) return;
-            idx = (idx + 1) % covers.length;
-            track.style.transform = 'translateX(-' + (idx * 100 / covers.length) + '%)';
-            document.querySelectorAll('[data-cover-dot]').forEach((d, i) => {
-                d.classList.toggle('active', i === idx);
-            });
+    let total = covers.length;
+
+    function goTo(i) {
+        idx = (i + total) % total;
+        if (track) track.style.transform = 'translateX(-' + (idx * 100 / total) + '%)';
+        document.querySelectorAll('[data-cover-dot]').forEach((d, j) => d.classList.toggle('active', j === idx));
+    }
+
+    if (total > 1) {
+        sceneCoverTimer = setInterval(() => {
+            if (!track || currentSceneId !== sceneId) { clearInterval(sceneCoverTimer); sceneCoverTimer = null; return; }
+            goTo(idx + 1);
         }, 4000);
     }
 
-    // Клик по точкам
     setTimeout(() => {
         document.querySelectorAll('[data-cover-dot]').forEach(dot => {
             dot.addEventListener('click', () => {
-                idx = parseInt(dot.dataset.coverDot);
-                if (track) track.style.transform = 'translateX(-' + (idx * 100 / covers.length) + '%)';
-                document.querySelectorAll('[data-cover-dot]').forEach((d, i) => d.classList.toggle('active', i === idx));
+                if (sceneCoverTimer) { clearInterval(sceneCoverTimer); sceneCoverTimer = null; }
+                goTo(parseInt(dot.dataset.coverDot));
             });
         });
     }, 10);
@@ -524,9 +573,7 @@ export function subscribeSceneChat(sceneId) {
     if (sceneChannel) supabase.removeChannel(sceneChannel);
     sceneChannel = supabase.channel('scene-' + sceneId)
         .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'rp_scene_messages',
+            event: 'INSERT', schema: 'public', table: 'rp_scene_messages',
             filter: 'scene_id=eq.' + sceneId
         }, payload => {
             sceneMessages.push(payload.new);
@@ -595,6 +642,7 @@ export function renderSceneMessages() {
             menu = '<span class="chat-menu-wrap"><button class="chat-menu-btn" data-menu-btn="scene' + m.id + '">⋯</button><div class="chat-menu-dropdown">';
             menu += '<div class="chat-menu-item" data-reply-scene="' + m.id + '" data-reply-char-name="' + (m.char_name || '') + '" data-reply-text="' + ((m.text || '').substring(0, 50).replace(/'/g, "\\'")) + '">↩ ОТВЕТИТЬ</div>';
             if (canDelete) menu += '<div class="chat-menu-item" data-delete-scene-msg="' + m.id + '">🗑 УДАЛИТЬ</div>';
+            if (isOwn) menu += '<div class="chat-menu-item" data-edit-scene-msg="' + m.id + '">✏️ РЕДАКТИРОВАТЬ</div>';
             menu += '</div></span>';
         }
 
@@ -607,7 +655,7 @@ export function renderSceneMessages() {
             '<div class="chat-msg-right">' + replyHtml +
             '<div class="chat-header-row">' +
             '<span class="chat-author" style="color:var(--accent);" onclick="window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + '</span>' +
-            '<span style="color:var(--text-3);font-size:0.75rem;">(' + m.owner + ')</span>' +
+            '<span style="color:var(--text-3);font-size:0.7rem;">(' + m.owner + ')</span>' +
             '<span class="chat-time">' + m.time + '</span>' + menu +
             '</div>' +
             '<div class="chat-text" style="font-style:italic;">' + txt + '</div>' +
@@ -646,6 +694,21 @@ export async function deleteSceneMessage(msgId) {
     sceneMessages = sceneMessages.filter(m => String(m.id) !== String(msgId));
     renderSceneMessages();
     notif('🗑 Удалено');
+}
+
+// NEW: редактирование своих сообщений в спектакле
+export async function editSceneMessage(msgId) {
+    let msg = sceneMessages.find(m => m.id == msgId);
+    if (!msg || msg.owner !== CA?.name) return;
+    let inp = document.getElementById('rp-scene-input');
+    if (!inp) return;
+    inp.value = msg.text;
+    inp.focus();
+    sceneReplyTo = null;
+    cancelSceneReply();
+    await supabase.from('rp_scene_messages').delete().eq('id', parseInt(msgId));
+    sceneMessages = sceneMessages.filter(m => String(m.id) !== String(msgId));
+    renderSceneMessages();
 }
 
 export function replyToSceneMessage(msgId, charName, text) {

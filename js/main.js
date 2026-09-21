@@ -1,5 +1,5 @@
 // ============================================================
-// ТЕРМИНАЛ СИНДИКАТА v2.5.0 — MAIN
+// ТЕРМИНАЛ СИНДИКАТА v2.5.1 — MAIN
 // ============================================================
 
 console.log('[MAIN] Модуль начал загрузку');
@@ -16,10 +16,10 @@ import { getAchievements, unlockAchievement, checkAchievements, renderAchievemen
 import { muteAgent, banAgent, deleteAgent, changeAgentRole, renderAdminPanel, renderLogs } from './admin.js';
 import { changeName, changePassword, changeAvatar } from './settings.js';
 import { playSound, startBgMusic, stopBgMusic, toggleSound, toggleMusic, getSoundEnabled, getMusicEnabled, nextBgTrack } from './sounds.js';
-import { recoverSystem } from './loader.js';
+import { startLoading, recoverSystem } from './loader.js';
 import { notif, closeModal, uploadFileAndInsert, glowIcon, stopGlowIcon } from './utils.js';
-import { loadRpCharacters, createRpCharacter, updateRpCharacter, deleteRpCharacter, getRpCharacters, setCurrentRpChar, loadSavedRpChar, loadRpMessages, subscribeRpChat, sendRpMessage, loadRpScenes, createRpScene, renderRpScenes, rpCharacters, getCurrentRpChar, requireCharacter, addRpReaction, deleteRpMessage, editRpMessage, replyToRpMessage, cancelRpReply } from './rp.js';
-import { openSceneChat, closeSceneChat, sendSceneMessage, addSceneReaction, deleteSceneMessage, replyToSceneMessage } from './rp.js';
+import { loadRpCharacters, createRpCharacter, updateRpCharacter, deleteRpCharacter, getRpCharacters, setCurrentRpChar, loadSavedRpChar, loadRpMessages, subscribeRpChat, sendRpMessage, loadRpScenes, createRpScene, editRpScene, deleteRpScene, renderRpScenes, rpCharacters, getCurrentRpChar, requireCharacter, addRpReaction, deleteRpMessage, editRpMessage, replyToRpMessage, cancelRpReply } from './rp.js';
+import { openSceneChat, closeSceneChat, sendSceneMessage, addSceneReaction, deleteSceneMessage, editSceneMessage, replyToSceneMessage } from './rp.js';
 import { renderPostCard as renderPostCardFeed, attachFeedHandlers } from './feed.js';
 import { initWebGraph, destroyWebGraph } from './web.js';
 
@@ -38,19 +38,37 @@ let feedAgentsCache = null;
 let feedOriginalsCache = null;
 
 // ============================================================
-// ЗВУК НА ВСЕ КНОПКИ (глобально)
+// УНИВЕРСАЛЬНАЯ МОДАЛКА ПОДТВЕРЖДЕНИЯ
+// ============================================================
+function confirmDialog(title, text, onConfirm) {
+    let modal = document.getElementById('modal-confirm');
+    if (!modal) { if (window.confirm(text)) onConfirm(); return; }
+    document.getElementById('modal-confirm-title').textContent = title || 'ПОДТВЕРЖДЕНИЕ';
+    document.getElementById('modal-confirm-text').textContent = text || '';
+    let okBtn = document.getElementById('modal-confirm-ok');
+    // Сбрасываем старый обработчик
+    let newOk = okBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOk, okBtn);
+    newOk.addEventListener('click', () => {
+        closeModal('modal-confirm');
+        if (typeof onConfirm === 'function') onConfirm();
+    });
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('show'), 10);
+}
+window.confirmDialog = confirmDialog;
+
+// ============================================================
+// ЗВУК НА ВСЕ КНОПКИ
 // ============================================================
 document.addEventListener('click', (e) => {
     if (e.target.closest('input, textarea, select')) return;
-
     let btn = e.target.closest('button, .btn, .modal-btn, .chat-icon-btn, .chat-send-btn, .app-close, .sidebar-item, .mobile-nav-btn, .feed-tab, .chat-tab, .card-action, .sidebar-profile, [data-app], .online-item, .top-clan-item, .announce-mini, .reaction-picker span, .emoji-cell, [data-emoji], .mention-item, .chat-reaction, [data-clan-emoji], [data-avatar], .hashtag-link, .cover-carousel-dot');
     if (!btn) return;
-
     if (btn.classList.contains('send-msg-btn') || btn.classList.contains('send-dm-btn')) return;
     if (btn.id === 'rp-send-btn') return;
     if (btn.id === 'rp-scene-send-btn') return;
     if (btn.dataset && (btn.dataset.buy || btn.dataset.apply || btn.dataset.invApply || btn.dataset.invReset)) return;
-    if (btn.dataset && (btn.dataset.apply === 'booster' || btn.dataset.invApply === 'booster')) return;
     if (btn.id === 'submit-post-btn' || btn.id === 'create-meme-submit-btn' || btn.id === 'create-guide-submit-btn') return;
     if (btn.id === 'create-announce-submit-btn' || btn.id === 'submit-scene-btn') return;
     if (btn.id === 'login-btn' || btn.id === 'register-link') return;
@@ -58,22 +76,19 @@ document.addEventListener('click', (e) => {
     if (btn.id === 'rp-save-char-btn' || btn.id === 'rp-create-char-btn') return;
     if (btn.id === 'submit-create-clan') return;
     if (btn.classList.contains('chat-reaction')) return;
-    if (btn.dataset && btn.dataset.reaction) return;
-    if (btn.dataset && btn.dataset.reactionPicker) return;
+    if (btn.dataset && (btn.dataset.reaction || btn.dataset.reactionPicker)) return;
     if (btn.id === 'chat-emoji-btn' || btn.id === 'dm-emoji-btn' || btn.id === 'guide-emoji-btn') return;
     if (btn.id === 'chat-file-btn' || btn.id === 'dm-file-btn' || btn.id === 'guide-file-btn') return;
     if (btn.id === 'error-btn') return;
     if (btn.classList.contains('hashtag-link')) return;
     if (btn.classList.contains('comment-send')) return;
-    if (btn.dataset && btn.dataset.commentSend) return;
-    if (btn.dataset && btn.dataset.repostBtn) return;
-    if (btn.dataset && btn.dataset.commentsToggle) return;
-
+    if (btn.dataset && (btn.dataset.commentSend || btn.dataset.repostBtn || btn.dataset.commentsToggle)) return;
+    if (btn.id === 'modal-confirm-ok') return;
     playSound('click');
 }, true);
 
 // ============================================================
-// ГЛОБАЛЬНОЕ ДЕЛЕГИРОВАНИЕ data-close-modal
+// data-close-modal
 // ============================================================
 document.addEventListener('click', (e) => {
     let closeBtn = e.target.closest('[data-close-modal]');
@@ -90,10 +105,7 @@ function startClock() {
     if (!el) return;
     function tick() {
         let now = new Date();
-        let h = String(now.getHours()).padStart(2, '0');
-        let m = String(now.getMinutes()).padStart(2, '0');
-        let s = String(now.getSeconds()).padStart(2, '0');
-        el.textContent = h + ':' + m + ':' + s;
+        el.textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
     }
     tick();
     if (clockInterval) clearInterval(clockInterval);
@@ -101,8 +113,11 @@ function startClock() {
 }
 
 // ============================================================
-// ЗАСТАВКА
+// ЗАСТАВКА → ЛОАДЕР → ЛОГИН (цепочка)
 // ============================================================
+const SKULL_TIME = 3500;    // 3.5 сек заставка
+const EAT_TIME = 600;       // 0.6 сек анимация "поедания"
+
 setTimeout(() => {
     const skull = document.getElementById('skull-ascii');
     if (skull) {
@@ -110,22 +125,30 @@ setTimeout(() => {
         setTimeout(() => {
             let start = document.getElementById('start-screen');
             if (start) start.style.display = 'none';
-            let login = document.getElementById('login-screen');
-            if (login) login.style.display = 'flex';
-            console.log('[MAIN] Логин-экран показан');
-        }, 250);
+            // NEW: запускаем лоадер
+            startLoading();
+            // Лоадер крутится ~7 сек, потом recoverSystem → логин
+            setTimeout(() => {
+                recoverSystem(() => {
+                    let login = document.getElementById('login-screen');
+                    if (login) login.style.display = 'flex';
+                    console.log('[MAIN] Логин-экран показан после лоадера');
+                });
+            }, 7000);
+        }, EAT_TIME);
     } else {
+        // Фолбэк — сразу логин
         let login = document.getElementById('login-screen');
         if (login) login.style.display = 'flex';
     }
-}, 1500);
+}, SKULL_TIME);
 
 // ============================================================
 // SIDEBAR
 // ============================================================
 const SIDEBAR_STRUCTURE = [
     { title: 'ОСНОВНОЕ', items: [
-        { id: 'feed', icon: '🏠', label: 'Лента' },
+        // REMOVED: { id: 'feed', icon: '🏠', label: 'Лента' } — лента теперь на логотипе
         { id: 'chat', icon: '💬', label: 'Чат' },
         { id: 'dm', icon: '📁', label: 'Личка' },
         { id: 'rp', icon: '🎭', label: 'РП-Чат' }
@@ -188,9 +211,7 @@ function buildSidebar() {
 
     nav.querySelectorAll('[data-app]').forEach(el => {
         el.addEventListener('click', () => {
-            let id = el.dataset.app;
-            if (id === 'feed') { openFeed(); return; }
-            openApp(id);
+            openApp(el.dataset.app);
         });
     });
 
@@ -204,19 +225,10 @@ function updateSidebarProfile() {
     let name = document.getElementById('sidebar-profile-name');
     let role = document.getElementById('sidebar-profile-role');
 
-    if (cover) {
-        if (CA.cover_url) cover.innerHTML = '<img src="' + CA.cover_url + '">';
-        else cover.innerHTML = '';
-    }
-    if (avatar) {
-        if (CA.avatar_url) avatar.innerHTML = '<img src="' + CA.avatar_url + '">';
-        else avatar.textContent = '🕶️';
-    }
+    if (cover) cover.innerHTML = CA.cover_url ? '<img src="' + CA.cover_url + '">' : '';
+    if (avatar) avatar.innerHTML = CA.avatar_url ? '<img src="' + CA.avatar_url + '">' : '🕶️';
     if (name) name.textContent = CA.name || '---';
-    if (role) {
-        let r = CA.role === 'admin' ? 'АДМИНИСТРАТОР' : CA.role === 'moderator' ? 'МОДЕРАТОР' : 'АГЕНТ';
-        role.textContent = r;
-    }
+    if (role) role.textContent = CA.role === 'admin' ? 'АДМИНИСТРАТОР' : CA.role === 'moderator' ? 'МОДЕРАТОР' : 'АГЕНТ';
 }
 
 function applySidebarState() {
@@ -273,7 +285,7 @@ function buildMobileNav() {
 }
 
 // ============================================================
-// ПРАВЫЙ SIDEBAR
+// ПРАВЫЙ SIDEBAR (с эффектами из кэша)
 // ============================================================
 async function renderRightPanel() {
     let online = document.getElementById('online-list');
@@ -284,13 +296,26 @@ async function renderRightPanel() {
             .filter(([n, d]) => n !== 'W-C26' && d.last_seen && (now - new Date(d.last_seen).getTime()) < 300000)
             .slice(0, 12);
         if (onlineAgents.length === 0) {
-            online.innerHTML = '<div style="color:var(--text-3);font-size:0.8rem;padding:6px;">НЕТ АГЕНТОВ</div>';
+            online.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ АГЕНТОВ</div>';
         } else {
             online.innerHTML = onlineAgents.map(([name, d]) => {
                 let av = d.avatar_url ? '<img src="' + d.avatar_url + '">' : '🕶️';
+                // NEW: эффекты
+                let colorCls = d.active_color ? getActiveColorClassForId(d.active_color) : '';
+                let frameCls = 'f-default';
+                if (d.active_frame && shopItems.frames) {
+                    let f = shopItems.frames.find(x => x.id === d.active_frame);
+                    if (f) frameCls = f.cssClass || 'f-default';
+                }
+                let badgeHtml = '';
+                if (d.active_badge && d.active_badge !== 'b_none' && shopItems.badges) {
+                    let b = shopItems.badges.find(x => x.id === d.active_badge);
+                    if (b && b.image) badgeHtml = '<img src="' + b.image + '" style="width:14px;height:14px;vertical-align:middle;">';
+                    else if (b && b.emoji) badgeHtml = '<span style="font-size:0.85rem;">' + b.emoji + '</span>';
+                }
                 return '<div class="online-item" data-show-agent="' + name + '">' +
-                    '<div class="online-avatar">' + av + '</div>' +
-                    '<div class="online-name">' + name + '</div>' +
+                    '<div class="online-avatar ' + frameCls + '">' + av + '</div>' +
+                    '<div class="online-name ' + colorCls + '">' + name + '</div>' + badgeHtml +
                     '<div class="online-dot"></div></div>';
             }).join('');
             online.querySelectorAll('[data-show-agent]').forEach(el => {
@@ -304,7 +329,7 @@ async function renderRightPanel() {
         await loadClans();
         let sorted = [...clans].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 5);
         if (sorted.length === 0) {
-            topClans.innerHTML = '<div style="color:var(--text-3);font-size:0.8rem;padding:6px;">НЕТ ОТРЯДОВ</div>';
+            topClans.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ ОТРЯДОВ</div>';
         } else {
             topClans.innerHTML = sorted.map((cl, i) =>
                 '<div class="top-clan-item">' +
@@ -319,7 +344,7 @@ async function renderRightPanel() {
     if (announceMini) {
         let { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(4);
         if (!data || data.length === 0) {
-            announceMini.innerHTML = '<div style="color:var(--text-3);font-size:0.8rem;padding:6px;">НЕТ ОБЪЯВЛЕНИЙ</div>';
+            announceMini.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ ОБЪЯВЛЕНИЙ</div>';
         } else {
             announceMini.innerHTML = data.map(a =>
                 '<div class="announce-mini" data-announce-id="' + a.id + '">' +
@@ -386,7 +411,7 @@ async function renderFeed() {
 
     view.innerHTML = profileBlock + header + feedHtml;
 
-    // NEW: если пришёл хэштег из профиля — подхватываем
+    // Хэштег из профиля
     if (window.__pendingHashtag) {
         let tag = window.__pendingHashtag;
         window.__pendingHashtag = null;
@@ -395,25 +420,9 @@ async function renderFeed() {
         if (si) si.value = '#' + tag;
         let sc = document.getElementById('feed-search-clear');
         if (sc) sc.style.display = 'inline-block';
-        // Перерисовываем чип + ленту
-        let chipWrap = view.querySelector('.feed-header');
-        if (chipWrap) {
-            let existing = chipWrap.querySelector('.hashtag-chip');
-            if (existing) existing.remove();
-            let chip = document.createElement('div');
-            chip.className = 'hashtag-chip';
-            chip.innerHTML = '🏷 #' + escapeHtml(tag) + ' <span data-remove-hashtag>✕</span>';
-            let tabs = chipWrap.querySelector('.feed-header-tabs');
-            if (tabs) tabs.parentNode.insertBefore(chip, tabs);
-            chip.querySelector('[data-remove-hashtag]')?.addEventListener('click', () => {
-                currentHashtag = null;
-                renderFeed();
-            });
-        }
         await refreshFeedOnly();
     }
 
-    // Восстанавливаем значение инпута из currentHashtag
     let searchInput = document.getElementById('feed-search-input');
     if (searchInput && currentHashtag) {
         searchInput.value = '#' + currentHashtag;
@@ -423,22 +432,14 @@ async function renderFeed() {
 
     setTimeout(() => {
         document.querySelectorAll('[data-feed-tab]').forEach(b => {
-            b.addEventListener('click', () => {
-                currentFeedTab = b.dataset.feedTab;
-                renderFeed();
-            });
+            b.addEventListener('click', () => { currentFeedTab = b.dataset.feedTab; renderFeed(); });
         });
         document.querySelectorAll('[data-feed-filter]').forEach(b => {
-            b.addEventListener('click', () => {
-                currentFeedFilter = b.dataset.feedFilter;
-                renderFeed();
-            });
+            b.addEventListener('click', () => { currentFeedFilter = b.dataset.feedFilter; renderFeed(); });
         });
         document.querySelector('[data-remove-hashtag]')?.addEventListener('click', () => {
-            currentHashtag = null;
-            renderFeed();
+            currentHashtag = null; renderFeed();
         });
-
         let si = document.getElementById('feed-search-input');
         let sc = document.getElementById('feed-search-clear');
         if (si) {
@@ -457,26 +458,17 @@ async function renderFeed() {
                 renderFeed();
             });
         }
-
         let feedEl = document.getElementById('feed');
         if (feedEl && typeof attachFeedHandlers === 'function') {
             attachFeedHandlers(feedEl, {
-                onHashtag: (tag) => {
-                    currentHashtag = tag;
-                    renderFeed();
-                },
-                onReposted: () => {
-                    renderFeed();
-                }
+                onHashtag: (tag) => { currentHashtag = tag; renderFeed(); },
+                onReposted: () => { renderFeed(); }
             });
         }
     }, 10);
 
     let fbtn = document.getElementById('floating-create-post');
-    if (fbtn) {
-        fbtn.style.display = 'block';
-        fbtn.onclick = () => window.showCreatePost();
-    }
+    if (fbtn) { fbtn.style.display = 'block'; fbtn.onclick = () => window.showCreatePost(); }
 }
 
 async function refreshFeedOnly() {
@@ -498,11 +490,10 @@ function renderFeedProfileBlock() {
 
     let roleMap = { admin: '👑 АДМИНИСТРАТОР', moderator: '🛡 МОДЕРАТОР', agent: '🎯 АГЕНТ' };
     let roleText = roleMap[CA.role] || '🎯 АГЕНТ';
-
     let nameClass = CA.active_color ? getActiveColorClassForId(CA.active_color) : '';
     let badgeHtml = getActiveBadgeEmoji();
 
-    return '<div class="feed-profile-block matrix-bg">' +
+    return '<div class="feed-profile-block">' +   // REMOVED matrix-bg
         '<div class="feed-profile-cover">' + coverHtml + '</div>' +
         '<div class="feed-profile-main">' +
         '<div class="feed-profile-avatar">' + avatarHtml + '</div>' +
@@ -549,19 +540,14 @@ async function loadFeedItems() {
             else if (typeof tags === 'string' && tags) {
                 try { let p = JSON.parse(tags); if (Array.isArray(p)) arr = p; } catch (e) {}
             }
-            if (arr.length > 0) {
-                return arr.map(t => String(t).toLowerCase()).includes(tag);
-            }
+            if (arr.length > 0) return arr.map(t => String(t).toLowerCase()).includes(tag);
             let txt = (item.data.text || '') + ' ' + (item.data.title || '');
             return new RegExp('#(' + tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')(?:\\s|$)', 'i').test(txt);
         });
     }
 
-    if (currentFeedFilter === 'popular') {
-        all.sort((a, b) => (b.likes || 0) - (a.likes || 0));
-    } else {
-        all.sort((a, b) => new Date(b.time) - new Date(a.time));
-    }
+    if (currentFeedFilter === 'popular') all.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    else all.sort((a, b) => new Date(b.time) - new Date(a.time));
 
     return all;
 }
@@ -582,10 +568,7 @@ function renderFeedPost(post) {
         originalPost = feedOriginalsCache.get(post.repost_of);
     }
 
-    let html = renderPostCardFeed(post, {
-        agents: feedAgentsCache,
-        originalPost: originalPost
-    });
+    let html = renderPostCardFeed(post, { agents: feedAgentsCache, originalPost: originalPost });
 
     if (post.repost_of && !originalPost) {
         supabase.from('profile_posts').select('*').eq('id', post.repost_of).maybeSingle().then(({ data }) => {
@@ -593,10 +576,7 @@ function renderFeedPost(post) {
                 feedOriginalsCache.set(post.repost_of, data);
                 let card = document.querySelector('[data-post-id="' + post.id + '"]');
                 if (card) {
-                    let newHtml = renderPostCardFeed(post, {
-                        agents: feedAgentsCache,
-                        originalPost: data
-                    });
+                    let newHtml = renderPostCardFeed(post, { agents: feedAgentsCache, originalPost: data });
                     let tmp = document.createElement('div');
                     tmp.innerHTML = newHtml;
                     card.replaceWith(tmp.firstElementChild);
@@ -604,17 +584,13 @@ function renderFeedPost(post) {
             }
         });
     }
-
     return html;
 }
 
 getAgents().then(a => { feedAgentsCache = a; });
 
 function renderAnnounceCard(a) {
-    let typeLabels = {
-        news: '📰 НОВОСТЬ', event: '🎯 ИВЕНТ', auction: '💰 АУКЦИОН',
-        update: '⚡ ОБНОВЛЕНИЕ', wanted: '🔍 РОЗЫСК'
-    };
+    let typeLabels = { news: '📰 НОВОСТЬ', event: '🎯 ИВЕНТ', auction: '💰 АУКЦИОН', update: '⚡ ОБНОВЛЕНИЕ', wanted: '🔍 РОЗЫСК' };
     let titleHtml = a.title ? linkifyHashtags(escapeHtml(a.title)) : '';
     let textHtml = a.text ? linkifyHashtags(escapeHtml(a.text)).replace(/\n/g, '<br>') : '';
     return '<div class="card" style="border-left-color:var(--accent);">' +
@@ -653,18 +629,13 @@ function openFeed() {
     document.getElementById('center-content').style.display = '';
     document.getElementById('floating-create-post').style.display = 'block';
     document.querySelectorAll('[data-app]').forEach(el => el.classList.remove('active'));
-    let feedNav = document.querySelector('[data-app="feed"]');
-    if (feedNav) feedNav.classList.add('active');
     feedAgentsCache = null;
     feedOriginalsCache = null;
     getAgents().then(a => { feedAgentsCache = a; });
     renderFeed();
 }
 
-function openOwnProfile() {
-    if (!CA) return;
-    showAgentInfo(CA.name);
-}
+function openOwnProfile() { if (CA) showAgentInfo(CA.name); }
 
 // ============================================================
 // ОТКРЫТИЕ ПРИЛОЖЕНИЙ
@@ -693,16 +664,11 @@ function openApp(id) {
 
     if (id === 'chat') {
         unreadMentions.chat = 0; unreadMentions.clan = 0;
-        updateBadgeIcons();
-        buildSidebar();
-        switchChatTab('general');
-        stopGlowIcon('icon-chat');
-        loadChatMessages();
+        updateBadgeIcons(); buildSidebar(); switchChatTab('general');
+        stopGlowIcon('icon-chat'); loadChatMessages();
     }
     if (id === 'dm') { unreadMentions.dm = 0; updateBadgeIcons(); buildSidebar(); loadDMMessages(); }
-    if (id === 'contacts') {
-        if (typeof initWebGraph === 'function') initWebGraph();
-    }
+    if (id === 'contacts') { if (typeof initWebGraph === 'function') initWebGraph(); }
     if (id === 'achievements') renderAchievementsUI();
     if (id === 'guides') { loadGuides().then(() => renderGuides()); }
     if (id === 'memes') { loadMemes().then(() => renderMemes()); }
@@ -722,9 +688,7 @@ function openApp(id) {
         });
     }
     if (id === 'rp-community') loadRpScenes().then(() => renderRpScenes());
-    if (id === 'rp-scene') {
-        // логика в openSceneChat()
-    }
+    if (id === 'rp-scene') { /* логика в openSceneChat */ }
 
     if (CA) { CA.crystals = (CA.crystals || 0) + 2; updateTopbar(); saveAgent(); }
 }
@@ -742,12 +706,8 @@ function closeApp(id) {
     };
     let el = document.getElementById(map[id]);
     if (el) {
-        if (id === 'contacts' && typeof destroyWebGraph === 'function') {
-            destroyWebGraph();
-        }
-        if (id === 'rp-scene' && typeof closeSceneChat === 'function') {
-            closeSceneChat();
-        }
+        if (id === 'contacts' && typeof destroyWebGraph === 'function') destroyWebGraph();
+        if (id === 'rp-scene' && typeof closeSceneChat === 'function') closeSceneChat();
         el.classList.remove('show');
         setTimeout(() => {
             el.style.display = 'none';
@@ -755,13 +715,6 @@ function closeApp(id) {
             document.getElementById('floating-create-post').style.display = 'block';
         }, 150);
     }
-}
-
-// ============================================================
-// СПИСОК АГЕНТОВ (делегируем в web.js)
-// ============================================================
-async function renderAgentList() {
-    if (typeof initWebGraph === 'function') initWebGraph();
 }
 
 // ============================================================
@@ -785,8 +738,8 @@ function renderRpCharsList() {
             '<div class="card-avatar">' + av + '</div>' +
             '<div style="flex:1;"><div style="font-weight:600;">' + escapeHtml(c.name) + '</div>' +
             '<div class="card-meta">' + escapeHtml(c.role || '') + '</div></div>' +
-            '<button class="btn secondary" data-char-edit="' + c.id + '" style="padding:4px 8px;font-size:0.75rem;">✏</button>' +
-            '<button class="btn danger" data-char-del="' + c.id + '" style="padding:4px 8px;font-size:0.75rem;">✕</button>' +
+            '<button class="btn secondary" data-char-edit="' + c.id + '" style="padding:4px 8px;font-size:0.7rem;">✏</button>' +
+            '<button class="btn danger" data-char-del="' + c.id + '" style="padding:4px 8px;font-size:0.7rem;">✕</button>' +
             '</div></div>';
     }).join('');
     setTimeout(() => {
@@ -797,11 +750,15 @@ function renderRpCharsList() {
             if (ch) { setCurrentRpChar(ch); updateRpCurrentChar(); closeModal('modal-rp-chars'); notif('🎭 ' + ch.name); }
         }));
         document.querySelectorAll('[data-char-edit]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); openCharCreateModal(parseInt(this.dataset.charEdit)); }));
-        document.querySelectorAll('[data-char-del]').forEach(b => b.addEventListener('click', async function(e) {
+        document.querySelectorAll('[data-char-del]').forEach(b => b.addEventListener('click', function(e) {
             e.stopPropagation();
-            if (!confirm('Удалить?')) return;
-            await deleteRpCharacter(parseInt(this.dataset.charDel));
-            renderRpCharsList();
+            let id = parseInt(this.dataset.charDel);
+            let ch = chars.find(x => x.id === id);
+            // NEW: персональная модалка
+            confirmDialog('УДАЛИТЬ ПЕРСОНАЖА', 'Удалить персонажа «' + (ch ? ch.name : '?') + '»? Это действие нельзя отменить.', async () => {
+                await deleteRpCharacter(id);
+                renderRpCharsList();
+            });
         }));
     }, 10);
 }
@@ -882,9 +839,7 @@ async function saveRpChar() {
         if (!id && res.character) { setCurrentRpChar(res.character); updateRpCurrentChar(); }
         await loadRpCharacters();
         renderRpCharsList();
-    } else {
-        notif('⛔ ' + res.error);
-    }
+    } else notif('⛔ ' + res.error);
 }
 
 // ============================================================
@@ -906,7 +861,7 @@ function updateTopbar() {
 window.updateStatusBar = updateTopbar;
 
 // ============================================================
-// ПРОБРОС В WINDOW
+// WINDOW ПРОБРОС
 // ============================================================
 window.showAgentInfo = showAgentInfo;
 window.buyItem = buyItem;
@@ -966,9 +921,9 @@ window.showClanInfo = function(clanId) {
     popup.id = 'modal-auto-clan';
     popup.innerHTML = '<div class="modal-box">' +
         '<div class="modal-title">' + cl.emoji + ' ' + escapeHtml(cl.name) + ' [' + cl.tag + ']</div>' +
-        '<div style="color:var(--text-2);margin-bottom:12px;font-size:0.9rem;">' + escapeHtml(cl.description || '') + '</div>' +
-        '<div style="color:var(--text-3);font-size:0.85rem;">👑 ' + escapeHtml(cl.leader) + ' · 💰 ' + (cl.treasury || 0) + ' ТК · ⭐ ' + (cl.rating || 0) + '</div>' +
-        '<div style="margin-top:12px;font-size:0.85rem;">Участники: ' + (cl.members || []).map(m => escapeHtml(m.name)).join(', ') + '</div>' +
+        '<div style="color:var(--text-2);margin-bottom:12px;font-size:0.85rem;">' + escapeHtml(cl.description || '') + '</div>' +
+        '<div style="color:var(--text-3);font-size:0.8rem;">👑 ' + escapeHtml(cl.leader) + ' · 💰 ' + (cl.treasury || 0) + ' ТК · ⭐ ' + (cl.rating || 0) + '</div>' +
+        '<div style="margin-top:12px;font-size:0.8rem;">Участники: ' + (cl.members || []).map(m => escapeHtml(m.name)).join(', ') + '</div>' +
         (cl.members && !cl.members.find(m => m.name === CA?.name) && !clans.some(c => c.members?.some(m => m.name === CA?.name)) ? '<button class="btn full mt-16" id="join-clan-btn-' + cl.id + '">' + (cl.join_type === 'request' ? '📩 ОТПРАВИТЬ ЗАЯВКУ' : '✅ ВСТУПИТЬ') + '</button>' : '') +
         '<div style="margin-top:16px;text-align:right;"><button class="modal-btn secondary" data-close-modal="modal-auto-clan">ЗАКРЫТЬ</button></div>' +
         '</div>';
@@ -976,8 +931,7 @@ window.showClanInfo = function(clanId) {
     setTimeout(() => {
         document.getElementById('join-clan-btn-' + cl.id)?.addEventListener('click', () => {
             joinClan(cl.id).then(r => {
-                if (r.success) { popup.remove(); renderClans(); notif('✅ Вступили'); }
-                else notif(r.error);
+                if (r.success) { popup.remove(); renderClans(); notif('✅ Вступили'); } else notif(r.error);
             });
         });
     }, 10);
@@ -1038,14 +992,14 @@ window.pinClanMessage = pinClanMessage;
 window.editClanMessage = editClanMessage;
 window.addAdminReaction = addAdminReaction;
 window.deleteAdminMessage = deleteAdminMessage;
-
 window.addSceneReaction = addSceneReaction;
 window.deleteSceneMessage = deleteSceneMessage;
+window.editSceneMessage = editSceneMessage;
 window.replyToSceneMessage = replyToSceneMessage;
 window.closeSceneChat = closeSceneChat;
 
 // ============================================================
-// ОТКРЫТИЕ РАБОЧЕГО СТОЛА
+// ДОСЬЕ / ОТКРЫТИЕ РАБОЧЕГО СТОЛА
 // ============================================================
 function openDesktop() {
     document.getElementById('desktop').style.display = 'flex';
@@ -1067,10 +1021,8 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[MAIN] DOMContentLoaded сработал');
 
     document.getElementById('login-btn')?.addEventListener('click', async () => {
-        console.log('[LOGIN] Кнопка нажата');
         try {
             let r = await login();
-            console.log('[LOGIN] Результат:', r);
             if (r && r.CA) {
                 document.getElementById('login-screen').style.display = 'none';
                 openDesktop();
@@ -1086,10 +1038,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 renderRightPanel();
             }
-        } catch (e) {
-            console.error('[LOGIN] Ошибка:', e);
-            notif('⛔ Ошибка: ' + e.message);
-        }
+        } catch (e) { console.error('[LOGIN] Ошибка:', e); notif('⛔ Ошибка: ' + e.message); }
     });
     document.getElementById('agent-pass')?.addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('login-btn').click(); });
 
@@ -1216,8 +1165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (r.success) {
             playSound('send');
             closeModal('modal-create-post');
-            feedAgentsCache = null;
-            feedOriginalsCache = null;
+            feedAgentsCache = null; feedOriginalsCache = null;
             getAgents().then(a => { feedAgentsCache = a; });
             renderFeed();
             checkAchievements();
@@ -1239,10 +1187,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rp-save-char-btn')?.addEventListener('click', saveRpChar);
     document.getElementById('create-scene-btn')?.addEventListener('click', () => {
         if (!requireCharacter()) return;
+        document.getElementById('scene-modal-title').textContent = 'НОВЫЙ СПЕКТАКЛЬ';
         document.getElementById('scene-title').value = '';
         document.getElementById('scene-desc').value = '';
         document.getElementById('scene-covers').value = '';
         document.getElementById('scene-covers-preview').innerHTML = '';
+        let btn = document.getElementById('submit-scene-btn');
+        delete btn.dataset.editingScene;
+        btn.textContent = 'СОЗДАТЬ';
         let el = document.getElementById('modal-scene-create');
         el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10);
     });
@@ -1262,12 +1214,19 @@ document.addEventListener('DOMContentLoaded', () => {
             r.readAsDataURL(f);
         });
     });
-    document.getElementById('submit-scene-btn')?.addEventListener('click', async () => {
+    document.getElementById('submit-scene-btn')?.addEventListener('click', async function() {
         let t = document.getElementById('scene-title').value.trim(), d = document.getElementById('scene-desc').value.trim();
         if (!t) return notif('⛔ ВВЕДИ НАЗВАНИЕ');
         let coverFiles = Array.from(document.getElementById('scene-covers')?.files || []);
-        let r = await createRpScene(t, d, coverFiles);
-        if (r.success) { playSound('send'); closeModal('modal-scene-create'); loadRpScenes().then(renderRpScenes); }
+        let editId = this.dataset.editingScene;
+        let r;
+        if (editId) r = await editRpScene(parseInt(editId), t, d, coverFiles);
+        else r = await createRpScene(t, d, coverFiles);
+        if (r.success) {
+            playSound('send');
+            closeModal('modal-scene-create');
+            loadRpScenes().then(renderRpScenes);
+        } else notif('⛔ ' + r.error);
     });
 
     // Закрытие приложений
@@ -1310,12 +1269,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let rsc = e.target.closest('[data-reply-scene]');
         if (rsc) { replyToSceneMessage(parseInt(rsc.dataset.replyScene), rsc.dataset.replyCharName, rsc.dataset.replyText); return; }
         let rad = e.target.closest('[data-reply-admin]');
-        if (rad) {
-            let inp = document.getElementById('chat-input');
-            if (inp) { inp.value = '@' + rad.dataset.replyAuthor + ' '; inp.focus(); }
-            notif('↩ ОТВЕТ ДЛЯ ' + rad.dataset.replyAuthor);
-            return;
-        }
+        if (rad) { let inp = document.getElementById('chat-input'); if (inp) { inp.value = '@' + rad.dataset.replyAuthor + ' '; inp.focus(); } notif('↩ ОТВЕТ ДЛЯ ' + rad.dataset.replyAuthor); return; }
+
         let dmb = e.target.closest('[data-delete-dm-msg]');
         if (dmb) { supabase.from('dm_messages').delete().eq('id', parseInt(dmb.dataset.deleteDmMsg)).then(() => loadDMMessages()); return; }
         let dcl = e.target.closest('[data-delete-clan-msg]');
@@ -1328,20 +1283,69 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dsc) { deleteSceneMessage(dsc.dataset.deleteSceneMsg); return; }
         let dl = e.target.closest('[data-delete-msg]');
         if (dl) { let ct = dl.dataset.chatType; if (ct === 'clan') deleteClanMessage(dl.dataset.deleteMsg); else deleteMessage(dl.dataset.deleteMsg); return; }
+
         let ecl = e.target.closest('[data-edit-clan-msg]');
         if (ecl) { editClanMessage(ecl.dataset.editClanMsg); return; }
         let erp = e.target.closest('[data-edit-rp-msg]');
         if (erp) { editRpMessage(erp.dataset.editRpMsg); return; }
+        let esc = e.target.closest('[data-edit-scene-msg]');
+        if (esc) { editSceneMessage(esc.dataset.editSceneMsg); return; }
         let ed = e.target.closest('[data-edit-msg]');
         if (ed) { editMessage(ed.dataset.editMsg); return; }
+
         let pcl = e.target.closest('[data-pin-clan]');
         if (pcl) { pinClanMessage(pcl.dataset.pinClan); return; }
         let pn = e.target.closest('[data-pin]');
         if (pn) { pinChatMessage(pn.dataset.pin); return; }
+
         let muteBtn = e.target.closest('[data-mute]');
         if (muteBtn) { muteAgent(muteBtn.dataset.mute); return; }
         let banBtn = e.target.closest('[data-ban]');
         if (banBtn) { banAgent(banBtn.dataset.ban); return; }
+
+        // NEW: спектакли — редактирование/удаление
+        let editSceneBtn = e.target.closest('[data-edit-scene]');
+        if (editSceneBtn) {
+            let id = parseInt(editSceneBtn.dataset.editScene);
+            let scene = (window.__rpScenes || []).find(s => s.id === id);
+            if (!scene) return;
+            (async () => {
+                let { loadSceneCovers } = await import('./rp.js');
+                let covers = await loadSceneCovers(id);
+                document.getElementById('scene-modal-title').textContent = '✏️ РЕДАКТИРОВАТЬ СПЕКТАКЛЬ';
+                document.getElementById('scene-title').value = scene.title || '';
+                document.getElementById('scene-desc').value = scene.description || '';
+                document.getElementById('scene-covers').value = '';
+                let preview = document.getElementById('scene-covers-preview');
+                preview.innerHTML = '';
+                if (covers.length > 0) {
+                    covers.forEach(c => {
+                        let img = document.createElement('img');
+                        img.src = c.image_url;
+                        img.style.cssText = 'width:60px;height:40px;object-fit:cover;border:1px solid var(--accent-dark);border-radius:3px;';
+                        preview.appendChild(img);
+                    });
+                }
+                let btn = document.getElementById('submit-scene-btn');
+                btn.dataset.editingScene = id;
+                btn.textContent = 'СОХРАНИТЬ';
+                let el = document.getElementById('modal-scene-create');
+                el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10);
+            })();
+            return;
+        }
+        let delSceneBtn = e.target.closest('[data-delete-scene]');
+        if (delSceneBtn) {
+            let id = parseInt(delSceneBtn.dataset.deleteScene);
+            let scene = (window.__rpScenes || []).find(s => s.id === id);
+            confirmDialog('УДАЛИТЬ СПЕКТАКЛЬ', 'Удалить «' + (scene ? scene.title : '?') + '»? Все сообщения и обложки будут удалены.', async () => {
+                let r = await deleteRpScene(id);
+                if (r.success) { notif('🗑 Спектакль удалён'); loadRpScenes().then(renderRpScenes); }
+                else notif('⛔ ' + r.error);
+            });
+            return;
+        }
+
         if (!e.target.closest('#mention-suggestions') && !e.target.closest('.chat-input')) hideMentionSuggestions();
         if (!e.target.closest('.chat-menu-wrap')) document.querySelectorAll('.chat-menu-dropdown.open').forEach(d => d.classList.remove('open'));
     });
@@ -1351,5 +1355,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateDiscountDisplay, 60000);
     setInterval(() => { if (CA && currentView === 'feed') renderRightPanel(); }, 60000);
 
-    console.log('✅ ТЕРМИНАЛ 2.5.0 ЗАГРУЖЕН');
+    console.log('✅ ТЕРМИНАЛ 2.5.1 ЗАГРУЖЕН');
 });

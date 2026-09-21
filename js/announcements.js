@@ -1,38 +1,69 @@
-// ============ ANNOUNCEMENTS / ОБЪЯВЛЕНИЯ ============
+// ============================================================
+// ANNOUNCEMENTS / ОБЪЯВЛЕНИЯ
+// v2.5.1: нормальный UI, фильтр, пагинация
+// ============================================================
+
 import { supabase, CA } from './auth.js';
-import { ANNOUNCE_PER_PAGE } from './config.js';
 import { addLog } from './admin.js';
 import { notif } from './utils.js';
 
 let announcements = [];
 let announceFilter = 'all';
-let announcePage = 1;
+let announcePage = 0;
+let announceTotal = 0;
+const PAGE_SIZE = 10;
 
 export const announceTypes = {
-    news: '📰 Новость',
-    event: '🎯 Ивент',
-    auction: '💰 Аукцион',
-    update: '⚡ Обновление',
-    wanted: '🔍 Розыск'
+    news:    { label: '📰 Новость',     icon: '📰', color: '#448aff' },
+    event:   { label: '🎯 Ивент',       icon: '🎯', color: '#ff9100' },
+    auction: { label: '💰 Аукцион',     icon: '💰', color: '#ffd700' },
+    update:  { label: '⚡ Обновление',  icon: '⚡', color: '#00ff41' },
+    wanted:  { label: '🔍 Розыск',      icon: '🔍', color: '#ff1744' }
 };
 
+// ============================================================
+// ЗАГРУЗКА
+// ============================================================
 export async function loadAnnouncements() {
     try {
-        let { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+        let { data, count } = await supabase.from('announcements')
+            .select('*', { count: 'exact' })
+            .order('pinned', { ascending: false })
+            .order('created_at', { ascending: false });
         if (data) {
-            announcements.length = 0;
-            data.forEach(a => announcements.push(a));
+            announcements = data;
+            announceTotal = count || data.length;
             window.announcements = announcements;
         }
     } catch (e) {}
 }
 
+// ============================================================
+// CRUD
+// ============================================================
 export async function createAnnouncement(title, text, type) {
     if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) return { success: false, error: '⛔ НЕТ ПРАВ' };
     try {
-        await supabase.from('announcements').insert({ type: type || 'news', title, text, author: CA.name });
+        // Парсим хэштеги
+        let hashtags = [];
+        if (text) {
+            let regex = /(?:^|\s)#([\p{L}\p{N}_-]{1,32})/gu;
+            let m;
+            while ((m = regex.exec(text)) !== null) {
+                let tag = m[1].toLowerCase().trim();
+                if (tag && !hashtags.includes(tag)) hashtags.push(tag);
+            }
+        }
+        await supabase.from('announcements').insert({
+            type: type || 'news',
+            title,
+            text,
+            author: CA.name,
+            hashtags: hashtags
+        });
         await loadAnnouncements();
         notif('📢 ОПУБЛИКОВАНО');
+        playSound('send');
         return { success: true };
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
@@ -61,7 +92,10 @@ export async function pinAnnouncement(id) {
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
-export function getFilteredAnnouncements() {
+// ============================================================
+// ФИЛЬТР / ПАГИНАЦИЯ
+// ============================================================
+function getFiltered() {
     let sorted = [...announcements].sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
@@ -71,38 +105,164 @@ export function getFilteredAnnouncements() {
     return sorted.filter(a => a.type === announceFilter);
 }
 
-export function getPaginatedAnnouncements() {
-    let filtered = getFilteredAnnouncements();
-    let totalPages = Math.ceil(filtered.length / ANNOUNCE_PER_PAGE);
-    if (announcePage > totalPages) announcePage = totalPages || 1;
-    let start = (announcePage - 1) * ANNOUNCE_PER_PAGE;
-    return { items: filtered.slice(start, start + ANNOUNCE_PER_PAGE), totalPages, currentPage: announcePage, total: filtered.length };
+function getPage(page) {
+    let filtered = getFiltered();
+    let start = page * PAGE_SIZE;
+    return {
+        items: filtered.slice(start, start + PAGE_SIZE),
+        total: filtered.length,
+        hasMore: start + PAGE_SIZE < filtered.length
+    };
 }
 
-export function setAnnounceFilter(filter) { announceFilter = filter; announcePage = 1; }
+export function setAnnounceFilter(filter) { announceFilter = filter; announcePage = 0; }
 export function setAnnouncePage(page) { announcePage = page; }
 
+// ============================================================
+// РЕНДЕР
+// ============================================================
 export function renderAnnounceApp() {
     let c = document.getElementById('announce-content');
     if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator') || !c) return;
-    let sorted = [...announcements].sort((a, b) => { if (a.pinned && !b.pinned) return -1; if (!a.pinned && b.pinned) return 1; return 0; });
-    c.innerHTML = '<button class="settings-btn" id="show-create-announce-btn"><span>📢</span> СОЗДАТЬ ОБЪЯВЛЕНИЕ</button><div id="announce-list">' +
-        (sorted.length === 0 ? '<div style="color:#cc0000;">НЕТ</div>' :
-        sorted.map(a => '<div class="announce-card' + (a.pinned ? ' pinned' : '') + '"><div class="announce-type-badge">' + (announceTypes[a.type] || '📰') + (a.pinned ? ' 📌' : '') + '</div><div class="announce-title-text">' + a.title + '</div><div class="announce-text-body">' + (a.text || '').replace(/\n/g, '<br>').replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid #ff1744;margin:5px 0;border-radius:8px;">') + '</div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="announce-author">— ' + a.author + '</div><div style="display:flex;gap:5px;"><button class="modal-btn" style="font-size:0.9rem;" data-pin-ann="' + a.id + '">' + (a.pinned ? '📌 ОТКРЕПИТЬ' : '📌 ЗАКРЕПИТЬ') + '</button><button class="modal-btn" style="font-size:0.9rem;" data-del-ann="' + a.id + '">🗑 УДАЛИТЬ</button></div></div></div>').join('')) +
+
+    // Чипсы-фильтры
+    let filters = [
+        { id: 'all', label: 'ВСЕ', icon: '▣' },
+        { id: 'news', label: 'НОВОСТИ', icon: '📰' },
+        { id: 'event', label: 'ИВЕНТЫ', icon: '🎯' },
+        { id: 'auction', label: 'АУКЦИОНЫ', icon: '💰' },
+        { id: 'update', label: 'ОБНОВЛЕНИЯ', icon: '⚡' },
+        { id: 'wanted', label: 'РОЗЫСК', icon: '🔍' }
+    ];
+
+    let filtersHtml = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">' +
+        filters.map(f =>
+            '<button class="feed-tab' + (announceFilter === f.id ? ' active' : '') + '" data-ann-filter="' + f.id + '">' + f.icon + ' ' + f.label + '</button>'
+        ).join('') +
         '</div>';
+
+    // Кнопка создания
+    let createBtn = '<button class="btn full" id="show-create-announce-btn" style="margin-bottom:16px;">➕ СОЗДАТЬ ОБЪЯВЛЕНИЕ</button>';
+
+    // Список
+    let { items, total, hasMore } = getPage(announcePage);
+
+    let listHtml = '<div id="announce-list">';
+    if (items.length === 0) {
+        listHtml += '<div class="empty-state">ОБЪЯВЛЕНИЙ НЕТ</div>';
+    } else {
+        items.forEach(a => { listHtml += renderAnnounceCard(a); });
+    }
+    listHtml += '</div>';
+
+    // «Загрузить ещё»
+    let moreHtml = '';
+    if (hasMore) {
+        let remaining = total - (announcePage + 1) * PAGE_SIZE;
+        moreHtml = '<div style="margin-top:16px;text-align:center;">' +
+            '<button class="btn secondary" id="announce-load-more">▼ ЗАГРУЗИТЬ ЕЩЁ (' + remaining + ')</button>' +
+            '</div>';
+    } else if (total > PAGE_SIZE) {
+        moreHtml = '<div style="margin-top:16px;text-align:center;color:var(--text-3);font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;">— КОНЕЦ —</div>';
+    }
+
+    // Счётчик
+    let countHtml = '<div style="color:var(--text-3);font-size:0.75rem;margin-bottom:12px;font-family:var(--font-digit);letter-spacing:1px;">ВСЕГО: ' + total + '</div>';
+
+    c.innerHTML = createBtn + filtersHtml + countHtml + listHtml + moreHtml;
+
+    // Обработчики
     setTimeout(() => {
         document.getElementById('show-create-announce-btn')?.addEventListener('click', () => {
             if (typeof window.showCreateAnnouncement === 'function') window.showCreateAnnouncement();
         });
-        document.querySelectorAll('[data-pin-ann]').forEach(b => b.addEventListener('click', async function() {
+        document.querySelectorAll('[data-ann-filter]').forEach(b => {
+            b.addEventListener('click', () => {
+                announceFilter = b.dataset.annFilter;
+                announcePage = 0;
+                renderAnnounceApp();
+            });
+        });
+        document.getElementById('announce-load-more')?.addEventListener('click', () => {
+            announcePage++;
+            renderAnnounceApp();
+        });
+        // Кнопки карточек
+        document.querySelectorAll('[data-pin-ann]').forEach(b => b.addEventListener('click', async function(e) {
+            e.stopPropagation();
             await pinAnnouncement(parseInt(this.dataset.pinAnn));
             renderAnnounceApp();
         }));
-        document.querySelectorAll('[data-del-ann]').forEach(b => b.addEventListener('click', async function() {
-            await deleteAnnouncement(parseInt(this.dataset.delAnn));
-            renderAnnounceApp();
+        document.querySelectorAll('[data-del-ann]').forEach(b => b.addEventListener('click', async function(e) {
+            e.stopPropagation();
+            let id = parseInt(this.dataset.delAnn);
+            let a = announcements.find(x => x.id === id);
+            if (typeof window.confirmDialog === 'function') {
+                window.confirmDialog('УДАЛИТЬ ОБЪЯВЛЕНИЕ', 'Удалить «' + (a ? a.title : '?') + '»?', async () => {
+                    await deleteAnnouncement(id);
+                    renderAnnounceApp();
+                });
+            } else {
+                await deleteAnnouncement(id);
+                renderAnnounceApp();
+            }
         }));
     }, 10);
 }
 
+function renderAnnounceCard(a) {
+    let t = announceTypes[a.type] || announceTypes.news;
+    let titleHtml = a.title ? linkifyHashtags(escapeHtml(a.title)) : '';
+    let textHtml = a.text ? linkifyHashtags(escapeHtml(a.text)).replace(/\n/g, '<br>') : '';
+    let isPinned = a.pinned;
+    let pinnedBy = a.pinned_by ? ' · закрепил ' + escapeHtml(a.pinned_by) : '';
+
+    return '<div class="card" style="border-left-color:' + t.color + ';margin-bottom:10px;' + (isPinned ? 'border-color:var(--accent);' : '') + '">' +
+        '<div class="card-header" style="margin-bottom:8px;">' +
+        '<div class="card-avatar" style="background:' + t.color + '22;color:' + t.color + ';font-size:1.3rem;">' + t.icon + '</div>' +
+        '<div class="card-author-block">' +
+        '<div class="card-author">' + escapeHtml(a.author) + '</div>' +
+        '<div class="card-meta">' +
+        '<span class="role" style="color:' + t.color + ';">' + t.label.toUpperCase() + '</span>' +
+        (isPinned ? '<span style="color:var(--accent);">📌 ЗАКРЕПЛЕНО' + pinnedBy + '</span>' : '') +
+        '<span class="card-time">' + timeAgo(a.created_at) + '</span>' +
+        '</div></div>' +
+        '<div style="display:flex;gap:4px;margin-left:auto;" onclick="event.stopPropagation();">' +
+        '<button class="btn secondary" data-pin-ann="' + a.id + '" style="padding:4px 8px;font-size:0.7rem;">' + (isPinned ? '📌' : '📍') + '</button>' +
+        '<button class="btn danger" data-del-ann="' + a.id + '" style="padding:4px 8px;font-size:0.7rem;">🗑</button>' +
+        '</div>' +
+        '</div>' +
+        (titleHtml ? '<div class="card-title">' + titleHtml + '</div>' : '') +
+        (textHtml ? '<div class="card-text">' + textHtml + '</div>' : '') +
+        '</div>';
+}
+
+// ============================================================
+// УТИЛИТЫ
+// ============================================================
+function escapeHtml(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function linkifyHashtags(text) {
+    if (!text) return '';
+    return text.replace(/(?:^|\s)#([\p{L}\p{N}_-]{1,32})/gu, (full, tag) => {
+        let prefix = full.startsWith(' ') ? ' ' : '';
+        return prefix + '<span class="hashtag-link" data-hashtag="' + tag.toLowerCase() + '">#' + tag + '</span>';
+    });
+}
+
+function timeAgo(d) {
+    if (!d) return '';
+    let diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+    if (diff < 60) return 'только что';
+    if (diff < 3600) return Math.floor(diff / 60) + ' мин';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' ч';
+    if (diff < 604800) return Math.floor(diff / 86400) + ' дн';
+    return new Date(d).toLocaleDateString('ru-RU');
+}
+
+// ============================================================
+// ЭКСПОРТЫ
+// ============================================================
 export { announcements, announceFilter, announcePage };
