@@ -50,7 +50,8 @@ export const RP_RACES = [
     { id: 'slime', name: 'Слайм', icon: '🟢' },
     { id: 'vulpkanin', name: 'Вульпканин', icon: '🦊' },
     { id: 'skrell', name: 'Скрелл', icon: '🐸' },
-    { id: 'ipc', name: 'Киборг', icon: '🤖' }
+    { id: 'ipc', name: 'Киборг', icon: '🤖' },
+    { id: 'arcana', name: 'Аркан', icon: '🔮' }  // NEW
 ];
 
 // Тикер

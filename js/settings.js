@@ -21,9 +21,15 @@ export async function changeName(newName) {
         await supabase.from('dm_messages').update({ to_agent: newName }).eq('to_agent', oldName);
         await supabase.from('friends').update({ agent: newName }).eq('agent', oldName);
         await supabase.from('friends').update({ friend: newName }).eq('friend', oldName);
-        await supabase.from('clan_messages').update({ author: newName }).eq('author', oldName);
         await supabase.from('chat_messages').update({ author: newName }).eq('author', oldName);
         await supabase.from('memes').update({ author: newName }).eq('author', oldName);
+        await supabase.from('profile_comments').update({ author: newName }).eq('author', oldName);
+        await supabase.from('rp_characters').update({ owner: newName }).eq('owner', oldName);
+        await supabase.from('rp_scenes').update({ author: newName }).eq('author', oldName);
+        await supabase.from('rp_messages').update({ owner: newName }).eq('owner', oldName);
+        await supabase.from('rp_scene_messages').update({ owner: newName }).eq('owner', oldName);
+        await supabase.from('clan_messages').update({ author: newName }).eq('author', oldName);
+        await supabase.from('admin_messages').update({ author: newName }).eq('author', oldName);
         await supabase.from('profile_posts').update({ author: newName }).eq('author', oldName);
     } catch (e) {}
 

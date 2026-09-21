@@ -1,17 +1,19 @@
 // ============================================================
 // ANNOUNCEMENTS / ОБЪЯВЛЕНИЯ
-// v2.5.1: нормальный UI, фильтр, пагинация
+// v2.6.0: role-badge автора, единый getAgentFx, realtime
 // ============================================================
 
 import { supabase, CA } from './auth.js';
 import { addLog } from './admin.js';
 import { notif } from './utils.js';
+import { shopItems, getActiveColorClassForId } from './shop.js';
 
 let announcements = [];
 let announceFilter = 'all';
 let announcePage = 0;
 let announceTotal = 0;
 const PAGE_SIZE = 10;
+let announceChannel = null;
 
 export const announceTypes = {
     news:    { label: '📰 Новость',     icon: '📰', color: '#448aff' },
@@ -20,6 +22,16 @@ export const announceTypes = {
     update:  { label: '⚡ Обновление',  icon: '⚡', color: '#00ff41' },
     wanted:  { label: '🔍 Розыск',      icon: '🔍', color: '#ff1744' }
 };
+
+// ==================== ЭФФЕКТЫ ====================
+function fx(name) {
+    if (typeof window.__getAgentFx === 'function') return window.__getAgentFx(name);
+    let colorCls = '';
+    let frameCls = 'f-default';
+    let roleBadge = '';
+    let badgeHtml = '';
+    return { colorCls, fontCls: '', frameCls, badgeHtml, roleBadge, avatar: '' };
+}
 
 // ============================================================
 // ЗАГРУЗКА
@@ -39,12 +51,30 @@ export async function loadAnnouncements() {
 }
 
 // ============================================================
+// REALTIME
+// ============================================================
+export function subscribeAnnouncements(onUpdate) {
+    if (announceChannel) supabase.removeChannel(announceChannel);
+    announceChannel = supabase.channel('announcements-rt')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+            loadAnnouncements().then(() => {
+                if (typeof onUpdate === 'function') onUpdate();
+                // Обновляем мини-блок в правом сайдбаре
+                let mini = document.getElementById('announce-mini');
+                if (mini && typeof window.__renderAnnounceMini === 'function') {
+                    window.__renderAnnounceMini();
+                }
+            });
+        })
+        .subscribe();
+}
+
+// ============================================================
 // CRUD
 // ============================================================
 export async function createAnnouncement(title, text, type) {
     if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) return { success: false, error: '⛔ НЕТ ПРАВ' };
     try {
-        // Парсим хэштеги
         let hashtags = [];
         if (text) {
             let regex = /(?:^|\s)#([\p{L}\p{N}_-]{1,32})/gu;
@@ -56,14 +86,12 @@ export async function createAnnouncement(title, text, type) {
         }
         await supabase.from('announcements').insert({
             type: type || 'news',
-            title,
-            text,
+            title, text,
             author: CA.name,
             hashtags: hashtags
         });
         await loadAnnouncements();
         notif('📢 ОПУБЛИКОВАНО');
-        playSound('send');
         return { success: true };
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
@@ -125,7 +153,6 @@ export function renderAnnounceApp() {
     let c = document.getElementById('announce-content');
     if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator') || !c) return;
 
-    // Чипсы-фильтры
     let filters = [
         { id: 'all', label: 'ВСЕ', icon: '▣' },
         { id: 'news', label: 'НОВОСТИ', icon: '📰' },
@@ -141,10 +168,8 @@ export function renderAnnounceApp() {
         ).join('') +
         '</div>';
 
-    // Кнопка создания
     let createBtn = '<button class="btn full" id="show-create-announce-btn" style="margin-bottom:16px;">➕ СОЗДАТЬ ОБЪЯВЛЕНИЕ</button>';
 
-    // Список
     let { items, total, hasMore } = getPage(announcePage);
 
     let listHtml = '<div id="announce-list">';
@@ -155,7 +180,6 @@ export function renderAnnounceApp() {
     }
     listHtml += '</div>';
 
-    // «Загрузить ещё»
     let moreHtml = '';
     if (hasMore) {
         let remaining = total - (announcePage + 1) * PAGE_SIZE;
@@ -166,12 +190,10 @@ export function renderAnnounceApp() {
         moreHtml = '<div style="margin-top:16px;text-align:center;color:var(--text-3);font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;">— КОНЕЦ —</div>';
     }
 
-    // Счётчик
     let countHtml = '<div style="color:var(--text-3);font-size:0.75rem;margin-bottom:12px;font-family:var(--font-digit);letter-spacing:1px;">ВСЕГО: ' + total + '</div>';
 
     c.innerHTML = createBtn + filtersHtml + countHtml + listHtml + moreHtml;
 
-    // Обработчики
     setTimeout(() => {
         document.getElementById('show-create-announce-btn')?.addEventListener('click', () => {
             if (typeof window.showCreateAnnouncement === 'function') window.showCreateAnnouncement();
@@ -187,7 +209,6 @@ export function renderAnnounceApp() {
             announcePage++;
             renderAnnounceApp();
         });
-        // Кнопки карточек
         document.querySelectorAll('[data-pin-ann]').forEach(b => b.addEventListener('click', async function(e) {
             e.stopPropagation();
             await pinAnnouncement(parseInt(this.dataset.pinAnn));
@@ -212,6 +233,7 @@ export function renderAnnounceApp() {
 
 function renderAnnounceCard(a) {
     let t = announceTypes[a.type] || announceTypes.news;
+    let e = fx(a.author);
     let titleHtml = a.title ? linkifyHashtags(escapeHtml(a.title)) : '';
     let textHtml = a.text ? linkifyHashtags(escapeHtml(a.text)).replace(/\n/g, '<br>') : '';
     let isPinned = a.pinned;
@@ -219,9 +241,11 @@ function renderAnnounceCard(a) {
 
     return '<div class="card" style="border-left-color:' + t.color + ';margin-bottom:10px;' + (isPinned ? 'border-color:var(--accent);' : '') + '">' +
         '<div class="card-header" style="margin-bottom:8px;">' +
-        '<div class="card-avatar" style="background:' + t.color + '22;color:' + t.color + ';font-size:1.3rem;">' + t.icon + '</div>' +
+        '<div class="chat-avatar-frame card-avatar" style="border-color:' + t.color + '55;">' +
+        '<div class="inner" style="background:' + t.color + '22;color:' + t.color + ';font-size:1.3rem;">' + t.icon + '</div>' +
+        '</div>' +
         '<div class="card-author-block">' +
-        '<div class="card-author">' + escapeHtml(a.author) + '</div>' +
+        '<div class="card-author name-with-badge ' + e.colorCls + ' ' + e.fontCls + '" data-show-agent="' + escapeHtml(a.author) + '" style="cursor:pointer;">' + escapeHtml(a.author) + e.roleBadge + e.badgeHtml + '</div>' +
         '<div class="card-meta">' +
         '<span class="role" style="color:' + t.color + ';">' + t.label.toUpperCase() + '</span>' +
         (isPinned ? '<span style="color:var(--accent);">📌 ЗАКРЕПЛЕНО' + pinnedBy + '</span>' : '') +
@@ -262,7 +286,4 @@ function timeAgo(d) {
     return new Date(d).toLocaleDateString('ru-RU');
 }
 
-// ============================================================
-// ЭКСПОРТЫ
-// ============================================================
 export { announcements, announceFilter, announcePage };

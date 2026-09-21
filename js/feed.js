@@ -1,5 +1,6 @@
 // ============================================================
 // FEED / ЛЕНТА — репосты, комментарии, хэштеги, эффекты
+// v2.6.0: единый getAgentFx, роль-бейджи
 // ============================================================
 
 import { supabase, CA, getAgents, saveAgent } from './auth.js';
@@ -61,18 +62,22 @@ export function linkifyHashtags(escapedText) {
 }
 
 // ============================================================
-// ЭФФЕКТЫ (из кэша agents)
+// ЭФФЕКТЫ (через единую функцию из main.js)
 // ============================================================
-function getAgentEffects(name, agents) {
-    let a = agents[name] || {};
+function fx(name, agents) {
+    if (typeof window.__getAgentFx === 'function') {
+        return window.__getAgentFx(name, agents);
+    }
+    // Fallback, если main.js ещё не загрузился
+    let a = (agents || {})[name] || {};
     let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
     let fontCls = '';
-    if (a.active_font) {
+    if (a.active_font && a.active_font !== 'fnt_blood') {
         let map = {
             'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
             'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
             'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
-            'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
+            'fnt_pixel': 'font-pixel', 'fnt_neon': 'font-neon',
             'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
         };
         fontCls = map[a.active_font] || '';
@@ -85,10 +90,13 @@ function getAgentEffects(name, agents) {
     let badgeHtml = '';
     if (a.active_badge && a.active_badge !== 'b_none' && shopItems.badges) {
         let b = shopItems.badges.find(x => x.id === a.active_badge);
-        if (b && b.image) badgeHtml = '<img src="' + b.image + '" style="width:16px;height:16px;vertical-align:middle;margin-left:4px;">';
-        else if (b && b.emoji) badgeHtml = '<span style="font-size:0.85rem;margin-left:4px;">' + b.emoji + '</span>';
+        if (b && b.image) badgeHtml = '<img src="' + b.image + '" class="badge-img">';
+        else if (b && b.emoji) badgeHtml = '<span style="font-size:0.9rem;">' + b.emoji + '</span>';
     }
-    return { colorCls, fontCls, frameCls, badgeHtml, avatar: a.avatar_url || '' };
+    let roleBadge = '';
+    if (a.role === 'admin') roleBadge = '<span class="role-badge admin">👑</span>';
+    else if (a.role === 'moderator') roleBadge = '<span class="role-badge mod">🛡</span>';
+    return { colorCls, fontCls, frameCls, badgeHtml, roleBadge, avatar: a.avatar_url || '' };
 }
 
 // ============================================================
@@ -99,8 +107,8 @@ export function renderPostCard(post, opts = {}) {
     let originalPost = opts.originalPost;
     let compact = opts.compact || false;
 
-    let fx = getAgentEffects(post.author, agents);
-    let avatarUrl = post.avatar_url || fx.avatar;
+    let e = fx(post.author, agents);
+    let avatarUrl = post.avatar_url || e.avatar;
     let avatarHtml = avatarUrl ? '<img src="' + avatarUrl + '">' : '🕶️';
 
     let liked = post.liked_by && CA && (Array.isArray(post.liked_by) ? post.liked_by : []).includes(CA.name);
@@ -114,8 +122,8 @@ export function renderPostCard(post, opts = {}) {
 
     // ============ РЕПОСТ ============
     if (post.repost_of && originalPost) {
-        let ofx = getAgentEffects(originalPost.author, agents);
-        let oAvatarUrl = originalPost.avatar_url || ofx.avatar;
+        let eo = fx(originalPost.author, agents);
+        let oAvatarUrl = originalPost.avatar_url || eo.avatar;
         let origAvatar = oAvatarUrl ? '<img src="' + oAvatarUrl + '">' : '🕶️';
         let origText = originalPost.text
             ? linkifyHashtags(escapeHtml(originalPost.text)).replace(/\n/g, '<br>')
@@ -127,24 +135,22 @@ export function renderPostCard(post, opts = {}) {
         return '<div class="card repost-wrapper" data-post-id="' + post.id + '">' +
             '<div class="repost-header">' +
             '<span>🔁</span>' +
-            '<span class="repost-author ' + fx.colorCls + ' ' + fx.fontCls + '" data-show-agent="' + escapeHtml(post.author) + '">' + escapeHtml(post.author) + '</span>' +
-            fx.badgeHtml +
+            '<span class="repost-author name-with-badge ' + e.colorCls + ' ' + e.fontCls + '" data-show-agent="' + escapeHtml(post.author) + '">' + escapeHtml(post.author) + e.roleBadge + e.badgeHtml + '</span>' +
             '<span>репостнул от</span>' +
-            '<span class="repost-author ' + ofx.colorCls + ' ' + ofx.fontCls + '" data-show-agent="' + escapeHtml(originalPost.author) + '">' + escapeHtml(originalPost.author) + '</span>' +
-            ofx.badgeHtml +
+            '<span class="repost-author name-with-badge ' + eo.colorCls + ' ' + eo.fontCls + '" data-show-agent="' + escapeHtml(originalPost.author) + '">' + escapeHtml(originalPost.author) + eo.roleBadge + eo.badgeHtml + '</span>' +
             '<span style="margin-left:auto;">' + timeAgo(post.created_at) + '</span>' +
             '</div>' +
             '<div class="repost-original">' +
             '<div class="card-header" style="margin-bottom:6px;">' +
-            '<div class="card-avatar ' + ofx.frameCls + '" data-show-agent="' + escapeHtml(originalPost.author) + '">' + origAvatar + '</div>' +
+            '<div class="chat-avatar-frame card-avatar ' + eo.frameCls + '" data-show-agent="' + escapeHtml(originalPost.author) + '"><div class="inner">' + origAvatar + '</div></div>' +
             '<div class="card-author-block">' +
-            '<div class="card-author ' + ofx.colorCls + ' ' + ofx.fontCls + '" data-open-post-author="' + escapeHtml(originalPost.author) + '">' + escapeHtml(originalPost.author) + ofx.badgeHtml + '</div>' +
+            '<div class="card-author name-with-badge ' + eo.colorCls + ' ' + eo.fontCls + '" data-open-post-author="' + escapeHtml(originalPost.author) + '">' + escapeHtml(originalPost.author) + eo.roleBadge + eo.badgeHtml + '</div>' +
             '<div class="card-meta"><span class="card-time">' + timeAgo(originalPost.created_at) + '</span></div>' +
             '</div></div>' +
-            (origText ? '<div class="card-text ' + ofx.fontCls + '">' + origText + '</div>' : '') +
+            (origText ? '<div class="card-text ' + eo.fontCls + '">' + origText + '</div>' : '') +
             origImg +
             '</div>' +
-            (post.text ? '<div class="card-text ' + fx.fontCls + '" style="margin-top:8px;color:var(--text-3);font-style:italic;">' + textHtml + '</div>' : '') +
+            (post.text ? '<div class="card-text ' + e.fontCls + '" style="margin-top:8px;color:var(--text-3);font-style:italic;">' + textHtml + '</div>' : '') +
             renderPostActions(post, compact) +
             renderCommentsSection(post) +
             '</div>';
@@ -153,12 +159,12 @@ export function renderPostCard(post, opts = {}) {
     // ============ ОБЫЧНЫЙ ПОСТ ============
     return '<div class="card" data-post-id="' + post.id + '">' +
         '<div class="card-header">' +
-        '<div class="card-avatar ' + fx.frameCls + '" data-show-agent="' + escapeHtml(post.author) + '">' + avatarHtml + '</div>' +
+        '<div class="chat-avatar-frame card-avatar ' + e.frameCls + '" data-show-agent="' + escapeHtml(post.author) + '"><div class="inner">' + avatarHtml + '</div></div>' +
         '<div class="card-author-block">' +
-        '<div class="card-author ' + fx.colorCls + ' ' + fx.fontCls + '" data-open-post-author="' + escapeHtml(post.author) + '">' + escapeHtml(post.author) + fx.badgeHtml + '</div>' +
+        '<div class="card-author name-with-badge ' + e.colorCls + ' ' + e.fontCls + '" data-open-post-author="' + escapeHtml(post.author) + '">' + escapeHtml(post.author) + e.roleBadge + e.badgeHtml + '</div>' +
         '<div class="card-meta"><span class="card-time">' + timeAgo(post.created_at) + '</span></div>' +
         '</div></div>' +
-        (textHtml ? '<div class="card-text ' + fx.fontCls + '">' + textHtml + '</div>' : '') +
+        (textHtml ? '<div class="card-text ' + e.fontCls + '">' + textHtml + '</div>' : '') +
         imgHtml +
         renderPostActions(post, compact) +
         renderCommentsSection(post) +
@@ -189,21 +195,21 @@ function renderCommentsSection(post) {
 }
 
 // ============================================================
-// КОММЕНТАРИИ (с эффектами)
+// КОММЕНТАРИИ
 // ============================================================
 export function renderComment(comment, agents) {
-    let fx = getAgentEffects(comment.author, agents);
-    let avatarUrl = comment.avatar_url || fx.avatar;
+    let e = fx(comment.author, agents);
+    let avatarUrl = comment.avatar_url || e.avatar;
     let avatarHtml = avatarUrl ? '<img src="' + avatarUrl + '">' : '🕶️';
     let liked = comment.liked_by && CA && (Array.isArray(comment.liked_by) ? comment.liked_by : []).includes(CA.name);
     let text = linkifyHashtags(escapeHtml(comment.text || '')).replace(/\n/g, '<br>');
     let canDel = CA && (CA.role === 'admin' || CA.role === 'moderator' || comment.author === CA.name);
 
     return '<div class="comment-item" data-comment-id="' + comment.id + '">' +
-        '<div class="comment-avatar ' + fx.frameCls + '" data-show-agent="' + escapeHtml(comment.author) + '">' + avatarHtml + '</div>' +
+        '<div class="chat-avatar-frame comment-avatar ' + e.frameCls + '" data-show-agent="' + escapeHtml(comment.author) + '"><div class="inner">' + avatarHtml + '</div></div>' +
         '<div class="comment-body">' +
-        '<div class="comment-author ' + fx.colorCls + ' ' + fx.fontCls + '" data-show-agent="' + escapeHtml(comment.author) + '">' + escapeHtml(comment.author) + fx.badgeHtml + '</div>' +
-        '<div class="comment-text ' + fx.fontCls + '">' + text + '</div>' +
+        '<div class="comment-author name-with-badge ' + e.colorCls + ' ' + e.fontCls + '" data-show-agent="' + escapeHtml(comment.author) + '">' + escapeHtml(comment.author) + e.roleBadge + e.badgeHtml + '</div>' +
+        '<div class="comment-text ' + e.fontCls + '">' + text + '</div>' +
         '<div class="comment-meta">' +
         '<span data-comment-like="' + comment.id + '" style="' + (liked ? 'color:var(--accent);' : '') + '">❤ ' + (comment.likes || 0) + '</span>' +
         '<span>' + timeAgo(comment.created_at) + '</span>' +
@@ -321,7 +327,7 @@ async function incrementRepostsCount(postId, delta) {
 }
 
 // ============================================================
-// ЛАЙК ПОСТА (с анимацией)
+// ЛАЙК
 // ============================================================
 export async function likePost(postId, buttonEl) {
     if (!CA) return;
@@ -374,6 +380,9 @@ export function attachFeedHandlers(container, callbacks = {}) {
 
         let sa = e.target.closest('[data-show-agent]');
         if (sa) { e.stopPropagation(); if (typeof window.showAgentInfo === 'function') window.showAgentInfo(sa.dataset.showAgent); return; }
+
+        let oa = e.target.closest('[data-open-post-author]');
+        if (oa) { e.stopPropagation(); if (typeof window.showAgentInfo === 'function') window.showAgentInfo(oa.dataset.openPostAuthor); return; }
 
         let like = e.target.closest('[data-like-post]');
         if (like) { e.stopPropagation(); let r = await likePost(parseInt(like.dataset.likePost), like); if (r) playSound('click'); return; }

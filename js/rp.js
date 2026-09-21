@@ -1,12 +1,13 @@
 // ============================================================
 // RP / ТЕКСТОВО-РОЛЕВОЙ ЧАТ + СПЕКТАКЛИ
-// v2.5.1: SPACE-X, редактирование/удаление спектаклей
+// v2.6.0: Discord-обложки в списке, единый getAgentFx, realtime
 // ============================================================
 
 import { supabase, CA, getAgents } from './auth.js';
 import { notif, timeAgo, closeModal } from './utils.js';
 import { playSound } from './sounds.js';
-
+import { shopItems, getActiveColorClassForId } from './shop.js';
+import { RP_RACES } from './config.js';
 // ==================== СОСТОЯНИЕ ====================
 let rpCharacters = [];
 let rpMessages = [];
@@ -22,6 +23,16 @@ let sceneChannel = null;
 let sceneReplyTo = null;
 let currentSceneData = null;
 let sceneCoverTimer = null;
+
+// ==================== ЭФФЕКТЫ ====================
+function fx(name) {
+    if (typeof window.__getAgentFx === 'function') return window.__getAgentFx(name);
+    // Fallback
+    let colorCls = '';
+    let frameCls = 'f-default';
+    let roleBadge = '';
+    return { colorCls, fontCls: '', frameCls, badgeHtml: '', roleBadge, avatar: '' };
+}
 
 // ==================== ПЕРСОНАЖИ ====================
 export async function loadRpCharacters() {
@@ -127,7 +138,17 @@ export function subscribeRpChat(room = 'space-x') {
             rpMessages.push(payload.new);
             if (payload.new.owner !== CA?.name) playSound('receive');
             renderRpMessages();
-        }).subscribe();
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rp_messages', filter: 'room=eq.space-x' }, payload => {
+            let idx = rpMessages.findIndex(m => m.id === payload.new.id);
+            if (idx !== -1) rpMessages[idx] = payload.new;
+            renderRpMessages();
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'rp_messages' }, payload => {
+            rpMessages = rpMessages.filter(m => m.id !== payload.old.id);
+            renderRpMessages();
+        })
+        .subscribe();
 }
 
 export async function sendRpMessage() {
@@ -167,6 +188,7 @@ export function renderRpMessages() {
         return;
     }
     c.innerHTML = rpMessages.map(m => {
+        let e = fx(m.owner);
         let avatarHtml = m.char_avatar_url
             ? '<img src="' + m.char_avatar_url + '" style="width:100%;height:100%;object-fit:cover;">'
             : '🎭';
@@ -200,14 +222,14 @@ export function renderRpMessages() {
             : '';
 
         return '<div class="chat-msg" data-msg-id="' + m.id + '">' +
-            '<div class="chat-msg-left"><span class="chat-avatar-frame f-default"><span class="chat-avatar">' + avatarHtml + '</span></span></div>' +
+            '<div class="chat-msg-left"><div class="chat-avatar-frame f-default"><div class="inner">' + avatarHtml + '</div></div></div>' +
             '<div class="chat-msg-right">' + replyHtml +
             '<div class="chat-header-row">' +
-            '<span class="chat-author" style="color:var(--accent);" onclick="window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + '</span>' +
+            '<span class="chat-author name-with-badge ' + e.colorCls + ' ' + e.fontCls + '" style="color:var(--accent);" onclick="window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + e.roleBadge + e.badgeHtml + '</span>' +
             '<span style="color:var(--text-3);font-size:0.7rem;">(' + m.owner + ')</span>' +
             '<span class="chat-time">' + m.time + '</span>' + menu +
             '</div>' +
-            '<div class="chat-text" style="font-style:italic;">' + txt + '</div>' +
+            '<div class="chat-text ' + e.fontCls + '" style="font-style:italic;">' + txt + '</div>' +
             '<div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="rp" data-msgid="' + m.id + '">+</span></div>' +
             '</div></div>';
     }).join('');
@@ -239,9 +261,10 @@ export async function deleteRpMessage(msgId) {
     if (!msg) return;
     let canMod = CA && (CA.role === 'admin' || CA.role === 'moderator');
     if (msg.owner !== CA?.name && !canMod) return notif('⛔ Нет прав');
-    await supabase.from('rp_messages').delete().eq('id', parseInt(msgId));
+    // Локально удаляем сразу для мгновенного отклика
     rpMessages = rpMessages.filter(m => String(m.id) !== String(msgId));
     renderRpMessages();
+    await supabase.from('rp_messages').delete().eq('id', parseInt(msgId));
     notif('🗑 Удалено');
 }
 
@@ -253,9 +276,9 @@ export async function editRpMessage(msgId) {
     inp.focus();
     rpReplyTo = null;
     cancelRpReply();
-    await supabase.from('rp_messages').delete().eq('id', parseInt(msgId));
     rpMessages = rpMessages.filter(m => String(m.id) !== String(msgId));
     renderRpMessages();
+    await supabase.from('rp_messages').delete().eq('id', parseInt(msgId));
 }
 
 export function replyToRpMessage(msgId, charName, text) {
@@ -295,7 +318,7 @@ export async function loadRpScenes() {
             .select('*').order('created_at', { ascending: false });
         if (data) {
             rpScenes = data;
-            window.__rpScenes = data;  // для доступа из main.js
+            window.__rpScenes = data;
         }
     } catch (e) {}
 }
@@ -307,6 +330,24 @@ export async function loadSceneCovers(sceneId) {
             .order('position', { ascending: true });
         return data || [];
     } catch (e) { return []; }
+}
+
+export async function loadFirstCovers() {
+    // Загружаем первую обложку для каждого спектакля (для превью в списке)
+    if (rpScenes.length === 0) return {};
+    let result = {};
+    try {
+        let ids = rpScenes.map(s => s.id);
+        let { data } = await supabase.from('rp_scene_images')
+            .select('scene_id, image_url, position')
+            .in('scene_id', ids)
+            .order('position', { ascending: true });
+        (data || []).forEach(c => {
+            if (!result[c.scene_id]) result[c.scene_id] = c.image_url;
+        });
+    } catch (e) {}
+    window.__sceneFirstCovers = result;
+    return result;
 }
 
 export async function createRpScene(title, description, coverFiles) {
@@ -322,7 +363,6 @@ export async function createRpScene(title, description, coverFiles) {
         }).select().single();
         if (error) return { success: false, error: error.message };
 
-        // Обложки
         if (coverFiles && coverFiles.length > 0) {
             for (let i = 0; i < Math.min(coverFiles.length, 5); i++) {
                 let url = await uploadSceneCover(scene.id, coverFiles[i], i);
@@ -341,34 +381,41 @@ export async function createRpScene(title, description, coverFiles) {
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
-// NEW: редактирование спектакля
 export async function editRpScene(sceneId, title, description, coverFiles) {
     if (!CA) return { success: false, error: 'Не авторизован' };
     try {
-        // Проверяем авторство
         let { data: scene } = await supabase.from('rp_scenes').select('*').eq('id', sceneId).maybeSingle();
         if (!scene) return { success: false, error: 'Спектакль не найден' };
         let canEdit = scene.author === CA.name || CA.role === 'admin' || CA.role === 'moderator';
         if (!canEdit) return { success: false, error: 'Нет прав' };
 
-        // Обновляем основные поля
-        await supabase.from('rp_scenes').update({
-            title,
-            description
-        }).eq('id', sceneId);
+        await supabase.from('rp_scenes').update({ title, description }).eq('id', sceneId);
 
-        // Если новые файлы выбраны — полная замена обложек
-        if (coverFiles && coverFiles.length > 0) {
-            // Удаляем старые записи
-            await supabase.from('rp_scene_images').delete().eq('scene_id', sceneId);
-            // Загружаем новые
-            for (let i = 0; i < Math.min(coverFiles.length, 5); i++) {
-                let url = await uploadSceneCover(sceneId, coverFiles[i], i);
-                if (url) {
-                    await supabase.from('rp_scene_images').insert({
-                        scene_id: sceneId, image_url: url, position: i
-                    });
-                }
+        // Обложки: удаляем ВСЕ старые и записываем те, что остались + новые
+        // window.__sceneCovers содержит объекты { url?, preview, isNew, file? }
+        let covers = window.__sceneCovers || [];
+        let keptUrls = covers.filter(c => !c.isNew).map(c => c.url);
+        let newFiles = covers.filter(c => c.isNew).map(c => c.file);
+
+        // Удаляем все старые записи
+        await supabase.from('rp_scene_images').delete().eq('scene_id', sceneId);
+
+        // Записываем оставшиеся (сохранённые) обложки
+        for (let i = 0; i < keptUrls.length; i++) {
+            await supabase.from('rp_scene_images').insert({
+                scene_id: sceneId, image_url: keptUrls[i], position: i
+            });
+        }
+
+        // Загружаем новые
+        let offset = keptUrls.length;
+        for (let i = 0; i < newFiles.length; i++) {
+            if (offset + i >= 5) break;
+            let url = await uploadSceneCover(sceneId, newFiles[i], offset + i);
+            if (url) {
+                await supabase.from('rp_scene_images').insert({
+                    scene_id: sceneId, image_url: url, position: offset + i
+                });
             }
         }
 
@@ -378,7 +425,6 @@ export async function editRpScene(sceneId, title, description, coverFiles) {
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
-// NEW: удаление спектакля
 export async function deleteRpScene(sceneId) {
     if (!CA) return { success: false, error: 'Не авторизован' };
     try {
@@ -387,7 +433,6 @@ export async function deleteRpScene(sceneId) {
         let canDel = scene.author === CA.name || CA.role === 'admin' || CA.role === 'moderator';
         if (!canDel) return { success: false, error: 'Нет прав' };
 
-        // Удаляем обложки, сообщения, сам спектакль
         await supabase.from('rp_scene_images').delete().eq('scene_id', sceneId);
         await supabase.from('rp_scene_messages').delete().eq('scene_id', sceneId);
         await supabase.from('rp_scenes').delete().eq('id', sceneId);
@@ -431,20 +476,29 @@ async function uploadSceneCover(sceneId, file, position) {
     });
 }
 
-export function renderRpScenes() {
+export async function renderRpScenes() {
     let c = document.getElementById('rp-scenes-list');
     if (!c) return;
+
+    // Загружаем первые обложки для превью
+    await loadFirstCovers();
+    let covers = window.__sceneFirstCovers || {};
+
     if (rpScenes.length === 0) {
         c.innerHTML = '<div class="empty-state">Спектаклей пока нет</div>';
         return;
     }
+
     c.innerHTML = rpScenes.map(s => {
-        let av = s.char_avatar_url
-            ? '<img src="' + s.char_avatar_url + '" style="width:44px;height:44px;border-radius:12px;object-fit:cover;">'
-            : '🎭';
+        let cover = covers[s.id];
+        let coverHtml = cover
+            ? '<div class="scene-card-cover"><img src="' + cover + '" onerror="this.style.display=\'none\'"></div>'
+            : '<div class="scene-card-cover" style="display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:1.5rem;">🎬</div>';
+
         let isMine = CA && (s.author === CA.name);
         let canMod = CA && (CA.role === 'admin' || CA.role === 'moderator');
         let canEdit = isMine || canMod;
+        let e = fx(s.author);
 
         let actions = '';
         if (canEdit) {
@@ -454,19 +508,20 @@ export function renderRpScenes() {
                 '</div>';
         }
 
-        return '<div class="card" style="padding:14px;margin-bottom:8px;cursor:pointer;" data-open-scene="' + s.id + '">' +
-            '<div style="display:flex;gap:12px;align-items:center;">' +
-            '<div>' + av + '</div>' +
+        return '<div class="card" style="padding:14px;margin-bottom:8px;cursor:pointer;display:flex;gap:12px;align-items:flex-start;" data-open-scene="' + s.id + '">' +
+            coverHtml +
             '<div style="flex:1;min-width:0;">' +
-            '<div style="font-weight:700;">' + escapeHtml(s.title) + '</div>' +
-            '<div style="color:var(--text-3);font-size:0.75rem;">' + escapeHtml(s.char_name || '') + ' (' + escapeHtml(s.author) + ') · ' + timeAgo(s.created_at) + '</div>' +
+            '<div style="font-weight:700;display:flex;align-items:center;gap:6px;">' + escapeHtml(s.title) + (canEdit ? '' : '<span style="color:var(--accent);font-size:1.2rem;margin-left:auto;">▸</span>') + '</div>' +
+            '<div style="color:var(--text-3);font-size:0.75rem;margin-top:2px;display:flex;gap:6px;align-items:center;">' +
+            '<span class="name-with-badge ' + e.colorCls + '" onclick="event.stopPropagation();window.showAgentInfo(\'' + escapeHtml(s.author) + '\')" style="cursor:pointer;">' + escapeHtml(s.char_name || s.author) + e.roleBadge + '</span>' +
+            '<span>· ' + timeAgo(s.created_at) + '</span>' +
             '</div>' +
-            (canEdit ? '' : '<div style="color:var(--accent);font-size:1.2rem;">▸</div>') +
+            (s.description ? '<div style="color:var(--text-2);margin-top:6px;line-height:1.4;font-size:0.8rem;">' + escapeHtml(s.description).substring(0, 120) + (s.description.length > 120 ? '...' : '') + '</div>' : '') +
+            '</div>' +
             actions +
-            '</div>' +
-            (s.description ? '<div style="color:var(--text-2);margin-top:8px;line-height:1.5;font-size:0.8rem;">' + escapeHtml(s.description).substring(0, 150) + (s.description.length > 150 ? '...' : '') + '</div>' : '') +
             '</div>';
     }).join('');
+
     setTimeout(() => {
         document.querySelectorAll('[data-open-scene]').forEach(el => {
             el.addEventListener('click', (e) => {
@@ -526,38 +581,28 @@ async function renderSceneCovers(sceneId) {
     let covers = await loadSceneCovers(sceneId);
     if (covers.length === 0) { wrap.innerHTML = ''; return; }
 
-    let slides = covers.map(c => '<div class="cover-carousel-slide" style="background-image:url(' + c.image_url + ');"></div>').join('');
-    let dots = covers.map((c, i) => '<div class="cover-carousel-dot' + (i === 0 ? ' active' : '') + '" data-cover-dot="' + i + '"></div>').join('');
-    wrap.innerHTML = '<div class="cover-carousel">' +
-        '<div class="cover-carousel-track" id="scene-cover-track" style="width:' + (covers.length * 100) + '%;">' + slides + '</div>' +
-        '<div class="cover-carousel-nav">' + dots + '</div>' +
+    // Discord-style: большая слева + маленькие справа
+    let mainUrl = covers[0].image_url;
+    let thumbs = covers.map((c, i) =>
+        '<div class="scene-cover-thumb-sm' + (i === 0 ? ' active' : '') + '" data-scene-cover-idx="' + i + '">' +
+        '<img src="' + c.image_url + '">' +
+        '</div>'
+    ).join('');
+
+    wrap.innerHTML = '<div class="scene-covers-view">' +
+        '<div class="scene-covers-view-main" id="scene-cover-main"><img src="' + mainUrl + '"></div>' +
+        (covers.length > 1 ? '<div class="scene-covers-view-thumbs">' + thumbs + '</div>' : '') +
         '</div>';
 
-    let track = document.getElementById('scene-cover-track');
-    let idx = 0;
-    let total = covers.length;
-
-    function goTo(i) {
-        idx = (i + total) % total;
-        if (track) track.style.transform = 'translateX(-' + (idx * 100 / total) + '%)';
-        document.querySelectorAll('[data-cover-dot]').forEach((d, j) => d.classList.toggle('active', j === idx));
-    }
-
-    if (total > 1) {
-        sceneCoverTimer = setInterval(() => {
-            if (!track || currentSceneId !== sceneId) { clearInterval(sceneCoverTimer); sceneCoverTimer = null; return; }
-            goTo(idx + 1);
-        }, 4000);
-    }
-
-    setTimeout(() => {
-        document.querySelectorAll('[data-cover-dot]').forEach(dot => {
-            dot.addEventListener('click', () => {
-                if (sceneCoverTimer) { clearInterval(sceneCoverTimer); sceneCoverTimer = null; }
-                goTo(parseInt(dot.dataset.coverDot));
-            });
+    // Клик по миниатюре
+    wrap.querySelectorAll('[data-scene-cover-idx]').forEach(thumb => {
+        thumb.addEventListener('click', () => {
+            let idx = parseInt(thumb.dataset.sceneCoverIdx);
+            let main = document.getElementById('scene-cover-main');
+            if (main && covers[idx]) main.innerHTML = '<img src="' + covers[idx].image_url + '">';
+            wrap.querySelectorAll('[data-scene-cover-idx]').forEach((t, i) => t.classList.toggle('active', i === idx));
         });
-    }, 10);
+    });
 }
 
 export async function loadSceneMessages(sceneId) {
@@ -579,7 +624,22 @@ export function subscribeSceneChat(sceneId) {
             sceneMessages.push(payload.new);
             if (payload.new.owner !== CA?.name) playSound('receive');
             if (currentSceneId === sceneId) renderSceneMessages();
-        }).subscribe();
+        })
+        .on('postgres_changes', {
+            event: 'UPDATE', schema: 'public', table: 'rp_scene_messages',
+            filter: 'scene_id=eq.' + sceneId
+        }, payload => {
+            let idx = sceneMessages.findIndex(m => m.id === payload.new.id);
+            if (idx !== -1) sceneMessages[idx] = payload.new;
+            if (currentSceneId === sceneId) renderSceneMessages();
+        })
+        .on('postgres_changes', {
+            event: 'DELETE', schema: 'public', table: 'rp_scene_messages'
+        }, payload => {
+            sceneMessages = sceneMessages.filter(m => m.id !== payload.old.id);
+            if (currentSceneId === sceneId) renderSceneMessages();
+        })
+        .subscribe();
 }
 
 export async function sendSceneMessage() {
@@ -618,6 +678,7 @@ export function renderSceneMessages() {
         return;
     }
     c.innerHTML = sceneMessages.map(m => {
+        let e = fx(m.owner);
         let avatarHtml = m.char_avatar_url
             ? '<img src="' + m.char_avatar_url + '" style="width:100%;height:100%;object-fit:cover;">'
             : '🎭';
@@ -651,14 +712,14 @@ export function renderSceneMessages() {
             : '';
 
         return '<div class="chat-msg" data-msg-id="' + m.id + '">' +
-            '<div class="chat-msg-left"><span class="chat-avatar-frame f-default"><span class="chat-avatar">' + avatarHtml + '</span></span></div>' +
+            '<div class="chat-msg-left"><div class="chat-avatar-frame f-default"><div class="inner">' + avatarHtml + '</div></div></div>' +
             '<div class="chat-msg-right">' + replyHtml +
             '<div class="chat-header-row">' +
-            '<span class="chat-author" style="color:var(--accent);" onclick="window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + '</span>' +
+            '<span class="chat-author name-with-badge ' + e.colorCls + ' ' + e.fontCls + '" style="color:var(--accent);" onclick="window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + e.roleBadge + e.badgeHtml + '</span>' +
             '<span style="color:var(--text-3);font-size:0.7rem;">(' + m.owner + ')</span>' +
             '<span class="chat-time">' + m.time + '</span>' + menu +
             '</div>' +
-            '<div class="chat-text" style="font-style:italic;">' + txt + '</div>' +
+            '<div class="chat-text ' + e.fontCls + '" style="font-style:italic;">' + txt + '</div>' +
             '<div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="scene" data-msgid="' + m.id + '">+</span></div>' +
             '</div></div>';
     }).join('');
@@ -680,9 +741,10 @@ export async function addSceneReaction(msgId, emoji) {
         msg.reactions[key].push(CA.name);
         msg.reactions[emoji] = (msg.reactions[emoji] || 0) + 1;
     }
-    await supabase.from('rp_scene_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
+    // Локально сразу
     sceneMessages = sceneMessages.map(m => m.id == msgId ? { ...m, reactions: msg.reactions } : m);
     renderSceneMessages();
+    await supabase.from('rp_scene_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
 }
 
 export async function deleteSceneMessage(msgId) {
@@ -690,13 +752,13 @@ export async function deleteSceneMessage(msgId) {
     if (!msg) return;
     let canMod = CA && (CA.role === 'admin' || CA.role === 'moderator');
     if (msg.owner !== CA?.name && !canMod) return notif('⛔ Нет прав');
-    await supabase.from('rp_scene_messages').delete().eq('id', parseInt(msgId));
+    // Локально сразу
     sceneMessages = sceneMessages.filter(m => String(m.id) !== String(msgId));
     renderSceneMessages();
+    await supabase.from('rp_scene_messages').delete().eq('id', parseInt(msgId));
     notif('🗑 Удалено');
 }
 
-// NEW: редактирование своих сообщений в спектакле
 export async function editSceneMessage(msgId) {
     let msg = sceneMessages.find(m => m.id == msgId);
     if (!msg || msg.owner !== CA?.name) return;
@@ -706,9 +768,9 @@ export async function editSceneMessage(msgId) {
     inp.focus();
     sceneReplyTo = null;
     cancelSceneReply();
-    await supabase.from('rp_scene_messages').delete().eq('id', parseInt(msgId));
     sceneMessages = sceneMessages.filter(m => String(m.id) !== String(msgId));
     renderSceneMessages();
+    await supabase.from('rp_scene_messages').delete().eq('id', parseInt(msgId));
 }
 
 export function replyToSceneMessage(msgId, charName, text) {

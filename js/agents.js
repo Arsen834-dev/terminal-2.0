@@ -1,6 +1,6 @@
 // ============================================================
 // AGENTS / ПРОФИЛИ АГЕНТОВ
-// v2.5.1: скролл, пагинация, эффекты, без матрицы
+// v2.6.0: роль-бейджи, единый getAgentFx, скролл, пагинация
 // ============================================================
 
 import { supabase, CA, loadAgent, getAgents, saveAgent } from './auth.js';
@@ -11,13 +11,36 @@ import { clans } from './clans.js';
 import { notif, closeModal, timeAgo } from './utils.js';
 import { renderPostCard as renderPostCardFeed, attachFeedHandlers } from './feed.js';
 
-// Кэш загруженных постов стены в текущей сессии модалки
 let wallPosts = [];
 let wallPage = 0;
 let wallTotal = 0;
 let wallAgentName = null;
 let wallLoaded = false;
 const WALL_PAGE_SIZE = 10;
+
+// ============================================================
+// ЭФФЕКТЫ (через main.js)
+// ============================================================
+function fx(name, agents) {
+    if (typeof window.__getAgentFx === 'function') return window.__getAgentFx(name, agents);
+    let a = (agents || {})[name] || {};
+    let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
+    let frameCls = 'f-default';
+    if (a.active_frame && shopItems.frames) {
+        let f = shopItems.frames.find(x => x.id === a.active_frame);
+        if (f) frameCls = f.cssClass || 'f-default';
+    }
+    let roleBadge = '';
+    if (a.role === 'admin') roleBadge = '<span class="role-badge admin">👑</span>';
+    else if (a.role === 'moderator') roleBadge = '<span class="role-badge mod">🛡</span>';
+    let badgeHtml = '';
+    if (a.active_badge && a.active_badge !== 'b_none' && shopItems.badges) {
+        let b = shopItems.badges.find(x => x.id === a.active_badge);
+        if (b && b.image) badgeHtml = '<img src="' + b.image + '" class="badge-img">';
+        else if (b && b.emoji) badgeHtml = '<span style="font-size:0.9rem;">' + b.emoji + '</span>';
+    }
+    return { colorCls, fontCls: '', frameCls, badgeHtml, roleBadge, avatar: a.avatar_url || '' };
+}
 
 // ============================================================
 // ПОКАЗ ПРОФИЛЯ
@@ -31,14 +54,13 @@ export async function showAgentInfo(name) {
         const agent = await loadAgent(name);
         if (!agent) { notif('⛔ Агент не найден'); return; }
 
-        // Сброс стены
         wallPosts = [];
         wallPage = 0;
         wallTotal = 0;
         wallAgentName = name;
         wallLoaded = false;
 
-        // ============ Подписки ============
+        // Подписки
         let subscribersCount = 0, followingCount = 0, iAmSubscribed = false;
         try {
             let { data: subs } = await supabase.from('subscriptions').select('*').eq('target', name);
@@ -48,39 +70,14 @@ export async function showAgentInfo(name) {
             if (CA && subs) iAmSubscribed = subs.some(s => s.subscriber === CA.name);
         } catch (e) {}
 
-        // ============ Аватар / обложка ============
         let coverUrl = agent.cover_url || '';
         let avatarHtml = agent.avatar_url
             ? '<img src="' + agent.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">'
             : '🕶️';
 
-        let colorClass = agent.active_color ? getActiveColorClassForId(agent.active_color) : '';
+        // Эффекты
+        let e = fx(name);
 
-        // Эффекты (рамка/шрифт/бейдж)
-        let frameCls = 'f-default';
-        if (agent.active_frame && shopItems.frames) {
-            let f = shopItems.frames.find(x => x.id === agent.active_frame);
-            if (f) frameCls = f.cssClass || 'f-default';
-        }
-        let fontCls = '';
-        if (agent.active_font) {
-            let map = {
-                'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
-                'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
-                'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
-                'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-                'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
-            };
-            fontCls = map[agent.active_font] || '';
-        }
-        let badgeHtml = '';
-        if (agent.active_badge && agent.active_badge !== 'b_none') {
-            let b = shopItems.badges.find(x => x.id === agent.active_badge);
-            if (b && b.image) badgeHtml = '<img src="' + b.image + '" style="width:24px;height:24px;vertical-align:middle;">';
-            else if (b && b.emoji) badgeHtml = '<span style="font-size:1.2rem;">' + b.emoji + '</span>';
-        }
-
-        // ============ Статус ============
         let now = Date.now();
         let isOnline = agent.name === CA?.name || (agent.last_seen && (now - new Date(agent.last_seen).getTime()) < 300000);
         let statusHtml = isOnline ? '<span style="color:var(--success);">● Онлайн</span>' : '<span style="color:var(--text-3);">● Оффлайн</span>';
@@ -95,23 +92,21 @@ export async function showAgentInfo(name) {
         let isMe = agent.name === CA?.name;
         let html = '';
 
-        // ============ Обложка ============
+        // Обложка
         html += '<div style="position:relative;height:160px;background:' + (coverUrl ? 'url(' + coverUrl + ') center/cover' : 'linear-gradient(135deg,#1a0000,var(--accent-dark),#1a0000)') + ';flex-shrink:0;">';
         if (isMe) html += '<button class="btn btn-secondary" style="position:absolute;top:12px;right:12px;font-size:0.75rem;padding:6px 12px;z-index:3;" onclick="window.changeCover()">📷 Обложка</button>';
         html += '</div>';
 
-        // ============ Аватар ============
+        // Аватар
         html += '<div style="padding:0 20px;">';
-        html += '<div class="card-avatar ' + frameCls + '" style="width:100px;height:100px;margin-top:-50px;border-radius:12px;background:var(--bg-3);border:3px solid var(--bg-2);overflow:visible;display:flex;align-items:center;justify-content:center;font-size:2.5rem;position:relative;z-index:2;">';
-        html += '<div style="width:100%;height:100%;overflow:hidden;border-radius:9px;display:flex;align-items:center;justify-content:center;">' + avatarHtml + '</div>';
-        html += '</div>';
-        html += '</div>';
+        html += '<div class="chat-avatar-frame ' + e.frameCls + '" style="width:100px;height:100px;margin-top:-50px;border-radius:12px;background:var(--bg-3);border:3px solid var(--bg-2);position:relative;z-index:2;">';
+        html += '<div class="inner" style="font-size:2.5rem;border-radius:9px;">' + avatarHtml + '</div>';
+        html += '</div></div>';
 
-        // ============ Имя / роль / клан ============
+        // Имя
         html += '<div style="padding:16px 20px;">';
         html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-        html += '<span class="' + colorClass + ' ' + fontCls + '" style="font-size:1.4rem;font-weight:700;">' + agent.name + '</span>';
-        html += badgeHtml;
+        html += '<span class="name-with-badge ' + e.colorCls + '" style="font-size:1.4rem;font-weight:700;position:relative;">' + agent.name + e.roleBadge + e.badgeHtml + '</span>';
         html += '</div>';
         html += '<div style="color:var(--text-3);font-size:0.85rem;margin-top:4px;">' + roleText + ' · ' + statusHtml + '</div>';
         if (agent.status_text) html += '<div style="color:var(--text-2);font-size:0.8rem;margin-top:6px;font-style:italic;">«' + agent.status_text + '»</div>';
@@ -119,7 +114,7 @@ export async function showAgentInfo(name) {
         html += '<div style="color:var(--text-3);font-size:0.8rem;margin-top:6px;">⚔️ Отряд: ' + clanName + '</div>';
         html += '</div>';
 
-        // ============ Статистика ============
+        // Статистика
         html += '<div style="display:flex;gap:24px;padding:12px 20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap;">';
         html += '<div><div style="font-weight:700;color:var(--text);">' + subscribersCount + '</div><div style="color:var(--text-3);font-size:0.7rem;">подписчики</div></div>';
         html += '<div><div style="font-weight:700;color:var(--text);">' + followingCount + '</div><div style="color:var(--text-3);font-size:0.7rem;">подписки</div></div>';
@@ -127,7 +122,7 @@ export async function showAgentInfo(name) {
         html += '<div><div style="font-weight:700;color:var(--text);">' + (agent.rep || 0) + '</div><div style="color:var(--text-3);font-size:0.7rem;">репа</div></div>';
         html += '</div>';
 
-        // ============ Кнопки ============
+        // Кнопки
         if (!isMe) {
             html += '<div style="display:flex;gap:8px;padding:16px 20px 8px;">';
             html += '<button class="btn" id="profile-dm-btn" style="flex:1;">📩 Написать</button>';
@@ -142,7 +137,7 @@ export async function showAgentInfo(name) {
             html += '<div style="padding:16px 20px;"><button class="btn full" id="profile-create-post-btn">✏️ Создать пост</button></div>';
         }
 
-        // ============ Стена ============
+        // Стена
         html += '<div style="padding:0 20px 20px;">';
         html += '<div style="font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">';
         html += '<span>📝 Стена</span>';
@@ -154,10 +149,8 @@ export async function showAgentInfo(name) {
         html += '<div id="profile-wall-more" style="margin-top:12px;text-align:center;"></div>';
         html += '</div>';
 
-        // ============ Кнопка закрытия ============
         html += '<div style="padding:0 20px 20px;"><button class="btn secondary full" data-close-modal="modal-agent-profile">Закрыть</button></div>';
 
-        // ============ Рендер ============
         let content = document.getElementById('profile-content');
         if (!content) {
             modal.querySelector('.modal-box').innerHTML = '<div id="profile-content"></div>';
@@ -165,7 +158,6 @@ export async function showAgentInfo(name) {
         }
         content.innerHTML = html;
 
-        // Модалка — фиксированная высота, скролл внутри #profile-content
         let modalBox = modal.querySelector('.modal-box');
         if (modalBox) {
             modalBox.style.padding = '0';
@@ -179,13 +171,11 @@ export async function showAgentInfo(name) {
         content.style.flex = '1';
         content.style.minHeight = '0';
 
-        // ============ Обработчики ============
         setTimeout(() => {
             document.getElementById('profile-dm-btn')?.addEventListener('click', function() {
                 closeModal('modal-agent-profile');
                 if (typeof window.startDM === 'function') window.startDM(agent.name);
             });
-
             document.getElementById('profile-sub-btn')?.addEventListener('click', async function() {
                 if (iAmSubscribed) {
                     await supabase.from('subscriptions').delete().eq('subscriber', CA.name).eq('target', name);
@@ -197,7 +187,6 @@ export async function showAgentInfo(name) {
                 closeModal('modal-agent-profile');
                 setTimeout(() => showAgentInfo(name), 300);
             });
-
             document.getElementById('profile-add-friend-btn')?.addEventListener('click', async function() {
                 let friendsList = getFriends();
                 let isFriend = friendsList.some(f =>
@@ -219,22 +208,18 @@ export async function showAgentInfo(name) {
                 closeModal('modal-agent-profile');
                 setTimeout(() => showAgentInfo(name), 300);
             });
-
             document.getElementById('profile-block-btn')?.addEventListener('click', async function() {
                 await blockAgent(agent.name);
                 notif('🚫 Заблокирован');
                 closeModal('modal-agent-profile');
             });
-
             document.getElementById('profile-create-post-btn')?.addEventListener('click', function() {
                 closeModal('modal-agent-profile');
                 if (typeof window.showCreatePost === 'function') window.showCreatePost();
             });
 
-            // Загружаем первую страницу стены
             loadWallPage(0);
 
-            // Делегированные обработчики стены
             let wall = document.getElementById('profile-wall');
             if (wall) {
                 attachFeedHandlers(wall, {
@@ -242,7 +227,6 @@ export async function showAgentInfo(name) {
                         closeModal('modal-agent-profile');
                         window.__pendingHashtag = tag;
                         if (typeof window.openApp === 'function') window.openApp('feed');
-                        // main.js подхватит через renderFeed()
                         setTimeout(() => {
                             let inp = document.getElementById('feed-search-input');
                             if (inp) { inp.value = '#' + tag; inp.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -250,7 +234,6 @@ export async function showAgentInfo(name) {
                     },
                     onReposted: () => {
                         notif('🔁 Репостнут');
-                        // Перезагружаем стену
                         wallPosts = []; wallPage = 0; wallLoaded = false;
                         document.getElementById('profile-wall').innerHTML = '';
                         loadWallPage(0);
@@ -262,7 +245,6 @@ export async function showAgentInfo(name) {
         modal.style.display = 'flex';
         setTimeout(() => modal.classList.add('show'), 10);
 
-        // Звук профиля
         if (agent.active_sound && agent.active_sound !== 'snd_default' && agent.active_sound !== 'snd_custom') {
             try {
                 let audio = new Audio(agent.active_sound);
@@ -287,7 +269,6 @@ async function loadWallPage(page) {
     let countLabel = document.getElementById('wall-count-label');
     if (!wall) return;
 
-    // Общее количество
     if (wallTotal === 0) {
         try {
             let { count } = await supabase.from('profile_posts')
@@ -298,7 +279,6 @@ async function loadWallPage(page) {
         } catch (e) {}
     }
 
-    // Загрузка страницы
     let from = page * WALL_PAGE_SIZE;
     let to = from + WALL_PAGE_SIZE - 1;
     let { data: posts } = await supabase.from('profile_posts')
@@ -314,7 +294,6 @@ async function loadWallPage(page) {
         return;
     }
 
-    // Подтягиваем оригиналы репостов
     let agentsCache = await getAgents();
     let originals = new Map();
     let repostIds = posts.filter(p => p.repost_of).map(p => p.repost_of);
@@ -325,10 +304,8 @@ async function loadWallPage(page) {
         } catch (e) {}
     }
 
-    // Убираем «Загрузка...» на первой странице
     if (page === 0) wall.innerHTML = '';
 
-    // Добавляем посты
     posts.forEach(p => {
         wall.insertAdjacentHTML('beforeend', renderPostCardFeed(p, {
             agents: agentsCache,
@@ -340,7 +317,6 @@ async function loadWallPage(page) {
     wallLoaded = true;
     wallPage = page;
 
-    // Кнопка «Загрузить ещё»
     let loadedCount = (page + 1) * WALL_PAGE_SIZE;
     if (moreWrap) {
         if (loadedCount < wallTotal) {
@@ -372,7 +348,6 @@ export async function createPost(text, imageUrl) {
                 if (tag && !hashtags.includes(tag)) hashtags.push(tag);
             }
         }
-
         await supabase.from('profile_posts').insert({
             author: CA.name,
             text: text || '',
@@ -391,9 +366,6 @@ export async function createPost(text, imageUrl) {
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
-// ============================================================
-// СМЕНА ОБЛОЖКИ
-// ============================================================
 export async function changeCover(file) {
     if (!CA || !file) return { success: false, error: 'Нет файла' };
     let { uploadCover } = await import('./auth.js');
