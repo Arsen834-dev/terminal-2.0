@@ -1,6 +1,6 @@
 // ============================================================
 // FEED / ЛЕНТА — репосты, комментарии, хэштеги, эффекты
-// v2.7.0: роль-бейджи не наезжают, делегирование работает везде
+// v2.8.0: шрифт не применяется на свой ник, картинки на всю ширину
 // ============================================================
 
 import { supabase, CA, getAgents, saveAgent } from './auth.js';
@@ -68,11 +68,10 @@ function fx(name, agents) {
     if (typeof window.__getAgentFx === 'function') {
         return window.__getAgentFx(name, agents);
     }
-    // Fallback
     let a = (agents || {})[name] || {};
     let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
     let fontCls = '';
-    if (a.active_font && a.active_font !== 'fnt_blood') {
+    if (a.active_font && name !== CA?.name) {
         let map = {
             'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
             'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
@@ -111,9 +110,8 @@ export function renderPostCard(post, opts = {}) {
     let avatarUrl = post.avatar_url || e.avatar;
     let avatarHtml = avatarUrl ? '<img src="' + avatarUrl + '">' : '🕶️';
 
-    let liked = post.liked_by && CA && (Array.isArray(post.liked_by) ? post.liked_by : []).includes(CA.name);
     let imgHtml = post.image_url
-        ? '<img src="' + post.image_url + '" onerror="this.style.display=\'none\'">'
+        ? '<img src="' + post.image_url + '" class="post-image" onerror="this.style.display=\'none\'">'
         : '';
 
     let textHtml = post.text
@@ -129,7 +127,7 @@ export function renderPostCard(post, opts = {}) {
             ? linkifyHashtags(escapeHtml(originalPost.text)).replace(/\n/g, '<br>')
             : '';
         let origImg = originalPost.image_url
-            ? '<img src="' + originalPost.image_url + '" style="max-width:100%;max-height:300px;border:1px solid var(--border-2);margin-top:6px;display:block;" onerror="this.style.display=\'none\'">'
+            ? '<img src="' + originalPost.image_url + '" class="post-image" onerror="this.style.display=\'none\'">'
             : '';
 
         return '<div class="card repost-wrapper" data-post-id="' + post.id + '">' +
@@ -368,30 +366,25 @@ function timeAgo(d) {
 }
 
 // ============================================================
-// ДЕЛЕГИРОВАННЫЕ ОБРАБОТЧИКИ (универсальные — работают и в ленте, и в профиле)
+// ДЕЛЕГИРОВАННЫЕ ОБРАБОТЧИКИ
 // ============================================================
 export function attachFeedHandlers(container, callbacks = {}) {
     if (!container || container.dataset.feedAttached === '1') return;
     container.dataset.feedAttached = '1';
 
     container.addEventListener('click', async (e) => {
-        // Хэштег
         let ht = e.target.closest('[data-hashtag]');
         if (ht) { e.stopPropagation(); if (callbacks.onHashtag) callbacks.onHashtag(ht.dataset.hashtag); return; }
 
-        // Показать профиль
         let sa = e.target.closest('[data-show-agent]');
         if (sa) { e.stopPropagation(); if (typeof window.showAgentInfo === 'function') window.showAgentInfo(sa.dataset.showAgent); return; }
 
-        // Открыть автора поста
         let oa = e.target.closest('[data-open-post-author]');
         if (oa) { e.stopPropagation(); if (typeof window.showAgentInfo === 'function') window.showAgentInfo(oa.dataset.openPostAuthor); return; }
 
-        // Лайк поста
         let like = e.target.closest('[data-like-post]');
         if (like) { e.stopPropagation(); let r = await likePost(parseInt(like.dataset.likePost), like); if (r) playSound('click'); return; }
 
-        // Репост
         let rp = e.target.closest('[data-repost-btn]');
         if (rp) {
             e.stopPropagation();
@@ -402,7 +395,6 @@ export function attachFeedHandlers(container, callbacks = {}) {
             return;
         }
 
-        // Раскрыть/свернуть комментарии
         let ct = e.target.closest('[data-comments-toggle]');
         if (ct) {
             e.stopPropagation();
@@ -424,7 +416,6 @@ export function attachFeedHandlers(container, callbacks = {}) {
             return;
         }
 
-        // Отправить комментарий
         let cs = e.target.closest('[data-comment-send]');
         if (cs) {
             e.stopPropagation();
@@ -449,7 +440,6 @@ export function attachFeedHandlers(container, callbacks = {}) {
             return;
         }
 
-        // Лайк комментария
         let cl = e.target.closest('[data-comment-like]');
         if (cl) {
             e.stopPropagation();
@@ -461,7 +451,6 @@ export function attachFeedHandlers(container, callbacks = {}) {
             return;
         }
 
-        // Удалить комментарий
         let cd = e.target.closest('[data-comment-del]');
         if (cd) {
             e.stopPropagation();

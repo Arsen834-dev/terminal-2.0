@@ -39,7 +39,6 @@ let feedOriginalsCache = null;
 let feedChannel = null;
 let agentsChannel = null;
 
-// Пометки "новый контент" в sidebar
 let newContentFlags = {
     chat: false,
     dm: false,
@@ -52,7 +51,6 @@ let newContentFlags = {
     rp: false
 };
 
-// Таймер репы/ТК
 let repTkInterval = null;
 
 // ============================================================
@@ -63,7 +61,8 @@ function getAgentFx(name, agents) {
     let a = agents[name] || {};
     let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
     let fontCls = '';
-    if (a.active_font) {
+    // Шрифт НЕ применяется на свой ник
+    if (a.active_font && name !== CA?.name) {
         let map = {
             'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
             'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
@@ -202,27 +201,12 @@ function startClock() {
 }
 
 // ============================================================
-// УКРАШЕННЫЙ ТЕКСТ
+// УКРАШЕННЫЙ ТЕКСТ (упрощено — без побуквенной анимации)
 // ============================================================
 function buildDecoratedTitle() {
     let el = document.getElementById('start-subtitle');
     if (!el) return;
-    let text = 'ТЕРМИНАЛ СИНДИКАТА';
-    el.innerHTML = '';
-    el.classList.add('glitch');
-    let delay = 1800;
-    for (let i = 0; i < text.length; i++) {
-        let ch = text[i];
-        let span = document.createElement('span');
-        if (ch === ' ') {
-            span.className = 'space';
-            span.innerHTML = '&nbsp;';
-        } else {
-            span.textContent = ch;
-        }
-        span.style.animationDelay = (delay + i * 90) + 'ms';
-        el.appendChild(span);
-    }
+    el.textContent = 'ТЕРМИНАЛ СИНДИКАТА';
 }
 buildDecoratedTitle();
 
@@ -732,7 +716,7 @@ function renderAnnounceCard(a) {
 function renderMemeCard(m) {
     let fx = getAgentFx(m.author);
     let avatarHtml = fx.avatar ? '<div class="inner"><img src="' + fx.avatar + '"></div>' : '<div class="inner">😂</div>';
-    let imgHtml = m.image_url ? '<img src="' + m.image_url + '" style="max-width:100%;max-height:400px;border:1px solid var(--border-2);margin-top:8px;display:block;border-radius:6px;" onerror="this.style.display=\'none\'">' : '';
+    let imgHtml = m.image_url ? '<img src="' + m.image_url + '" class="post-image" onerror="this.style.display=\'none\'">' : '';
     let titleHtml = m.title ? linkifyHashtags(escapeHtml(m.title)) : '';
     let textHtml = m.text ? linkifyHashtags(escapeHtml(m.text)).replace(/\n/g, '<br>') : '';
     return '<div class="card">' +
@@ -1250,7 +1234,6 @@ function openDesktop() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[MAIN] DOMContentLoaded сработал');
 
-    // ============ КНОПКИ ПРОФИЛЯ В ЛЕНТЕ (делегирование) ============
     document.addEventListener('click', (e) => {
         let t = e.target.closest('[data-action]');
         if (!t) return;
@@ -1262,7 +1245,6 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (a === 'feed') { openFeed(); }
     });
 
-    // ============ СПЕКТАКЛИ — edit/delete (capture phase) ============
     document.addEventListener('click', (e) => {
         let editSceneBtn = e.target.closest('[data-edit-scene]');
         if (editSceneBtn) {
@@ -1363,7 +1345,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('topbar-logo')?.addEventListener('click', openFeed);
     document.getElementById('sidebar-profile')?.addEventListener('click', openOwnProfile);
 
-    // Настройки
     document.getElementById('change-name-btn')?.addEventListener('click', () => { document.getElementById('new-name').value = CA?.name || ''; let el = document.getElementById('modal-name'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
     document.getElementById('change-pass-btn')?.addEventListener('click', () => { document.getElementById('old-pass').value = ''; document.getElementById('new-pass').value = ''; let el = document.getElementById('modal-password'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
     document.getElementById('change-avatar-btn')?.addEventListener('click', () => { document.getElementById('avatar-file-input').value = ''; let el = document.getElementById('modal-avatar'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
@@ -1397,7 +1378,6 @@ document.addEventListener('DOMContentLoaded', () => {
         else notif(r.error || 'ОШИБКА');
     });
 
-    // Чаты
     document.querySelector('.send-msg-btn')?.addEventListener('click', e => { e.stopPropagation(); if (isClanChatActive()) sendClanMessage(); else sendMessage(); });
     document.querySelector('.send-dm-btn')?.addEventListener('click', e => { e.stopPropagation(); sendDM(); });
     document.getElementById('rp-send-btn')?.addEventListener('click', sendRpMessage);
@@ -1426,7 +1406,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'dm-input') showMentionSuggestions('dm-input');
     });
 
-    // Гайды
     document.getElementById('create-guide-btn')?.addEventListener('click', () => { let el = document.getElementById('modal-rules'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
     document.getElementById('accept-rules-btn')?.addEventListener('click', () => {
         closeModal('modal-rules');
@@ -1449,7 +1428,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Мемы
     document.getElementById('create-meme-btn')?.addEventListener('click', () => {
         document.getElementById('meme-title').value = '';
         document.getElementById('meme-text').value = '';
@@ -1467,7 +1445,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (re.success) { playSound('send'); closeModal('modal-meme-create'); loadMemes().then(renderMemes); }
     });
 
-    // Объявления
     document.getElementById('create-announce-submit-btn')?.addEventListener('click', async () => {
         let t = document.getElementById('new-announce-title').value.trim(), x = document.getElementById('new-announce-text').value.trim(), ty = document.getElementById('new-announce-type').value;
         if (!t || !x) return notif('⛔ ЗАПОЛНИ');
@@ -1475,7 +1452,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (r.success) { playSound('send'); closeModal('modal-announce'); loadAnnouncements().then(renderAnnounceApp); }
     });
 
-    // Посты
     document.getElementById('submit-post-btn')?.addEventListener('click', async () => {
         let t = document.getElementById('post-text').value.trim();
         let f = document.getElementById('post-file').files[0];
@@ -1493,7 +1469,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Отряды
     document.getElementById('submit-create-clan')?.addEventListener('click', async () => {
         let name = document.getElementById('clan-name').value.trim(), tag = document.getElementById('clan-tag').value.trim();
         if (!name || !tag) return notif('⛔ ЗАПОЛНИ');
@@ -1502,12 +1477,10 @@ document.addEventListener('DOMContentLoaded', () => {
         else notif(r.error);
     });
 
-    // РП
     document.getElementById('rp-choose-char-btn')?.addEventListener('click', () => { renderRpCharsList(); let el = document.getElementById('modal-rp-chars'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
     document.getElementById('rp-create-char-btn')?.addEventListener('click', () => openCharCreateModal());
     document.getElementById('rp-save-char-btn')?.addEventListener('click', saveRpChar);
 
-    // Спектакли
     document.getElementById('create-scene-btn')?.addEventListener('click', () => {
         if (!requireCharacter()) return;
         document.getElementById('scene-modal-title').textContent = 'НОВЫЙ СПЕКТАКЛЬ';
@@ -1557,10 +1530,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else notif('⛔ ' + r.error);
     });
 
-    // Закрытие приложений
     document.querySelectorAll('.app-close[data-close]').forEach(btn => btn.addEventListener('click', function() { closeApp(this.dataset.close); }));
 
-    // ДЕЛЕГИРОВАНИЕ
     document.addEventListener('click', e => {
         let reactBtn = e.target.closest('[data-reaction]');
         if (reactBtn) {

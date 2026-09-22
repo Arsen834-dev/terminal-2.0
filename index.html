@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ТЕРМИНАЛ СИНДИКАТА v2.7.0</title>
 <link rel="icon" href="https://wiki.adven.space/items/contraband/pais.png">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=VT323&family=Share+Tech+Mono&family=Ruslan+Display&family=Pixelify+Sans:wght@400;600;700&family=Special+Elite&family=Rye&family=UnifrakturMaguntia&family=Uncial+Antiqua&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=VT323&family=Share+Tech+Mono&family=Ruslan+Display&family=Pixelify+Sans:wght@400;600;700&family=Special+Elite&family=MedievalSharp&family=Smokum&family=Pirata+One&family=Uncial+Antiqua&family=Press+Start+2P&display=swap" rel="stylesheet">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#06060a">
 <style>
@@ -125,29 +125,29 @@ a:active, button:active, a:focus, button:focus {
 @keyframes matrixScroll { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
 .matrix-bg > * { position: relative; z-index: 1; }
 
-/* ============ ЗАСТАВКА (череп СВЕРХУ, текст СНИЗУ) ============ */
+/* ============ ЗАСТАВКА — ОБЛЕГЧЁННАЯ ============ */
 #start-screen {
     position: fixed;
     inset: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    gap: 24px;
     background: #000;
     z-index: 10000;
-    padding: 40px 20px;
-    transition: opacity 0.6s ease, visibility 0.6s;
+    padding: 20px;
+    transition: opacity 0.5s ease, visibility 0.5s;
 }
 #start-screen.fade-out { opacity: 0; visibility: hidden; pointer-events: none; }
 
-/* Череп сверху */
 #skull-intro {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
 }
+
 #skull-ascii {
     color: var(--accent);
     font-family: 'Courier New', monospace;
@@ -156,68 +156,52 @@ a:active, button:active, a:focus, button:focus {
     white-space: pre;
     text-align: left;
     opacity: 0;
-    animation: skullAppear 2.2s ease-out forwards, skullPulse 2.5s ease-in-out 2.2s infinite;
-    filter: drop-shadow(0 0 20px var(--accent));
-    text-shadow: 0 0 6px var(--accent), 0 0 15px var(--accent-dark);
+    animation: fadeIn 0.6s ease-out forwards;
     display: inline-block;
 }
-@keyframes skullAppear {
-    0% { opacity: 0; transform: scale(0.7); filter: blur(10px) drop-shadow(0 0 5px var(--accent)); }
-    100% { opacity: 1; transform: scale(1); filter: blur(0) drop-shadow(0 0 20px var(--accent)); }
-}
-@keyframes skullPulse {
-    0%, 100% { text-shadow: 0 0 6px var(--accent), 0 0 15px var(--accent-dark); }
-    50% { text-shadow: 0 0 12px var(--accent), 0 0 30px var(--accent), 0 0 50px var(--accent-dark); }
-}
-#skull-ascii.eating { animation: skullEat 0.9s ease-in forwards !important; }
-@keyframes skullEat {
-    0% { transform: scale(1); opacity: 1; }
-    40% { transform: scale(2.5); opacity: 1; filter: blur(2px) drop-shadow(0 0 30px var(--accent)); }
-    100% { transform: scale(10); opacity: 0; filter: blur(30px); }
+
+#skull-ascii.eating { animation: skullEat 0.7s ease-in forwards !important; }
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-/* Текст снизу */
-#start-subtitle-wrap {
-    width: 100%;
-    text-align: center;
-    padding-bottom: 30px;
-    min-height: 100px;
+@keyframes skullEat {
+    0% { transform: scale(1); opacity: 1; }
+    60% { transform: scale(3); opacity: 0.8; }
+    100% { transform: scale(8); opacity: 0; }
 }
+
+#start-subtitle-wrap {
+    text-align: center;
+}
+
 .start-subtitle {
     font-family: var(--font-head);
     font-size: 2.4rem;
     letter-spacing: 8px;
     text-transform: uppercase;
-    display: inline-block;
-    position: relative;
-    user-select: none;
-}
-.start-subtitle span {
+    color: var(--accent);
     display: inline-block;
     opacity: 0;
-    background: linear-gradient(180deg, #ff5566 0%, var(--accent) 50%, var(--accent-dark) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    animation: fadeIn 0.6s ease-out 0.3s forwards;
+    user-select: none;
+}
+
+.start-subtitle span {
+    display: inline;
+    opacity: 1;
+    color: inherit;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
     text-shadow: none;
-    filter: drop-shadow(0 0 8px rgba(255, 23, 68, 0.7));
-    animation: charAppear 0.4s ease-out forwards;
+    filter: none;
+    animation: none;
 }
-.start-subtitle span.space { width: 0.6em; }
-@keyframes charAppear {
-    0% { opacity: 0; transform: translateY(8px) scale(0.8); filter: blur(6px) drop-shadow(0 0 8px rgba(255,23,68,0)); }
-    60% { opacity: 1; transform: translateY(0) scale(1.05); filter: blur(0) drop-shadow(0 0 12px rgba(255,23,68,0.9)); }
-    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0) drop-shadow(0 0 8px rgba(255,23,68,0.7)); }
-}
-.start-subtitle.glitch span {
-    animation: charAppear 0.4s ease-out forwards, charGlitch 3s ease-in-out infinite 1s;
-}
-@keyframes charGlitch {
-    0%, 90%, 100% { transform: translate(0,0); }
-    92% { transform: translate(-1px, 1px); }
-    94% { transform: translate(1px, -1px); }
-    96% { transform: translate(-1px, 0); }
-}
+.start-subtitle span.space { display: inline; }
+.start-subtitle.glitch span { animation: none; }
 
 /* ============ ЛОГИН ============ */
 #login-screen { position: fixed; inset: 0; z-index: 8000; display: none; justify-content: center; align-items: center; padding: 20px; background: var(--bg); opacity: 0; transition: opacity 0.6s ease; }
@@ -314,7 +298,6 @@ a:active, button:active, a:focus, button:focus {
 .sidebar-item-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; position: relative; }
 .sidebar-item-label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
 
-/* Точка "новый контент" */
 .sidebar-item-new-dot {
     position: absolute;
     top: 8px;
@@ -410,6 +393,35 @@ a:active, button:active, a:focus, button:focus {
 .card-action:hover { color: var(--accent); text-shadow: 0 0 6px var(--accent); }
 .card-action.liked { color: var(--accent); text-shadow: 0 0 6px var(--accent); }
 
+/* ============================================================
+   КАРТИНКИ ПОСТОВ — НА ВСЮ ШИРИНУ
+   ============================================================ */
+.post-image {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: none;
+    margin: 10px 0;
+    border: 1px solid var(--border-2);
+    border-radius: 4px;
+    object-fit: cover;
+}
+#profile-wall .post-image {
+    width: calc(100% + 32px);
+    max-width: calc(100% + 32px);
+    margin-left: -16px;
+    margin-right: -16px;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+}
+#feed .post-image {
+    width: 100%;
+    max-width: 100%;
+    margin: 10px 0;
+}
+
 .repost-wrapper { border-left-color: var(--accent) !important; }
 .repost-header { display: flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 0.75rem; margin-bottom: 10px; font-family: var(--font-digit); letter-spacing: 1px; flex-wrap: wrap; }
 .repost-header .repost-author { color: var(--accent); cursor: pointer; font-weight: 600; }
@@ -448,7 +460,6 @@ a:active, button:active, a:focus, button:focus {
 .right-block-title::before { content: '▸'; color: var(--accent-dark); }
 .online-list { display: flex; flex-direction: column; gap: 6px; }
 
-/* Онлайн-строка — переделана */
 .online-item {
     display: grid;
     grid-template-columns: 32px 1fr auto;
@@ -502,7 +513,6 @@ a:active, button:active, a:focus, button:focus {
     box-shadow: none;
 }
 
-/* Роль-бейдж в онлайне */
 .online-role-badge {
     display: inline-flex;
     align-items: center;
@@ -580,7 +590,6 @@ a:active, button:active, a:focus, button:focus {
 .chat-msg-left { flex-shrink: 0; }
 .chat-msg-right { flex: 1; min-width: 0; }
 .chat-header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
-/* Время рядом с ником, а не справа */
 .chat-time { color: var(--text-4); font-size: 0.65rem; font-family: var(--font-digit); letter-spacing: 1px; }
 .chat-text { font-size: 0.85rem; line-height: 1.5; word-break: break-word; color: var(--text-2); }
 .chat-text img { max-width: 240px; border: 1px solid var(--border-2); margin: 6px 0; display: block; }
@@ -637,146 +646,352 @@ a:active, button:active, a:focus, button:focus {
 /* ============================================================
    ЭФФЕКТЫ РАМОК
    ============================================================ */
-.f-angelic { border-color: rgba(255, 249, 196, 0.7); box-shadow: 0 0 15px rgba(255, 255, 200, 0.5), inset 0 0 8px rgba(255, 249, 196, 0.2); }
-.f-angelic::before {
+
+.f-default { border-color: var(--border-2); }
+
+.f-silver { border-color: #cfd8dc; box-shadow: 0 0 10px rgba(207, 216, 220, 0.5), inset 0 0 6px rgba(207, 216, 220, 0.2); }
+
+.f-gold { border-color: #ffd700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.6), inset 0 0 8px rgba(255, 215, 0, 0.2); }
+
+/* ШИПОВАННАЯ */
+.f-spike {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(255, 23, 68, 0.6), inset 0 0 8px rgba(255, 23, 68, 0.2);
+}
+.f-spike::before {
     content: '';
     position: absolute;
-    top: -12px; left: 50%;
-    transform: translateX(-50%) rotateX(65deg);
-    width: 26px; height: 26px;
-    border: 2px solid #fff9c4;
-    border-radius: 50%;
-    box-shadow: 0 0 10px #fff9c4, 0 0 20px #fff9c4, inset 0 0 8px #fff9c4;
-    animation: haloFloat 2.5s ease-in-out infinite;
+    inset: -3px;
+    background:
+        radial-gradient(circle at 0% 0%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 25% 0%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 50% 0%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 75% 0%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 100% 0%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 100% 25%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 100% 50%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 100% 75%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 100% 100%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 75% 100%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 50% 100%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 25% 100%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 0% 100%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 0% 75%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 0% 50%, var(--accent) 0px, var(--accent) 2px, transparent 3px),
+        radial-gradient(circle at 0% 25%, var(--accent) 0px, var(--accent) 2px, transparent 3px);
     pointer-events: none;
+    filter: drop-shadow(0 0 3px var(--accent));
+    animation: spikePulse 1.5s ease-in-out infinite;
 }
-@keyframes haloFloat {
-    0%, 100% { transform: translateX(-50%) rotateX(65deg) scale(1); opacity: 0.9; }
-    50% { transform: translateX(-50%) rotateX(65deg) scale(1.1); opacity: 1; }
+@keyframes spikePulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
 }
 
-.f-demonic { border-color: rgba(183, 28, 28, 0.8); box-shadow: 0 0 15px rgba(255, 0, 0, 0.5), inset 0 0 8px rgba(183, 28, 28, 0.3); }
-.f-demonic::before, .f-demonic::after {
-    content: '';
-    position: absolute;
-    top: -8px;
-    width: 6px; height: 14px;
-    background: linear-gradient(180deg, #b71c1c 0%, #5c0000 100%);
-    border-radius: 50% 50% 20% 20%;
-    box-shadow: 0 0 8px rgba(255, 0, 0, 0.7);
-    animation: hornPulse 2s ease-in-out infinite;
-    pointer-events: none;
+/* ОГНЕННАЯ */
+.f-fire {
+    border-color: #ff6d00;
+    box-shadow: 0 0 15px rgba(255, 109, 0, 0.7), inset 0 -8px 12px -6px rgba(255, 61, 0, 0.5);
 }
-.f-demonic::before { left: 3px; transform: rotate(-25deg); transform-origin: bottom; }
-.f-demonic::after { right: 3px; transform: rotate(25deg); transform-origin: bottom; }
-@keyframes hornPulse {
-    0%, 100% { filter: brightness(1) drop-shadow(0 0 6px #ff0000); }
-    50% { filter: brightness(1.3) drop-shadow(0 0 12px #ff0000); }
-}
-
-.f-fire { border-color: #ff6d00; box-shadow: 0 0 15px rgba(255, 109, 0, 0.7), inset 0 -8px 12px -6px rgba(255, 61, 0, 0.5); }
 .f-fire::before {
     content: '';
     position: absolute;
-    bottom: -8px; left: 10%;
-    width: 80%; height: 12px;
+    bottom: -6px;
+    left: 20%;
+    width: 10px;
+    height: 14px;
+    background: radial-gradient(ellipse at 50% 100%, #ff3d00 0%, #ff9100 40%, transparent 75%);
+    border-radius: 50% 50% 40% 40%;
+    filter: blur(0.5px) drop-shadow(0 0 6px #ff6d00);
+    animation: flameFlicker 0.4s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+.f-fire::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    right: 20%;
+    width: 10px;
+    height: 14px;
+    background: radial-gradient(ellipse at 50% 100%, #ff3d00 0%, #ff9100 40%, transparent 75%);
+    border-radius: 50% 50% 40% 40%;
+    filter: blur(0.5px) drop-shadow(0 0 6px #ff6d00);
+    animation: flameFlicker 0.5s ease-in-out infinite alternate 0.2s;
+    pointer-events: none;
+}
+@keyframes flameFlicker {
+    0% { transform: scaleY(0.9) scaleX(1) translateY(0); opacity: 0.85; }
+    100% { transform: scaleY(1.2) scaleX(0.9) translateY(-2px); opacity: 1; }
+}
+
+/* ЛЕДЯНАЯ */
+.f-ice {
+    border-color: #80deea;
+    box-shadow: 0 0 15px rgba(128, 222, 234, 0.6), inset 0 0 10px rgba(128, 222, 234, 0.25);
+}
+.f-ice::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 12px;
     background:
-        radial-gradient(ellipse at 20% 100%, #ff3d00 0%, transparent 60%),
-        radial-gradient(ellipse at 50% 100%, #ff9100 0%, transparent 70%),
-        radial-gradient(ellipse at 80% 100%, #ff3d00 0%, transparent 60%);
-    filter: blur(1px);
-    animation: fireFlicker 0.5s ease-in-out infinite alternate;
-    pointer-events: none;
-}
-@keyframes fireFlicker {
-    0% { transform: scaleY(1) translateY(0); opacity: 0.85; }
-    100% { transform: scaleY(1.4) translateY(-2px); opacity: 1; }
-}
-
-.f-ice { border-color: #80deea; box-shadow: 0 0 15px rgba(128, 222, 234, 0.6), inset 0 0 10px rgba(128, 222, 234, 0.25); }
-.f-ice::after {
-    content: '';
-    position: absolute;
-    bottom: -6px; left: 20%;
-    width: 60%; height: 8px;
-    background: linear-gradient(180deg, transparent 0%, #80deea 40%, #4dd0e1 100%);
-    clip-path: polygon(0% 0%, 10% 100%, 20% 0%, 30% 80%, 40% 0%, 50% 100%, 60% 0%, 70% 90%, 80% 0%, 90% 80%, 100% 0%);
+        linear-gradient(180deg, #80deea 0%, #4dd0e1 60%, transparent 100%),
+        linear-gradient(180deg, #80deea 0%, #4dd0e1 60%, transparent 100%),
+        linear-gradient(180deg, #80deea 0%, #4dd0e1 60%, transparent 100%);
+    background-size: 4px 12px, 5px 14px, 4px 10px;
+    background-position: 20% 0, 55% 0, 82% 0;
+    background-repeat: no-repeat;
     filter: drop-shadow(0 0 4px #80deea);
-    animation: iceShimmer 3s ease-in-out infinite;
+    animation: icicleShimmer 2.5s ease-in-out infinite;
     pointer-events: none;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
-@keyframes iceShimmer { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; filter: drop-shadow(0 0 8px #80deea); } }
+@keyframes icicleShimmer {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; filter: drop-shadow(0 0 8px #80deea); }
+}
 
-.f-blood { border-color: #d50000; box-shadow: 0 0 15px rgba(213, 0, 0, 0.6), inset 0 0 8px rgba(213, 0, 0, 0.3); }
-.f-blood::before, .f-blood::after {
+/* ОРГАНИКА */
+.f-organic {
+    border-color: #2e7d32;
+    box-shadow: 0 0 12px rgba(46, 125, 50, 0.5), inset 0 0 8px rgba(46, 125, 50, 0.2);
+}
+.f-organic::before {
     content: '';
     position: absolute;
-    top: 100%; width: 3px; height: 4px;
-    background: #d50000;
-    border-radius: 50%;
-    box-shadow: 0 0 6px #d50000;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
     pointer-events: none;
+    background:
+        radial-gradient(ellipse at 0% 0%, #4caf50 0px, #1b5e20 2px, transparent 3px),
+        radial-gradient(ellipse at 100% 0%, #4caf50 0px, #1b5e20 2px, transparent 3px),
+        radial-gradient(ellipse at 0% 100%, #4caf50 0px, #1b5e20 2px, transparent 3px),
+        radial-gradient(ellipse at 100% 100%, #4caf50 0px, #1b5e20 2px, transparent 3px);
+    background-size: 12px 12px, 12px 12px, 12px 12px, 12px 12px;
+    background-repeat: no-repeat;
+    background-position: top left, top right, bottom left, bottom right;
+    animation: vineSway 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 3px #4caf50);
 }
-.f-blood::before { left: 30%; animation: bloodDrip1 2s linear infinite; }
-.f-blood::after { left: 65%; animation: bloodDrip2 2.5s linear infinite 0.5s; }
-@keyframes bloodDrip1 {
-    0% { opacity: 0; transform: translateY(0) scale(0.5); }
-    20% { opacity: 1; transform: translateY(2px) scale(1); }
-    100% { opacity: 0; transform: translateY(14px) scale(0.4); }
+.f-organic::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 8px;
+    border: 1px dashed rgba(76, 175, 80, 0.4);
+    pointer-events: none;
+    animation: vineSway 4s ease-in-out infinite;
 }
-@keyframes bloodDrip2 {
-    0% { opacity: 0; transform: translateY(0) scale(0.5); }
-    20% { opacity: 1; transform: translateY(2px) scale(1); }
-    100% { opacity: 0; transform: translateY(18px) scale(0.4); }
+@keyframes vineSway {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
 }
 
-.f-neon { border-color: #76ff03; box-shadow: 0 0 15px rgba(118, 255, 3, 0.6), inset 0 0 8px rgba(118, 255, 3, 0.3); animation: neonPulse 1.8s ease-in-out infinite; }
+/* ТЕХНО */
+.f-techno {
+    border-color: #ff9100;
+    box-shadow: 0 0 12px rgba(255, 145, 0, 0.5), inset 0 0 6px rgba(255, 145, 0, 0.2);
+}
+.f-techno::before {
+    content: '⚙';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 14px;
+    color: #ff9100;
+    text-shadow: 0 0 6px #ff9100;
+    animation: gearRotate 3s linear infinite;
+    pointer-events: none;
+}
+.f-techno::after {
+    content: '⚙';
+    position: absolute;
+    bottom: -8px;
+    left: -8px;
+    font-size: 12px;
+    color: #ffb300;
+    text-shadow: 0 0 6px #ffb300;
+    animation: gearRotate 3s linear infinite reverse;
+    pointer-events: none;
+}
+@keyframes gearRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* НЕОН */
+.f-neon {
+    border-color: #76ff03;
+    box-shadow: 0 0 15px rgba(118, 255, 3, 0.6), inset 0 0 8px rgba(118, 255, 3, 0.3);
+    animation: neonPulse 1.8s ease-in-out infinite;
+}
 @keyframes neonPulse {
     0%, 100% { box-shadow: 0 0 10px rgba(118, 255, 3, 0.5), inset 0 0 6px rgba(118, 255, 3, 0.2); }
     50% { box-shadow: 0 0 20px rgba(118, 255, 3, 0.9), inset 0 0 12px rgba(118, 255, 3, 0.4); }
 }
 
-.f-glitch { border-color: rgba(118, 255, 3, 0.6); animation: glitchFrame 2.5s steps(3) infinite; }
-.f-glitch::before, .f-glitch::after {
+/* КРОВАВАЯ */
+.f-blood {
+    border-color: #d50000;
+    box-shadow: 0 0 15px rgba(213, 0, 0, 0.6), inset 0 0 8px rgba(213, 0, 0, 0.3);
+}
+.f-blood::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 30%;
+    width: 3px;
+    height: 3px;
+    background: #d50000;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #d50000;
+    animation: bloodDrop1 2.2s linear infinite;
+    pointer-events: none;
+}
+.f-blood::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 65%;
+    width: 4px;
+    height: 4px;
+    background: #d50000;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #d50000;
+    animation: bloodDrop2 2.8s linear infinite 0.6s;
+    pointer-events: none;
+}
+@keyframes bloodDrop1 {
+    0% { opacity: 0; transform: translateY(0) scale(0.4); }
+    20% { opacity: 1; transform: translateY(3px) scale(1); }
+    100% { opacity: 0; transform: translateY(18px) scale(0.3); }
+}
+@keyframes bloodDrop2 {
+    0% { opacity: 0; transform: translateY(0) scale(0.4); }
+    20% { opacity: 1; transform: translateY(3px) scale(1); }
+    100% { opacity: 0; transform: translateY(22px) scale(0.3); }
+}
+
+/* ГЛЮЧНАЯ */
+.f-glitch {
+    border-color: rgba(118, 255, 3, 0.6);
+    animation: glitchShake 2.5s steps(8) infinite;
+}
+.f-glitch::before {
     content: '';
     position: absolute;
     inset: -2px;
     border-radius: 4px;
     pointer-events: none;
+    border: 1px solid rgba(255, 0, 0, 0.5);
+    animation: glitchShift1 0.35s steps(2) infinite;
 }
-.f-glitch::before { border: 1px solid rgba(255, 0, 0, 0.5); transform: translate(-2px, 0); opacity: 0.7; animation: glitchShift1 0.4s steps(2) infinite; }
-.f-glitch::after { border: 1px solid rgba(0, 255, 255, 0.5); transform: translate(2px, 0); opacity: 0.7; animation: glitchShift2 0.4s steps(2) infinite; }
-@keyframes glitchFrame { 0%, 95%, 100% { filter: none; } 96% { filter: hue-rotate(90deg); } 97% { filter: hue-rotate(-90deg); } }
-@keyframes glitchShift1 { 0% { transform: translate(-2px, 0); } 100% { transform: translate(-3px, 1px); } }
-@keyframes glitchShift2 { 0% { transform: translate(2px, 0); } 100% { transform: translate(3px, -1px); } }
-
-.f-shadow { border-color: rgba(80, 80, 80, 0.6); box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(0, 0, 0, 0.6); }
-.f-shadow::before {
+.f-glitch::after {
     content: '';
     position: absolute;
-    inset: -6px;
-    border-radius: 8px;
-    background: radial-gradient(ellipse, rgba(30, 30, 30, 0.4) 0%, transparent 70%);
-    animation: shadowPulse 3s ease-in-out infinite;
+    inset: -2px;
+    border-radius: 4px;
     pointer-events: none;
-    z-index: -1;
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    animation: glitchShift2 0.35s steps(2) infinite;
 }
-@keyframes shadowPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
+@keyframes glitchShake {
+    0%, 88%, 100% { transform: translate(0, 0); filter: hue-rotate(0deg); }
+    89% { transform: translate(-1px, 1px); filter: hue-rotate(30deg); }
+    91% { transform: translate(1px, -1px); filter: hue-rotate(-30deg); }
+    93% { transform: translate(-1px, 0); filter: hue-rotate(60deg); }
+    95% { transform: translate(1px, 1px); filter: hue-rotate(-60deg); }
+}
+@keyframes glitchShift1 {
+    0% { transform: translate(-2px, 0); opacity: 0.8; }
+    50% { transform: translate(-3px, 1px); opacity: 0.5; }
+    100% { transform: translate(-2px, 0); opacity: 0.8; }
+}
+@keyframes glitchShift2 {
+    0% { transform: translate(2px, 0); opacity: 0.8; }
+    50% { transform: translate(3px, -1px); opacity: 0.5; }
+    100% { transform: translate(2px, 0); opacity: 0.8; }
+}
 
-.f-skull { border-color: rgba(255, 255, 255, 0.8); box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), inset 0 0 6px rgba(255, 255, 255, 0.2); }
+/* ТЕНЕВАЯ */
+.f-shadow {
+    border-color: rgba(120, 120, 120, 0.6);
+    animation: shadowVibrate 0.8s linear infinite;
+}
+@keyframes shadowVibrate {
+    0%, 100% { box-shadow: 0 0 12px rgba(0, 0, 0, 0.9), inset 0 0 8px rgba(0, 0, 0, 0.7); border-color: #000; }
+    50% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.2); border-color: #fff; }
+}
 
-.f-cyber { border-color: #00e5ff; box-shadow: 0 0 12px rgba(0, 229, 255, 0.6), inset 0 0 8px rgba(0, 229, 255, 0.2); }
-.f-cyber::before, .f-cyber::after {
+/* ЧЕРЕПНАЯ */
+.f-skull {
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), inset 0 0 6px rgba(255, 255, 255, 0.2);
+    position: relative;
+}
+.f-skull::before {
+    content: '💀 💀 💀';
+    position: absolute;
+    inset: -14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    letter-spacing: 8px;
+    pointer-events: none;
+    animation: skullOrbit 6s linear infinite;
+    opacity: 0.85;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
+}
+@keyframes skullOrbit {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* КИБЕР */
+.f-cyber {
+    border-color: #00e5ff;
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.6), inset 0 0 8px rgba(0, 229, 255, 0.2);
+}
+.f-cyber::before,
+.f-cyber::after {
     content: '';
     position: absolute;
-    width: 10px; height: 10px;
+    width: 10px;
+    height: 10px;
     border: 2px solid #00e5ff;
     pointer-events: none;
+    box-shadow: 0 0 6px #00e5ff;
 }
-.f-cyber::before { top: -3px; left: -3px; border-right: none; border-bottom: none; }
-.f-cyber::after { bottom: -3px; right: -3px; border-left: none; border-top: none; }
+.f-cyber::before {
+    top: -3px;
+    left: -3px;
+    border-right: none;
+    border-bottom: none;
+    animation: cyberCorner 3s ease-in-out infinite;
+}
+.f-cyber::after {
+    bottom: -3px;
+    right: -3px;
+    border-left: none;
+    border-top: none;
+    animation: cyberCorner 3s ease-in-out infinite 1.5s;
+}
+@keyframes cyberCorner {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.2); opacity: 1; }
+}
 
-.f-crystal { border-color: rgba(200, 220, 255, 0.7); box-shadow: 0 0 15px rgba(180, 210, 255, 0.5), inset 0 0 10px rgba(180, 210, 255, 0.2); overflow: hidden; }
+/* ХРУСТАЛЬНАЯ */
+.f-crystal {
+    border-color: rgba(200, 220, 255, 0.7);
+    box-shadow: 0 0 15px rgba(180, 210, 255, 0.5), inset 0 0 10px rgba(180, 210, 255, 0.2);
+    overflow: hidden;
+}
 .f-crystal::before {
     content: '';
     position: absolute;
@@ -786,76 +1001,96 @@ a:active, button:active, a:focus, button:focus {
     animation: crystalShine 3s linear infinite;
     pointer-events: none;
 }
-@keyframes crystalShine { 0% { background-position: -100% -100%; } 100% { background-position: 200% 200%; } }
+@keyframes crystalShine {
+    0% { background-position: -100% -100%; }
+    100% { background-position: 200% 200%; }
+}
 
-.f-royal { border-color: #b388ff; box-shadow: 0 0 15px rgba(179, 136, 255, 0.6), inset 0 0 8px rgba(179, 136, 255, 0.2); }
+/* КОРОЛЕВСКАЯ */
+.f-royal {
+    border-color: #b388ff;
+    box-shadow: 0 0 15px rgba(179, 136, 255, 0.6), inset 0 0 8px rgba(179, 136, 255, 0.2);
+}
 .f-royal::before {
     content: '';
     position: absolute;
-    top: -12px; left: 50%;
+    top: -12px;
+    left: 50%;
     transform: translateX(-50%);
-    width: 24px; height: 10px;
+    width: 24px;
+    height: 10px;
     background: linear-gradient(180deg, #ffd700 0%, #b388ff 100%);
     clip-path: polygon(0% 100%, 10% 40%, 30% 70%, 50% 0%, 70% 70%, 90% 40%, 100% 100%);
     filter: drop-shadow(0 0 6px #b388ff) drop-shadow(0 0 10px #ffd700);
     animation: crownFloat 2.5s ease-in-out infinite;
     pointer-events: none;
 }
-@keyframes crownFloat { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-2px); } }
+@keyframes crownFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-2px); }
+}
 
-.f-spike { border-color: var(--accent); box-shadow: 0 0 15px rgba(255, 23, 68, 0.6), inset 0 0 8px rgba(255, 23, 68, 0.2); }
-.f-spike::before {
+/* ДЕМОНИЧЕСКАЯ */
+.f-demonic {
+    border-color: rgba(183, 28, 28, 0.9);
+    box-shadow: 0 0 18px rgba(255, 0, 0, 0.6), inset 0 0 10px rgba(183, 28, 28, 0.4);
+}
+.f-demonic::before,
+.f-demonic::after {
     content: '';
     position: absolute;
-    inset: -4px;
-    background: conic-gradient(from 0deg,
-        var(--accent) 0deg, transparent 15deg,
-        var(--accent) 45deg, transparent 60deg,
-        var(--accent) 90deg, transparent 105deg,
-        var(--accent) 135deg, transparent 150deg,
-        var(--accent) 180deg, transparent 195deg,
-        var(--accent) 225deg, transparent 240deg,
-        var(--accent) 270deg, transparent 285deg,
-        var(--accent) 315deg, transparent 330deg,
-        var(--accent) 360deg);
-    clip-path: polygon(50% 0%, 55% 40%, 100% 50%, 55% 60%, 50% 100%, 45% 60%, 0% 50%, 45% 40%);
-    animation: spikeRotate 8s linear infinite;
+    top: -16px;
+    width: 10px;
+    height: 22px;
+    background: linear-gradient(180deg, #b71c1c 0%, #5c0000 100%);
+    border-radius: 60% 60% 15% 15%;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+    animation: hornPulse 2s ease-in-out infinite;
     pointer-events: none;
-    z-index: -1;
 }
-@keyframes spikeRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.f-demonic::before {
+    left: 2px;
+    transform: rotate(-32deg);
+    transform-origin: bottom center;
+}
+.f-demonic::after {
+    right: 2px;
+    transform: rotate(32deg);
+    transform-origin: bottom center;
+}
+@keyframes hornPulse {
+    0%, 100% { filter: brightness(1) drop-shadow(0 0 6px #ff0000); }
+    50% { filter: brightness(1.4) drop-shadow(0 0 14px #ff0000); }
+}
 
-.f-silver { border-color: #cfd8dc; box-shadow: 0 0 10px rgba(207, 216, 220, 0.5), inset 0 0 6px rgba(207, 216, 220, 0.2); }
-.f-gold { border-color: #ffd700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.6), inset 0 0 8px rgba(255, 215, 0, 0.2); }
-
-.f-organic { border-color: #2e7d32; box-shadow: 0 0 12px rgba(46, 125, 50, 0.5), inset 0 0 8px rgba(46, 125, 50, 0.2); }
-.f-organic::before, .f-organic::after {
+/* АНГЕЛЬСКАЯ */
+.f-angelic {
+    border-color: rgba(255, 249, 196, 0.9);
+    box-shadow: 0 0 18px rgba(255, 255, 200, 0.6), inset 0 0 10px rgba(255, 249, 196, 0.3);
+}
+.f-angelic::before {
     content: '';
     position: absolute;
-    width: 8px; height: 12px;
-    background: linear-gradient(180deg, #4caf50 0%, #1b5e20 100%);
-    border-radius: 50% 0 50% 0;
-    pointer-events: none;
-    box-shadow: 0 0 4px #2e7d32;
-}
-.f-organic::before { top: -4px; left: 4px; transform: rotate(-30deg); }
-.f-organic::after { bottom: -4px; right: 4px; transform: rotate(150deg); }
-
-.f-techno { border-color: #ff9100; box-shadow: 0 0 12px rgba(255, 145, 0, 0.5), inset 0 0 6px rgba(255, 145, 0, 0.2); }
-.f-techno::before, .f-techno::after {
-    content: '⚙';
-    position: absolute;
-    font-size: 10px;
-    color: #ff9100;
-    text-shadow: 0 0 4px #ff9100;
-    animation: gearRotate 4s linear infinite;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%) rotateX(65deg);
+    width: 40px;
+    height: 40px;
+    border: 2px solid #fff9c4;
+    border-radius: 50%;
+    box-shadow: 0 0 12px #fff9c4, 0 0 24px #fff9c4, inset 0 0 10px #fff9c4;
+    animation: haloFloat 2.5s ease-in-out infinite;
     pointer-events: none;
 }
-.f-techno::before { top: -6px; right: -6px; }
-.f-techno::after { bottom: -6px; left: -6px; animation-direction: reverse; }
-@keyframes gearRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes haloFloat {
+    0%, 100% { transform: translateX(-50%) rotateX(65deg) scale(1); opacity: 0.9; }
+    50% { transform: translateX(-50%) rotateX(65deg) scale(1.1); opacity: 1; }
+}
 
-.f-iridescent { animation: rainbowBorder 3s linear infinite; }
+/* ПЕРЕЛИВАЮЩАЯСЯ */
+.f-iridescent {
+    animation: rainbowBorder 3s linear infinite;
+}
 @keyframes rainbowBorder {
     0% { border-color: #ff1744; box-shadow: 0 0 12px rgba(255, 23, 68, 0.6); }
     16% { border-color: #ffd700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.6); }
@@ -867,7 +1102,7 @@ a:active, button:active, a:focus, button:focus {
 }
 
 /* ============================================================
-   РОЛЬ-БЕЙДЖИКИ (👑 / 🛡) — УВЕЛИЧЕНЫ, в правом верхнем углу ника
+   РОЛЬ-БЕЙДЖИКИ — крупные в чате, уменьшенные в ленте/профиле
    ============================================================ */
 .role-badge {
     position: absolute;
@@ -886,14 +1121,44 @@ a:active, button:active, a:focus, button:focus {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.15); }
 }
-.name-with-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; padding-right: 8px; }
-.name-with-badge .badge-img { width: 20px; height: 20px; vertical-align: middle; }
 
-/* Бейджик (картинка) — увеличен */
+/* УМЕНЬШЕННЫЕ — только в ленте, профиле, комментариях, репостах */
+.card-author .role-badge,
+.comment-author .role-badge,
+.repost-author .role-badge,
+.repost-header .role-badge,
+.feed-profile-name .role-badge {
+    top: -5px;
+    right: -8px;
+    font-size: 0.65rem;
+    filter: drop-shadow(0 0 3px currentColor);
+    animation: none;
+}
+
+.name-with-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; padding-right: 8px; }
+.name-with-badge .badge-img { width: 32px; height: 32px; vertical-align: middle; }
+
+/* Бейджик-картинка — УВЕЛИЧЕН */
 .badge-img {
-    width: 20px !important;
-    height: 20px !important;
+    width: 32px !important;
+    height: 32px !important;
     vertical-align: middle;
+    margin-left: 6px;
+    image-rendering: pixelated;
+}
+
+.chat-author .badge-img {
+    width: 36px !important;
+    height: 36px !important;
+}
+
+.card-author .badge-img,
+.comment-author .badge-img,
+.repost-author .badge-img,
+.repost-header .badge-img,
+.feed-profile-name .badge-img {
+    width: 26px !important;
+    height: 26px !important;
     margin-left: 4px;
 }
 
@@ -986,23 +1251,156 @@ a:active, button:active, a:focus, button:focus {
 .color-cyan { color: #00e5ff; text-shadow: 0 0 6px #00e5ff; }
 .color-gray { color: #9e9e9e; text-shadow: 0 0 6px #9e9e9e; }
 .color-silver { color: #cfd8dc; text-shadow: 0 0 6px #cfd8dc; }
-.color-sapphire { color: #1565c0; text-shadow: 0 0 6px #1565c0, 0 0 14px #42a5f5; }
 .color-dark-purple { color: #7c4dff; text-shadow: 0 0 6px #7c4dff; }
 
-.color-gold { color: #ffd700; text-shadow: 0 0 8px #ffd700, 0 0 16px #ffab00; animation: goldShine 2s ease-in-out infinite; }
-@keyframes goldShine { 0%, 100% { text-shadow: 0 0 8px #ffd700, 0 0 16px #ffab00; } 50% { text-shadow: 0 0 12px #ffd700, 0 0 24px #ffab00, 0 0 32px #ffd700; } }
+/* ЗОЛОТОЙ — переливается */
+.color-gold {
+    background: linear-gradient(90deg, #ffd700, #fff8b0, #c9a800, #ffd700, #fff8b0, #c9a800);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: goldShimmer 3s linear infinite;
+    filter: drop-shadow(0 0 6px #ffd700);
+}
+@keyframes goldShimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+}
 
-.color-neon-green { color: #76ff03; text-shadow: 0 0 6px #76ff03, 0 0 14px #64dd17; animation: neonGreenPulse 1.5s ease-in-out infinite; }
-@keyframes neonGreenPulse { 0%, 100% { text-shadow: 0 0 6px #76ff03, 0 0 14px #64dd17; } 50% { text-shadow: 0 0 12px #76ff03, 0 0 24px #64dd17, 0 0 32px #76ff03; } }
+/* САПФИРОВЫЙ — переливается */
+.color-sapphire {
+    background: linear-gradient(90deg, #1565c0, #42a5f5, #0d47a1, #64b5f6, #1565c0);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: sapphireShimmer 3s linear infinite;
+    filter: drop-shadow(0 0 6px #42a5f5);
+}
+@keyframes sapphireShimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+}
 
-.color-neon-blue { color: #40c4ff; text-shadow: 0 0 6px #40c4ff, 0 0 14px #0091ea; animation: neonBluePulse 1.5s ease-in-out infinite; }
-@keyframes neonBluePulse { 0%, 100% { text-shadow: 0 0 6px #40c4ff, 0 0 14px #0091ea; } 50% { text-shadow: 0 0 12px #40c4ff, 0 0 24px #0091ea, 0 0 32px #40c4ff; } }
+/* ОГНЕННЫЙ — переливается оранжевым и красным */
+.color-fire {
+    background: linear-gradient(90deg, #ff3d00, #ff9100, #ff1744, #ff6d00, #ff3d00);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: fireShimmer 2.5s linear infinite;
+    filter: drop-shadow(0 0 6px #ff3d00) drop-shadow(0 0 10px #ff6d00);
+}
+@keyframes fireShimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+}
 
-.color-fire { color: #ff3d00; text-shadow: 0 0 6px #ff3d00, 0 0 14px #ff6d00; animation: fireFlicker 0.4s ease-in-out infinite alternate; }
-.color-ice { color: #80deea; text-shadow: 0 0 6px #80deea, 0 0 14px #4dd0e1; }
-.color-blood { color: #d50000; text-shadow: 0 0 6px #d50000, 0 0 14px #b71c1c; }
-.color-matrix { color: #00ff41; text-shadow: 0 0 6px #00ff41, 0 0 14px #00c853; font-family: var(--font-digit); }
+/* ЛЕДЯНОЙ — переливается голубым и бирюзовым */
+.color-ice {
+    background: linear-gradient(90deg, #80deea, #4dd0e1, #b3e5fc, #00bcd4, #80deea);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: iceShimmerText 3s linear infinite;
+    filter: drop-shadow(0 0 6px #80deea) drop-shadow(0 0 10px #4dd0e1);
+}
+@keyframes iceShimmerText {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+}
 
+/* КРОВАВО-КРАСНЫЙ — стекающие капли */
+.color-blood {
+    color: #d50000;
+    text-shadow: 0 0 6px #d50000, 0 0 12px #b71c1c;
+    position: relative;
+    display: inline-block;
+}
+.color-blood::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 10px;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 15% 0%, #d50000 0px, #d50000 1.2px, transparent 2.5px),
+        radial-gradient(circle at 45% 0%, #d50000 0px, #d50000 1.5px, transparent 2.8px),
+        radial-gradient(circle at 75% 0%, #d50000 0px, #d50000 1.2px, transparent 2.5px);
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    animation: bloodDripDown 3s linear infinite;
+    opacity: 0.9;
+}
+@keyframes bloodDripDown {
+    0% { background-position: 0 -4px; opacity: 0; }
+    20% { opacity: 1; }
+    100% { background-position: 0 12px; opacity: 0; }
+}
+
+/* МАТРИЦА — падающие матричные циферки */
+.color-matrix {
+    color: #00ff41;
+    font-family: var(--font-digit);
+    text-shadow: 0 0 6px #00ff41, 0 0 12px #00c853;
+    position: relative;
+    display: inline-block;
+}
+.color-matrix::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(180deg, transparent 0%, rgba(0, 255, 65, 0.5) 40%, transparent 100%);
+    background-size: 100% 100%;
+    mix-blend-mode: screen;
+    animation: matrixScan 2.5s linear infinite;
+    opacity: 0.6;
+}
+@keyframes matrixScan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+}
+
+/* ПУСТОТА */
+.color-void {
+    color: #b39ddb;
+    text-shadow: 0 0 8px #ce93d8, 0 0 16px #ab47bc, 0 0 24px rgba(171, 71, 188, 0.4);
+    position: relative;
+    display: inline-block;
+}
+.color-void::before {
+    content: '✦';
+    position: absolute;
+    top: -0.6em;
+    right: -0.4em;
+    color: rgba(206, 147, 216, 0.8);
+    font-size: 0.7em;
+    animation: voidTwinkle 2.5s ease-in-out infinite;
+    pointer-events: none;
+}
+.color-void::after {
+    content: '✧';
+    position: absolute;
+    bottom: -0.5em;
+    left: -0.3em;
+    color: rgba(206, 147, 216, 0.6);
+    font-size: 0.6em;
+    animation: voidTwinkle 2.5s ease-in-out infinite 1.2s;
+    pointer-events: none;
+}
+@keyframes voidTwinkle {
+    0%, 100% { opacity: 0.3; transform: scale(0.9) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1.2) rotate(20deg); }
+}
+
+/* СЕВЕРНОЕ СИЯНИЕ */
 .color-aurora {
     background: linear-gradient(90deg, #00e676, #00b0ff, #b388ff, #00e676, #00b0ff, #b388ff);
     background-size: 400% 100%;
@@ -1011,34 +1409,32 @@ a:active, button:active, a:focus, button:focus {
     color: transparent;
     animation: auroraFlow 5s linear infinite;
     filter: drop-shadow(0 0 4px #00e676) drop-shadow(0 0 8px #00b0ff);
+    position: relative;
 }
 @keyframes auroraFlow { 0% { background-position: 0% 50%; } 100% { background-position: 400% 50%; } }
 
-.color-void {
-    color: #b39ddb;
-    text-shadow: 0 0 8px #ce93d8, 0 0 16px #ab47bc;
-    animation: voidPulse 3s ease-in-out infinite;
-    position: relative;
+/* ПЕРЕЛИВАЮЩИЙСЯ (радуга) */
+.color-rainbow, .rainbow-text {
+    background: linear-gradient(90deg, #ff1744, #ffd700, #00ff41, #448aff, #b388ff, #ff80ab, #ff1744);
+    background-size: 400% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: rainbowFlow 3s linear infinite;
+    filter: drop-shadow(0 0 6px currentColor);
 }
-.color-void::before {
-    content: '✦ · ✧ · ✦ · ✧';
-    position: absolute;
-    inset: 0;
-    color: rgba(206, 147, 216, 0.4);
-    pointer-events: none;
-    animation: voidStars 8s linear infinite;
-    white-space: nowrap;
-    overflow: hidden;
+@keyframes rainbowFlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 400% 50%; }
 }
-@keyframes voidPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.65; } }
-@keyframes voidStars { 0% { transform: translateX(-20%); } 100% { transform: translateX(20%); } }
 
-.color-rainbow, .rainbow-text { animation: rainbow 3s linear infinite; text-shadow: 0 0 10px currentColor; }
-@keyframes rainbow {
-    0% { color: #ff1744; } 16% { color: #ffd700; } 33% { color: #00ff41; }
-    50% { color: #448aff; } 66% { color: #b388ff; } 83% { color: #ff80ab; }
-    100% { color: #ff1744; }
-}
+/* НЕОН-ЗЕЛЁНЫЙ */
+.color-neon-green { color: #76ff03; text-shadow: 0 0 6px #76ff03, 0 0 14px #64dd17; animation: neonGreenPulse 1.5s ease-in-out infinite; }
+@keyframes neonGreenPulse { 0%, 100% { text-shadow: 0 0 6px #76ff03, 0 0 14px #64dd17; } 50% { text-shadow: 0 0 12px #76ff03, 0 0 24px #64dd17, 0 0 32px #76ff03; } }
+
+/* НЕОН-СИНИЙ */
+.color-neon-blue { color: #40c4ff; text-shadow: 0 0 6px #40c4ff, 0 0 14px #0091ea; animation: neonBluePulse 1.5s ease-in-out infinite; }
+@keyframes neonBluePulse { 0%, 100% { text-shadow: 0 0 6px #40c4ff, 0 0 14px #0091ea; } 50% { text-shadow: 0 0 12px #40c4ff, 0 0 24px #0091ea, 0 0 32px #40c4ff; } }
 
 /* ============================================================
    ЭФФЕКТЫ ШРИФТОВ
@@ -1057,12 +1453,12 @@ a:active, button:active, a:focus, button:focus {
 @keyframes cyberScan { 0% { background-position: 0 -100%; } 100% { background-position: 0 200%; } }
 
 .font-typewriter { font-family: 'Special Elite', 'JetBrains Mono', monospace; letter-spacing: 1px; filter: sepia(0.4) contrast(0.9); }
-.font-western { font-family: 'Rye', 'Ruslan Display', serif; text-transform: uppercase; letter-spacing: 3px; }
-.font-gothic { font-family: 'UnifrakturMaguntia', 'Ruslan Display', serif; }
+.font-western { font-family: 'Smokum', 'Ruslan Display', serif; text-transform: uppercase; letter-spacing: 3px; font-size: 1.15em; }
+.font-gothic { font-family: 'Pirata One', 'Ruslan Display', serif; letter-spacing: 1px; font-size: 1.15em; }
 .font-rune { font-family: 'Uncial Antiqua', 'Ruslan Display', cursive; }
 .font-stencil { font-family: 'Impact', 'Ruslan Display', sans-serif; text-transform: uppercase; letter-spacing: 4px; }
 .font-pixel { font-family: 'Press Start 2P', 'Pixelify Sans', monospace; font-size: 0.85em; text-transform: uppercase; }
-.font-medieval { font-family: 'UnifrakturMaguntia', 'Ruslan Display', serif; font-size: 1.1em; }
+.font-medieval { font-family: 'MedievalSharp', 'Ruslan Display', serif; font-size: 1.1em; letter-spacing: 0.5px; }
 .font-comic { font-family: 'Comic Sans MS', 'Pixelify Sans', cursive; color: #ff80ab !important; }
 
 .font-neon { text-shadow: 0 0 5px #76ff03, 0 0 10px #76ff03, 0 0 20px #64dd17; animation: neonTextPulse 1.5s ease-in-out infinite; }
@@ -1239,7 +1635,7 @@ a:active, button:active, a:focus, button:focus {
 .scene-cover-thumb-sm:hover, .scene-cover-thumb-sm.active { border-color: var(--accent); transform: scale(1.05); }
 .scene-cover-thumb-sm img { width: 100%; height: 100%; object-fit: cover; }
 
-/* ============ КНОПКА ЗАКРЫТИЯ ПРОФИЛЯ (NEW) ============ */
+/* ============ КНОПКА ЗАКРЫТИЯ ПРОФИЛЯ ============ */
 .profile-close-top {
     position: absolute;
     top: 12px;
@@ -1271,7 +1667,7 @@ a:active, button:active, a:focus, button:focus {
 
 <canvas id="noise-canvas"></canvas>
 
-<!-- ЗАСТАВКА (череп сверху, текст снизу) -->
+<!-- ЗАСТАВКА -->
 <div id="start-screen">
     <div id="skull-intro">
         <pre id="skull-ascii">#############################################################
@@ -1391,7 +1787,7 @@ a:active, button:active, a:focus, button:focus {
 
 <nav class="mobile-nav" id="mobile-nav"><div class="mobile-nav-inner" id="mobile-nav-inner"></div></nav>
 
-<!-- ЭКРАНЫ ПРИЛОЖЕНИЙ (без изменений) -->
+<!-- ЭКРАНЫ ПРИЛОЖЕНИЙ -->
 <div class="app-screen" id="app-chat">
     <div class="app-header"><div class="app-title">💬 ЧАТ</div><button class="app-close" data-close="chat">✕</button></div>
     <div class="app-body no-pad"><div class="chat-wrap">
@@ -1507,7 +1903,7 @@ a:active, button:active, a:focus, button:focus {
 <div class="app-screen" id="app-logs"><div class="app-header"><div class="app-title">📜 ЛОГИ</div><button class="app-close" data-close="logs">✕</button></div><div class="app-body" id="logs-content"></div></div>
 <div class="app-screen" id="app-announce"><div class="app-header"><div class="app-title">📢 ОБЪЯВЛЕНИЯ</div><button class="app-close" data-close="announce">✕</button></div><div class="app-body" id="announce-content"></div></div>
 
-<!-- МОДАЛКИ (без изменений, кроме доп. модалки объявления) -->
+<!-- МОДАЛКИ -->
 <div class="modal-overlay" id="modal-rules">
     <div class="modal-box">
         <div class="modal-title">ПРАВИЛА</div>
@@ -1621,7 +2017,6 @@ a:active, button:active, a:focus, button:focus {
     </div>
 </div>
 
-<!-- Модалка просмотра объявления -->
 <div class="modal-overlay" id="modal-announce-view">
     <div class="modal-box">
         <div class="modal-title" id="modal-announce-view-title"></div>
