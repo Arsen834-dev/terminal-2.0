@@ -1,6 +1,6 @@
 // ============================================================
 // AGENTS / ПРОФИЛИ АГЕНТОВ
-// v2.7.0: кнопка закрытия сверху, друзья "✓ В друзьях"
+// v2.8.0: кнопка закрытия сверху, друзья "✓ В друзьях", reloadWall
 // ============================================================
 
 import { supabase, CA, loadAgent, getAgents, saveAgent } from './auth.js';
@@ -18,9 +18,6 @@ let wallAgentName = null;
 let wallLoaded = false;
 const WALL_PAGE_SIZE = 10;
 
-// ============================================================
-// ЭФФЕКТЫ
-// ============================================================
 function fx(name, agents) {
     if (typeof window.__getAgentFx === 'function') return window.__getAgentFx(name, agents);
     let a = (agents || {})[name] || {};
@@ -42,9 +39,6 @@ function fx(name, agents) {
     return { colorCls, fontCls: '', frameCls, badgeHtml, roleBadge, avatar: a.avatar_url || '' };
 }
 
-// ============================================================
-// ПОКАЗ ПРОФИЛЯ
-// ============================================================
 export async function showAgentInfo(name) {
     if (!name) return;
     const modal = document.getElementById('modal-agent-profile');
@@ -60,7 +54,6 @@ export async function showAgentInfo(name) {
         wallAgentName = name;
         wallLoaded = false;
 
-        // Подписки
         let subscribersCount = 0, followingCount = 0, iAmSubscribed = false;
         try {
             let { data: subs } = await supabase.from('subscriptions').select('*').eq('target', name);
@@ -90,7 +83,6 @@ export async function showAgentInfo(name) {
 
         let isMe = agent.name === CA?.name;
 
-        // Проверка дружбы
         let friendsList = getFriends();
         let isFriend = friendsList.some(f =>
             (f.agent === CA?.name && f.friend === agent.name && f.status === 'accepted') ||
@@ -102,21 +94,17 @@ export async function showAgentInfo(name) {
 
         let html = '';
 
-        // ============ КНОПКА ЗАКРЫТИЯ СВЕРХУ ============
         html += '<button class="profile-close-top" onclick="window.closeModal(\'modal-agent-profile\')" title="Закрыть">✕</button>';
 
-        // Обложка
         html += '<div style="position:relative;height:160px;background:' + (coverUrl ? 'url(' + coverUrl + ') center/cover' : 'linear-gradient(135deg,#1a0000,var(--accent-dark),#1a0000)') + ';flex-shrink:0;">';
         if (isMe) html += '<button class="btn btn-secondary" style="position:absolute;top:12px;right:56px;font-size:0.75rem;padding:6px 12px;z-index:3;" onclick="window.changeCover()">📷 Обложка</button>';
         html += '</div>';
 
-        // Аватар
         html += '<div style="padding:0 20px;">';
         html += '<div class="chat-avatar-frame ' + e.frameCls + '" style="width:100px;height:100px;margin-top:-50px;border-radius:12px;background:var(--bg-3);border:3px solid var(--bg-2);position:relative;z-index:2;">';
         html += '<div class="inner" style="font-size:2.5rem;border-radius:9px;">' + avatarHtml + '</div>';
         html += '</div></div>';
 
-        // Имя
         html += '<div style="padding:16px 20px;">';
         html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
         html += '<span class="name-with-badge ' + e.colorCls + '" style="font-size:1.4rem;font-weight:700;position:relative;padding-right:12px;">' + agent.name + e.roleBadge + e.badgeHtml + '</span>';
@@ -127,7 +115,6 @@ export async function showAgentInfo(name) {
         html += '<div style="color:var(--text-3);font-size:0.8rem;margin-top:6px;">⚔️ Отряд: ' + clanName + '</div>';
         html += '</div>';
 
-        // Статистика
         html += '<div style="display:flex;gap:24px;padding:12px 20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap;">';
         html += '<div><div style="font-weight:700;color:var(--text);">' + subscribersCount + '</div><div style="color:var(--text-3);font-size:0.7rem;">подписчики</div></div>';
         html += '<div><div style="font-weight:700;color:var(--text);">' + followingCount + '</div><div style="color:var(--text-3);font-size:0.7rem;">подписки</div></div>';
@@ -135,7 +122,6 @@ export async function showAgentInfo(name) {
         html += '<div><div style="font-weight:700;color:var(--text);">' + (agent.rep || 0) + '</div><div style="color:var(--text-3);font-size:0.7rem;">репа</div></div>';
         html += '</div>';
 
-        // Кнопки
         if (!isMe) {
             html += '<div style="display:flex;gap:8px;padding:16px 20px 8px;">';
             html += '<button class="btn" id="profile-dm-btn" style="flex:1;">📩 Написать</button>';
@@ -144,7 +130,6 @@ export async function showAgentInfo(name) {
             html += '</div>';
             html += '<div style="display:flex;gap:8px;padding:0 20px 16px;">';
 
-            // Кнопка "Добавить / ✓ В друзьях"
             if (isFriend) {
                 html += '<button class="btn in-friends" id="profile-add-friend-btn" style="flex:1;">✓ В ДРУЗЬЯХ</button>';
             } else if (hasPendingRequest) {
@@ -159,7 +144,6 @@ export async function showAgentInfo(name) {
             html += '<div style="padding:16px 20px;"><button class="btn full" id="profile-create-post-btn">✏️ СОЗДАТЬ ПОСТ</button></div>';
         }
 
-        // Стена
         html += '<div style="padding:0 20px 20px;">';
         html += '<div style="font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">';
         html += '<span>📝 Стена</span>';
@@ -193,13 +177,11 @@ export async function showAgentInfo(name) {
         content.style.minHeight = '0';
 
         setTimeout(() => {
-            // DM
             document.getElementById('profile-dm-btn')?.addEventListener('click', function() {
                 closeModal('modal-agent-profile');
                 if (typeof window.startDM === 'function') window.startDM(agent.name);
             });
 
-            // Подписка
             document.getElementById('profile-sub-btn')?.addEventListener('click', async function() {
                 if (iAmSubscribed) {
                     await supabase.from('subscriptions').delete().eq('subscriber', CA.name).eq('target', name);
@@ -212,10 +194,8 @@ export async function showAgentInfo(name) {
                 setTimeout(() => showAgentInfo(name), 300);
             });
 
-            // Друзья
             document.getElementById('profile-add-friend-btn')?.addEventListener('click', async function() {
                 if (isFriend) {
-                    // Удалить из друзей
                     let rec = friendsList.find(f =>
                         (f.agent === CA?.name && f.friend === agent.name) ||
                         (f.agent === agent.name && f.friend === CA?.name)
@@ -231,14 +211,12 @@ export async function showAgentInfo(name) {
                 setTimeout(() => showAgentInfo(name), 300);
             });
 
-            // Блок
             document.getElementById('profile-block-btn')?.addEventListener('click', async function() {
                 await blockAgent(agent.name);
                 notif('🚫 Заблокирован');
                 closeModal('modal-agent-profile');
             });
 
-            // Создать пост
             document.getElementById('profile-create-post-btn')?.addEventListener('click', function() {
                 closeModal('modal-agent-profile');
                 if (typeof window.showCreatePost === 'function') window.showCreatePost();
@@ -266,6 +244,16 @@ export async function showAgentInfo(name) {
                     }
                 });
             }
+
+            // Проброс для rerenderAll
+            window.__reloadProfileWall = function() {
+                wallPosts = [];
+                wallPage = 0;
+                wallLoaded = false;
+                let w = document.getElementById('profile-wall');
+                if (w) w.innerHTML = '';
+                loadWallPage(0);
+            };
         }, 50);
 
         modal.style.display = 'flex';
@@ -285,9 +273,6 @@ export async function showAgentInfo(name) {
     }
 }
 
-// ============================================================
-// ПАГИНАЦИЯ СТЕНЫ
-// ============================================================
 async function loadWallPage(page) {
     if (!wallAgentName) return;
     let wall = document.getElementById('profile-wall');
@@ -359,9 +344,6 @@ async function loadWallPage(page) {
     }
 }
 
-// ============================================================
-// СОЗДАНИЕ ПОСТА
-// ============================================================
 export async function createPost(text, imageUrl) {
     if (!CA) return { success: false, error: 'Не авторизован' };
     try {

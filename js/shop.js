@@ -1,15 +1,12 @@
 // ============================================================
 // SHOP / МАГАЗИН И ИНВЕНТАРЬ
-// v2.5.1: убраны стили профилей, улучшены превью с эффектами
+// v2.8.0: кириллические шрифты, мгновенный ререндер
 // ============================================================
 
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, saveAgent, setInventory } from './auth.js';
 import { REMOVED_ITEM_IDS } from './config.js';
 import { playSound } from './sounds.js';
 
-// ============================================================
-// ТОВАРЫ
-// ============================================================
 export const shopItems = {
     colors: [
         { id: 'c_red', name: 'Красный', price: 0, color: '#ff1744' },
@@ -82,20 +79,19 @@ export const shopItems = {
     ],
     fonts: [
         { id: 'fnt_default', name: 'Стандартный', price: 0 },
-        { id: 'fnt_rune', name: 'Руны', price: 200 },
-        { id: 'fnt_typewriter', name: 'Печатная машинка', price: 200 },
+        { id: 'fnt_rune', name: 'Древние руны', price: 200 },
+        { id: 'fnt_typewriter', name: 'Машинопись', price: 200 },
         { id: 'fnt_comic', name: 'Комикс', price: 200 },
         { id: 'fnt_cyber', name: 'Кибер', price: 300 },
-        { id: 'fnt_gothic', name: 'Готика', price: 300 },
-        { id: 'fnt_western', name: 'Вестерн', price: 300 },
+        { id: 'fnt_gothic', name: 'Готический', price: 300 },
+        { id: 'fnt_western', name: 'Дикий запад', price: 300 },
         { id: 'fnt_stencil', name: 'Трафарет', price: 350 },
-        { id: 'fnt_medieval', name: 'Средневековый', price: 350 },
+        { id: 'fnt_medieval', name: 'Средневековье', price: 350 },
         { id: 'fnt_pixel', name: 'Пиксельный', price: 450 },
         { id: 'fnt_neon', name: 'Неоновый', price: 600 },
         { id: 'fnt_glitch', name: 'Глитч', price: 900 },
         { id: 'fnt_blood', name: 'Кровавый', price: 1500 }
     ],
-    // REMOVED: styles — убраны полностью
     sounds: [
         { id: 'snd_custom', name: 'Свой звук', price: 500, url: 'custom' }
     ],
@@ -107,18 +103,12 @@ export const shopItems = {
     ]
 };
 
-// ============================================================
-// СОСТОЯНИЕ
-// ============================================================
 let shopCategory = 'colors';
 let invCategory = 'color';
 let discountedItems = {};
 let discountEndTime = 0;
 let shopLogs = JSON.parse(localStorage.getItem('syndicate_shop_logs') || '[]');
 
-// ============================================================
-// КЛАССЫ ЦВЕТОВ
-// ============================================================
 export function getActiveColorClass() {
     return getActiveColorClassForId(activeItems.color);
 }
@@ -160,9 +150,6 @@ export function getActiveBadgeEmoji() {
            (b && b.emoji ? b.emoji : '');
 }
 
-// ============================================================
-// СКИДКИ
-// ============================================================
 export function loadDiscount() {
     let saved = JSON.parse(localStorage.getItem('syndicate_discount') || 'null');
     if (saved && Date.now() < saved.endTime) {
@@ -254,9 +241,6 @@ export function updateDiscountDisplay() {
     }
 }
 
-// ============================================================
-// БУСТЕР
-// ============================================================
 export function getBoosterTimeLeft() {
     if (!boosterEndTime) return '';
     let n = Date.now(), e = new Date(boosterEndTime).getTime();
@@ -265,9 +249,6 @@ export function getBoosterTimeLeft() {
     return h + 'ч ' + m + 'м';
 }
 
-// ============================================================
-// ИНВЕНТАРЬ
-// ============================================================
 export async function saveInventory() {
     if (!CA) return;
     localStorage.setItem('syndicate_inventory_' + CA.name, JSON.stringify(inventory));
@@ -300,9 +281,6 @@ export async function loadInventory() {
     activeItems.avatar_url = CA.avatar_url || '';
 }
 
-// ============================================================
-// ПРЕВЬЮ (с эффектами!)
-// ============================================================
 export function previewItem(cat, id) {
     let cats = { color: 'colors', frame: 'frames', badge: 'badges', font: 'fonts', sound: 'sounds', booster: 'boosters' };
     let item = shopItems[cats[cat]] ? shopItems[cats[cat]].find(i => i.id === id) : null;
@@ -342,9 +320,6 @@ export function previewItem(cat, id) {
     el.classList.add('show');
 }
 
-// ============================================================
-// МАГАЗИН UI
-// ============================================================
 export function renderShop() {
     let c = document.getElementById('shop-content');
     if (!CA || !c) return;
@@ -399,7 +374,6 @@ export function renderShopItems() {
         if (shopCategory === 'colors') {
             prev = '<span class="' + getActiveColorClassForId(item.id) + '" style="font-size:1.1rem;padding:8px;display:inline-block;">АГЕНТ</span>';
         } else if (shopCategory === 'frames') {
-            // Превью рамки — с эффектом
             prev = '<div style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:9px;position:relative;" class="chat-avatar-frame ' + (item.cssClass || 'f-default') + '">' +
                 '<span style="font-size:1.8rem;">🕶️</span></div>';
         } else if (shopCategory === 'badges') {
@@ -457,9 +431,6 @@ export function renderShopItems() {
     }, 10);
 }
 
-// ============================================================
-// ПОКУПКА / ПРИМЕНЕНИЕ / СБРОС
-// ============================================================
 export function buyItem(cat, id) {
     if (!CA) return;
     let cats = { color: 'colors', frame: 'frames', badge: 'badges', font: 'fonts', sound: 'sounds', booster: 'boosters' };
@@ -499,6 +470,7 @@ export function applyItem(cat, id) {
                     activeItems.sound = reader.result;
                     saveAgent();
                     window.notif('✅ Звук загружен');
+                    if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
                 };
                 reader.readAsDataURL(file);
             };
@@ -509,6 +481,7 @@ export function applyItem(cat, id) {
         saveInventory(); saveAgent();
         renderShopItems(); renderInventory();
         if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
+        if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
         return;
     }
     if (cat === 'booster') {
@@ -521,6 +494,7 @@ export function applyItem(cat, id) {
         saveInventory(); saveAgent();
         renderShopItems(); renderInventory();
         if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
+        if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
         window.notif('⚡ Активирован: ' + item.name);
         playSound('buy');
         return;
@@ -529,6 +503,7 @@ export function applyItem(cat, id) {
     saveInventory(); saveAgent();
     renderShopItems(); renderInventory();
     if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
+    if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
     window.notif('✅ Применено');
 }
 
@@ -538,6 +513,7 @@ export function resetItem(cat) {
         activeItems.sound = '';
         saveInventory(); saveAgent();
         renderShopItems(); renderInventory();
+        if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
         window.notif('🔇 Звук сброшен');
         return;
     }
@@ -547,12 +523,10 @@ export function resetItem(cat) {
     saveInventory(); saveAgent();
     renderShopItems(); renderInventory();
     if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
+    if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
     window.notif('🔄 Сброшено');
 }
 
-// ============================================================
-// ИНВЕНТАРЬ UI
-// ============================================================
 export function renderInventory() {
     invCategory = window.invCategory || invCategory;
     let c = document.getElementById('inventory-content');
@@ -628,9 +602,6 @@ export function renderInventory() {
     window.invCategory = invCategory;
 }
 
-// ============================================================
-// ЛОГИ
-// ============================================================
 export function addShopLog(who, action, item, price) {
     let time = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
     shopLogs.unshift({ who, action, item, price, time });
@@ -640,7 +611,4 @@ export function addShopLog(who, action, item, price) {
 
 export function getShopLogs() { return shopLogs; }
 
-// ============================================================
-// ЭКСПОРТЫ
-// ============================================================
 export { shopCategory, invCategory, discountedItems, discountEndTime };

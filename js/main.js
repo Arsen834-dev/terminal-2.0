@@ -1,12 +1,12 @@
 // ============================================================
-// ТЕРМИНАЛ СИНДИКАТА v2.7.0 — MAIN
+// ТЕРМИНАЛ СИНДИКАТА v2.8.0 — MAIN
 // ============================================================
 
 console.log('[MAIN] Модуль начал загрузку');
 
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, login, register, saveAgent, loadAgent, getAgents, translit } from './auth.js';
 import { loadDiscount, loadInventory, saveInventory, renderShop, renderShopItems, renderShopCategories, renderInventory, previewItem, buyItem, applyItem, resetItem, getItemDiscount, getDiscountedPrice, formatPrice, updateDiscountDisplay, generateNewDiscount, getActiveColorClass, getActiveColorClassForId, getActiveFrameClass, getActiveBadgeEmoji, getActiveFontClass, getBoosterTimeLeft, shopItems } from './shop.js';
-import { loadChatMessages, sendMessage, renderChat, subscribeChat, switchChatTab, loadDMMessages, sendDM, renderDMList, renderDMMessages, subscribeDM, openDM, startDM, loadMoreChatMessages, addReaction, addDMReaction, addAdminReaction, addClanReaction, deleteMessage, deleteClanMessage, deleteAdminMessage, pinChatMessage, pinClanMessage, editMessage, editClanMessage, replyToMessage, replyToClanMessage, cancelReply, loadMentionAgents, showMentionSuggestions, hideMentionSuggestions, updateBadgeIcons, showReactionPickerUniversal, loadAdminMessages, sendAdminMessage, renderAdminChat, subscribeAdminChat, openClanChat, sendClanMessage, renderClanMessages, loadClanMessages, subscribeClanChat, chatMessages, currentClanId, currentDM, dmMessagesAll, unreadMentions, clanChats, isClanChatActive } from './chat.js';
+import { loadChatMessages, sendMessage, renderChat, subscribeChat, switchChatTab, loadDMMessages, sendDM, renderDMList, renderDMMessages, subscribeDM, openDM, startDM, loadMoreChatMessages, addReaction, addDMReaction, addAdminReaction, addClanReaction, deleteMessage, deleteClanMessage, deleteAdminMessage, pinChatMessage, pinClanMessage, editMessage, editClanMessage, replyToMessage, replyToClanMessage, cancelReply, loadMentionAgents, showMentionSuggestions, hideMentionSuggestions, updateBadgeIcons, showReactionPickerUniversal, loadAdminMessages, sendAdminMessage, renderAdminChat, subscribeAdminChat, openClanChat, sendClanMessage, renderClanMessages, loadClanMessages, subscribeClanChat, chatMessages, currentClanId, currentDM, dmMessagesAll, unreadMentions, clanChats, isClanChatActive, chatTabActive } from './chat.js';
 import { loadClans, loadClanWars, createClan, joinClan, leaveClan, deleteClan, declareWar, donateToClan, acceptJoinRequest, checkCompletedWars, autoDistributeTreasury, renderClans, changeClanRole, kickClanMember, showDonateModal, openWarTargetModal, clans, clanWars } from './clans.js';
 import { loadFriends, sendFriendRequest, acceptFriend, removeFriend, blockAgent, unblockAgent, getFriends, renderFriends } from './friends.js';
 import { loadGuides, createGuide, deleteGuide, editGuide, loadMemes, createMeme, deleteMeme, likeMeme, userGuides, memes, renderGuides, saveEditedGuide, renderMemes, openGuideModal } from './guides.js';
@@ -93,6 +93,42 @@ function getAgentFx(name, agents) {
 window.__getAgentFx = getAgentFx;
 
 // ============================================================
+// РЕРЕНДЕР ВСЕГО
+// ============================================================
+async function rerenderAll() {
+    try {
+        feedAgentsCache = await getAgents();
+
+        if (currentView === 'feed') {
+            await refreshFeedOnly();
+        }
+
+        let profileModal = document.getElementById('modal-agent-profile');
+        if (profileModal && profileModal.classList.contains('show')) {
+            if (typeof window.__reloadProfileWall === 'function') {
+                window.__reloadProfileWall();
+            }
+        }
+
+        if (currentView === 'chat') {
+            if (chatTabActive === 'general') renderChat();
+            else if (chatTabActive === 'clan') renderClanMessages();
+            else if (chatTabActive === 'admin') renderAdminChat();
+        }
+
+        if (currentView === 'dm') {
+            renderDMList();
+            renderDMMessages();
+        }
+
+        renderRightPanel();
+
+        if (currentView === 'announce') renderAnnounceApp();
+    } catch (e) { console.error('[rerenderAll]', e); }
+}
+window.__rerenderAll = rerenderAll;
+
+// ============================================================
 // УНИВЕРСАЛЬНАЯ МОДАЛКА ПОДТВЕРЖДЕНИЯ
 // ============================================================
 function confirmDialog(title, text, onConfirm) {
@@ -166,7 +202,7 @@ function startClock() {
 }
 
 // ============================================================
-// УКРАШЕННЫЙ ТЕКСТ "ТЕРМИНАЛ СИНДИКАТА" (для нижней части заставки)
+// УКРАШЕННЫЙ ТЕКСТ
 // ============================================================
 function buildDecoratedTitle() {
     let el = document.getElementById('start-subtitle');
@@ -268,7 +304,6 @@ function buildSidebar() {
             if (item.id === 'dm' && unreadMentions.dm > 0) {
                 badge = '<span class="sidebar-item-badge">' + unreadMentions.dm + '</span>';
             }
-            // Точка "новый контент"
             let dot = '';
             if (newContentFlags[item.id]) {
                 dot = '<span class="sidebar-item-new-dot"></span>';
@@ -357,7 +392,7 @@ function buildMobileNav() {
 }
 
 // ============================================================
-// ПРАВЫЙ SIDEBAR (онлайн realtime + эффекты)
+// ПРАВЫЙ SIDEBAR
 // ============================================================
 async function renderRightPanel() {
     let online = document.getElementById('online-list');
@@ -366,7 +401,6 @@ async function renderRightPanel() {
         feedAgentsCache = agents;
         let now = Date.now();
         let allAgents = Object.entries(agents).filter(([n]) => n !== 'W-C26');
-        // Сортируем: онлайн первыми, потом оффлайн
         let sorted = allAgents
             .map(([name, d]) => {
                 let isOnline = d.last_seen && (now - new Date(d.last_seen).getTime()) < 300000;
@@ -433,7 +467,6 @@ async function renderRightPanel() {
                 '<div>' + escapeHtml((a.title || '').substring(0, 60)) + '</div>' +
                 '<div class="announce-mini-time">' + timeAgo(a.created_at) + '</div></div>'
             ).join('');
-            // Клик по объявлению → модалка просмотра
             announceMini.querySelectorAll('[data-announce-id]').forEach(el => {
                 el.addEventListener('click', async () => {
                     let id = parseInt(el.dataset.announceId);
@@ -699,7 +732,7 @@ function renderAnnounceCard(a) {
 function renderMemeCard(m) {
     let fx = getAgentFx(m.author);
     let avatarHtml = fx.avatar ? '<div class="inner"><img src="' + fx.avatar + '"></div>' : '<div class="inner">😂</div>';
-    let imgHtml = m.image_url ? '<img src="' + m.image_url + '" style="max-width:100%;max-height:400px;border:1px solid var(--border-2);margin-top:8px;display:block;" onerror="this.style.display=\'none\'">' : '';
+    let imgHtml = m.image_url ? '<img src="' + m.image_url + '" style="max-width:100%;max-height:400px;border:1px solid var(--border-2);margin-top:8px;display:block;border-radius:6px;" onerror="this.style.display=\'none\'">' : '';
     let titleHtml = m.title ? linkifyHashtags(escapeHtml(m.title)) : '';
     let textHtml = m.text ? linkifyHashtags(escapeHtml(m.text)).replace(/\n/g, '<br>') : '';
     return '<div class="card">' +
@@ -754,7 +787,6 @@ function subscribeFeedRealtime() {
         .subscribe();
 }
 
-// Подписка на онлайн-статусы
 function subscribeAgentsRealtime() {
     if (agentsChannel) supabase.removeChannel(agentsChannel);
     agentsChannel = supabase.channel('agents-realtime')
@@ -765,11 +797,10 @@ function subscribeAgentsRealtime() {
 }
 
 // ============================================================
-// РЕПА/ТК ТАЙМЕР (каждые 30 мин)
+// РЕПА/ТК ТАЙМЕР
 // ============================================================
 function startRepTkTimer() {
     if (repTkInterval) clearInterval(repTkInterval);
-    // Каждые 30 минут
     repTkInterval = setInterval(() => {
         if (!CA) return;
         let now = Date.now();
@@ -782,8 +813,7 @@ function startRepTkTimer() {
             updateTopbar();
             notif('📈 +1 репа, +50 ТК');
         }
-    }, 60000); // проверка каждую минуту
-    // Проверка сразу при запуске
+    }, 60000);
     let now = Date.now();
     let lastRepTk = parseInt(localStorage.getItem('syndicate_last_rep_tk_' + CA.name) || '0');
     if (now - lastRepTk >= 1800000) {
@@ -799,10 +829,9 @@ function startRepTkTimer() {
 // ОТКРЫТИЕ ПРИЛОЖЕНИЙ
 // ============================================================
 function openApp(id) {
-    window.__currentView = id;   // ← ДОБАВИТЬ ЭТУ СТРОКУ
+    window.__currentView = id;
     playSound('open');
     currentView = id;
-    // Сброс точки "новый контент"
     if (newContentFlags[id]) {
         newContentFlags[id] = false;
         buildSidebar();
@@ -1161,6 +1190,44 @@ window.replyToSceneMessage = replyToSceneMessage;
 window.closeSceneChat = closeSceneChat;
 
 // ============================================================
+// DISCORD-STYLE ОБЛОЖКИ (рендер)
+// ============================================================
+function renderDiscordCovers() {
+    let main = document.getElementById('discord-covers-main');
+    let grid = document.getElementById('discord-covers-grid');
+    if (!main || !grid) return;
+    let covers = window.__sceneCovers || [];
+
+    let activeIdx = covers.findIndex(c => c.active);
+    if (activeIdx === -1 && covers.length > 0) { activeIdx = 0; covers[0].active = true; }
+    if (covers.length === 0) {
+        main.innerHTML = '<span>НЕТ ОБЛОЖЕК</span>';
+    } else {
+        let url = covers[activeIdx].preview || covers[activeIdx].url;
+        main.innerHTML = '<img src="' + url + '">';
+    }
+
+    grid.innerHTML = '';
+    covers.forEach((c, i) => {
+        let url = c.preview || c.url;
+        grid.innerHTML += '<div class="discord-cover-thumb' + (i === activeIdx ? ' active' : '') + '" data-cover-idx="' + i + '">' +
+            '<img src="' + url + '">' +
+            '<span class="remove" data-cover-idx="' + i + '">✕</span>' +
+            '</div>';
+    });
+    if (covers.length < 5) {
+        grid.innerHTML += '<div class="discord-cover-add" id="discord-cover-add" title="Добавить">+</div>';
+    }
+    let addBtn = document.getElementById('discord-cover-add');
+    if (addBtn) {
+        let newAdd = addBtn.cloneNode(true);
+        addBtn.parentNode.replaceChild(newAdd, addBtn);
+        newAdd.addEventListener('click', () => document.getElementById('scene-covers').click());
+    }
+}
+window.__renderDiscordCovers = renderDiscordCovers;
+
+// ============================================================
 // ОТКРЫТИЕ РАБОЧЕГО СТОЛА
 // ============================================================
 function openDesktop() {
@@ -1182,6 +1249,58 @@ function openDesktop() {
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[MAIN] DOMContentLoaded сработал');
+
+    // ============ КНОПКИ ПРОФИЛЯ В ЛЕНТЕ (делегирование) ============
+    document.addEventListener('click', (e) => {
+        let t = e.target.closest('[data-action]');
+        if (!t) return;
+        let a = t.dataset.action;
+        if (a === 'post') { if (typeof window.showCreatePost === 'function') window.showCreatePost(); }
+        else if (a === 'profile') { openOwnProfile(); }
+        else if (a === 'settings') { openApp('settings'); }
+        else if (a === 'dm') { openApp('dm'); }
+        else if (a === 'feed') { openFeed(); }
+    });
+
+    // ============ СПЕКТАКЛИ — edit/delete (capture phase) ============
+    document.addEventListener('click', (e) => {
+        let editSceneBtn = e.target.closest('[data-edit-scene]');
+        if (editSceneBtn) {
+            e.stopPropagation();
+            e.preventDefault();
+            let id = parseInt(editSceneBtn.dataset.editScene);
+            let scene = (window.__rpScenes || []).find(s => s.id === id);
+            if (!scene) return;
+            (async () => {
+                let { loadSceneCovers } = await import('./rp.js');
+                let covers = await loadSceneCovers(id);
+                document.getElementById('scene-modal-title').textContent = '✏️ РЕДАКТИРОВАТЬ СПЕКТАКЛЬ';
+                document.getElementById('scene-title').value = scene.title || '';
+                document.getElementById('scene-desc').value = scene.description || '';
+                window.__sceneCovers = covers.map(c => ({ url: c.image_url, preview: c.image_url, isNew: false }));
+                if (typeof window.__renderDiscordCovers === 'function') window.__renderDiscordCovers();
+                let btn = document.getElementById('submit-scene-btn');
+                btn.dataset.editingScene = id;
+                btn.textContent = 'СОХРАНИТЬ';
+                let el = document.getElementById('modal-scene-create');
+                el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10);
+            })();
+            return;
+        }
+        let delSceneBtn = e.target.closest('[data-delete-scene]');
+        if (delSceneBtn) {
+            e.stopPropagation();
+            e.preventDefault();
+            let id = parseInt(delSceneBtn.dataset.deleteScene);
+            let scene = (window.__rpScenes || []).find(s => s.id === id);
+            confirmDialog('УДАЛИТЬ СПЕКТАКЛЬ', 'Удалить «' + (scene ? scene.title : '?') + '»?', async () => {
+                let r = await deleteRpScene(id);
+                if (r.success) { notif('🗑 Спектакль удалён'); loadRpScenes().then(renderRpScenes); }
+                else notif('⛔ ' + r.error);
+            });
+            return;
+        }
+    }, true);
 
     document.getElementById('login-btn')?.addEventListener('click', async () => {
         try {
@@ -1512,58 +1631,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let banBtn = e.target.closest('[data-ban]');
         if (banBtn) { banAgent(banBtn.dataset.ban); return; }
 
-        // Спектакли — редактирование/удаление
-        let editSceneBtn = e.target.closest('[data-edit-scene]');
-        if (editSceneBtn) {
-            e.stopPropagation();
-            let id = parseInt(editSceneBtn.dataset.editScene);
-            let scene = (window.__rpScenes || []).find(s => s.id === id);
-            if (!scene) return;
-            (async () => {
-                let { loadSceneCovers } = await import('./rp.js');
-                let covers = await loadSceneCovers(id);
-                document.getElementById('scene-modal-title').textContent = '✏️ РЕДАКТИРОВАТЬ СПЕКТАКЛЬ';
-                document.getElementById('scene-title').value = scene.title || '';
-                document.getElementById('scene-desc').value = scene.description || '';
-                window.__sceneCovers = covers.map(c => ({ url: c.image_url, preview: c.image_url, isNew: false }));
-                renderDiscordCovers();
-                let btn = document.getElementById('submit-scene-btn');
-                btn.dataset.editingScene = id;
-                btn.textContent = 'СОХРАНИТЬ';
-                let el = document.getElementById('modal-scene-create');
-                el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10);
-            })();
-            return;
-        }
-        let delSceneBtn = e.target.closest('[data-delete-scene]');
-        if (delSceneBtn) {
-            e.stopPropagation();
-            let id = parseInt(delSceneBtn.dataset.deleteScene);
-            let scene = (window.__rpScenes || []).find(s => s.id === id);
-            confirmDialog('УДАЛИТЬ СПЕКТАКЛЬ', 'Удалить «' + (scene ? scene.title : '?') + '»?', async () => {
-                let r = await deleteRpScene(id);
-                if (r.success) { notif('🗑 Спектакль удалён'); loadRpScenes().then(renderRpScenes); }
-                else notif('⛔ ' + r.error);
-            });
-            return;
-        }
-
-        // Discord covers — переключение активной
-        let coverThumb = e.target.closest('.discord-cover-thumb');
-        if (coverThumb && !e.target.closest('.remove')) {
-            let idx = parseInt(coverThumb.dataset.coverIdx);
-            if (window.__sceneCovers) window.__sceneCovers.forEach((c, i) => c.active = i === idx);
-            renderDiscordCovers();
-            return;
-        }
-        let coverRemove = e.target.closest('.discord-cover-thumb .remove');
-        if (coverRemove) {
-            let idx = parseInt(coverRemove.dataset.coverIdx);
-            if (window.__sceneCovers) window.__sceneCovers.splice(idx, 1);
-            renderDiscordCovers();
-            return;
-        }
-
         if (!e.target.closest('#mention-suggestions') && !e.target.closest('.chat-input')) hideMentionSuggestions();
         if (!e.target.closest('.chat-menu-wrap')) document.querySelectorAll('.chat-menu-dropdown.open').forEach(d => d.classList.remove('open'));
     });
@@ -1573,44 +1640,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateDiscountDisplay, 60000);
     setInterval(() => { if (CA && currentView === 'feed') renderRightPanel(); }, 60000);
 
-    console.log('✅ ТЕРМИНАЛ 2.7.0 ЗАГРУЖЕН');
+    console.log('✅ ТЕРМИНАЛ 2.8.0 ЗАГРУЖЕН');
 });
-
-// ============================================================
-// DISCORD-STYLE ОБЛОЖКИ (рендер)
-// ============================================================
-function renderDiscordCovers() {
-    let main = document.getElementById('discord-covers-main');
-    let grid = document.getElementById('discord-covers-grid');
-    if (!main || !grid) return;
-    let covers = window.__sceneCovers || [];
-
-    let activeIdx = covers.findIndex(c => c.active);
-    if (activeIdx === -1 && covers.length > 0) { activeIdx = 0; covers[0].active = true; }
-    if (covers.length === 0) {
-        main.innerHTML = '<span>НЕТ ОБЛОЖЕК</span>';
-    } else {
-        let url = covers[activeIdx].preview || covers[activeIdx].url;
-        main.innerHTML = '<img src="' + url + '">';
-    }
-
-    grid.innerHTML = '';
-    covers.forEach((c, i) => {
-        let url = c.preview || c.url;
-        grid.innerHTML += '<div class="discord-cover-thumb' + (i === activeIdx ? ' active' : '') + '" data-cover-idx="' + i + '">' +
-            '<img src="' + url + '">' +
-            '<span class="remove" data-cover-idx="' + i + '">✕</span>' +
-            '</div>';
-    });
-    if (covers.length < 5) {
-        grid.innerHTML += '<div class="discord-cover-add" id="discord-cover-add" title="Добавить">+</div>';
-    }
-    let addBtn = document.getElementById('discord-cover-add');
-    if (addBtn) {
-        let newAdd = addBtn.cloneNode(true);
-        addBtn.parentNode.replaceChild(newAdd, addBtn);
-        newAdd.addEventListener('click', () => document.getElementById('scene-covers').click());
-    }
-}
-window.__renderDiscordCovers = renderDiscordCovers;
-window.__renderAnnounceMini = renderRightPanel;
