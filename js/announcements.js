@@ -1,6 +1,6 @@
 // ============================================================
 // ANNOUNCEMENTS / ОБЪЯВЛЕНИЯ
-// v2.6.0: role-badge автора, единый getAgentFx, realtime
+// v2.7.0: раскрытие объявления по клику
 // ============================================================
 
 import { supabase, CA } from './auth.js';
@@ -23,7 +23,6 @@ export const announceTypes = {
     wanted:  { label: '🔍 Розыск',      icon: '🔍', color: '#ff1744' }
 };
 
-// ==================== ЭФФЕКТЫ ====================
 function fx(name) {
     if (typeof window.__getAgentFx === 'function') return window.__getAgentFx(name);
     let colorCls = '';
@@ -33,9 +32,6 @@ function fx(name) {
     return { colorCls, fontCls: '', frameCls, badgeHtml, roleBadge, avatar: '' };
 }
 
-// ============================================================
-// ЗАГРУЗКА
-// ============================================================
 export async function loadAnnouncements() {
     try {
         let { data, count } = await supabase.from('announcements')
@@ -50,16 +46,12 @@ export async function loadAnnouncements() {
     } catch (e) {}
 }
 
-// ============================================================
-// REALTIME
-// ============================================================
 export function subscribeAnnouncements(onUpdate) {
     if (announceChannel) supabase.removeChannel(announceChannel);
     announceChannel = supabase.channel('announcements-rt')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
             loadAnnouncements().then(() => {
                 if (typeof onUpdate === 'function') onUpdate();
-                // Обновляем мини-блок в правом сайдбаре
                 let mini = document.getElementById('announce-mini');
                 if (mini && typeof window.__renderAnnounceMini === 'function') {
                     window.__renderAnnounceMini();
@@ -69,9 +61,6 @@ export function subscribeAnnouncements(onUpdate) {
         .subscribe();
 }
 
-// ============================================================
-// CRUD
-// ============================================================
 export async function createAnnouncement(title, text, type) {
     if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator')) return { success: false, error: '⛔ НЕТ ПРАВ' };
     try {
@@ -120,9 +109,6 @@ export async function pinAnnouncement(id) {
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
-// ============================================================
-// ФИЛЬТР / ПАГИНАЦИЯ
-// ============================================================
 function getFiltered() {
     let sorted = [...announcements].sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
@@ -146,9 +132,6 @@ function getPage(page) {
 export function setAnnounceFilter(filter) { announceFilter = filter; announcePage = 0; }
 export function setAnnouncePage(page) { announcePage = page; }
 
-// ============================================================
-// РЕНДЕР
-// ============================================================
 export function renderAnnounceApp() {
     let c = document.getElementById('announce-content');
     if (!CA || (CA.role !== 'admin' && CA.role !== 'moderator') || !c) return;
@@ -228,6 +211,13 @@ export function renderAnnounceApp() {
                 renderAnnounceApp();
             }
         }));
+        // Клик по карточке объявления → раскрыть
+        document.querySelectorAll('[data-ann-open]').forEach(b => b.addEventListener('click', function(e) {
+            e.stopPropagation();
+            let id = parseInt(this.dataset.annOpen);
+            let a = announcements.find(x => x.id === id);
+            if (a && typeof window.openAnnounceView === 'function') window.openAnnounceView(a);
+        }));
     }, 10);
 }
 
@@ -239,13 +229,13 @@ function renderAnnounceCard(a) {
     let isPinned = a.pinned;
     let pinnedBy = a.pinned_by ? ' · закрепил ' + escapeHtml(a.pinned_by) : '';
 
-    return '<div class="card" style="border-left-color:' + t.color + ';margin-bottom:10px;' + (isPinned ? 'border-color:var(--accent);' : '') + '">' +
+    return '<div class="card" style="border-left-color:' + t.color + ';margin-bottom:10px;cursor:pointer;' + (isPinned ? 'border-color:var(--accent);' : '') + '" data-ann-open="' + a.id + '">' +
         '<div class="card-header" style="margin-bottom:8px;">' +
         '<div class="chat-avatar-frame card-avatar" style="border-color:' + t.color + '55;">' +
         '<div class="inner" style="background:' + t.color + '22;color:' + t.color + ';font-size:1.3rem;">' + t.icon + '</div>' +
         '</div>' +
         '<div class="card-author-block">' +
-        '<div class="card-author name-with-badge ' + e.colorCls + ' ' + e.fontCls + '" data-show-agent="' + escapeHtml(a.author) + '" style="cursor:pointer;">' + escapeHtml(a.author) + e.roleBadge + e.badgeHtml + '</div>' +
+        '<div class="card-author name-with-badge ' + e.colorCls + ' ' + e.fontCls + '" data-show-agent="' + escapeHtml(a.author) + '" style="cursor:pointer;position:relative;padding-right:6px;">' + escapeHtml(a.author) + e.roleBadge + e.badgeHtml + '</div>' +
         '<div class="card-meta">' +
         '<span class="role" style="color:' + t.color + ';">' + t.label.toUpperCase() + '</span>' +
         (isPinned ? '<span style="color:var(--accent);">📌 ЗАКРЕПЛЕНО' + pinnedBy + '</span>' : '') +
@@ -261,9 +251,6 @@ function renderAnnounceCard(a) {
         '</div>';
 }
 
-// ============================================================
-// УТИЛИТЫ
-// ============================================================
 function escapeHtml(s) {
     return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

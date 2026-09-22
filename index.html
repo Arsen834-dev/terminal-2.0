@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>ТЕРМИНАЛ СИНДИКАТА v2.6.0</title>
+<title>ТЕРМИНАЛ СИНДИКАТА v2.7.0</title>
 <link rel="icon" href="https://wiki.adven.space/items/contraband/pais.png">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=VT323&family=Share+Tech+Mono&family=Ruslan+Display&family=Pixelify+Sans:wght@400;600;700&family=Special+Elite&family=Rye&family=UnifrakturMaguntia&family=Uncial+Antiqua&family=Press+Start+2P&display=swap" rel="stylesheet">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#06060a">
 <style>
 /* ============================================================
-   ТЕРМИНАЛ СИНДИКАТА v2.6.0
+   ТЕРМИНАЛ СИНДИКАТА v2.7.0
    ============================================================ */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -85,8 +85,12 @@ body::after {
 ::-webkit-scrollbar-thumb { background: var(--accent-dark); border: 1px solid var(--bg); }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-body, a, button, input, textarea, select, [role="button"], .clickable {
-    cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><line x1='10' y1='0' x2='10' y2='7' stroke='%23ff1744' stroke-width='1.5'/><line x1='10' y1='13' x2='10' y2='20' stroke='%23ff1744' stroke-width='1.5'/><line x1='0' y1='10' x2='7' y2='10' stroke='%23ff1744' stroke-width='1.5'/><line x1='13' y1='10' x2='20' y2='10' stroke='%23ff1744' stroke-width='1.5'/><circle cx='10' cy='10' r='2' fill='%23ff1744'/></svg>") 10 10, crosshair;
+/* ============ КУРСОР (один везде) ============ */
+html, body, *, *::before, *::after,
+a, button, input, textarea, select, [role="button"], .clickable,
+a:hover, button:hover, input:hover, textarea:hover, select:hover,
+a:active, button:active, a:focus, button:focus {
+    cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><line x1='12' y1='0' x2='12' y2='9' stroke='%23ff1744' stroke-width='1.8'/><line x1='12' y1='15' x2='12' y2='24' stroke='%23ff1744' stroke-width='1.8'/><line x1='0' y1='12' x2='9' y2='12' stroke='%23ff1744' stroke-width='1.8'/><line x1='15' y1='12' x2='24' y2='12' stroke='%23ff1744' stroke-width='1.8'/><circle cx='12' cy='12' r='2.5' fill='none' stroke='%23ff1744' stroke-width='1.5'/><circle cx='12' cy='12' r='1' fill='%23ff1744'/></svg>") 12 12, crosshair !important;
 }
 
 /* ============ МАТРИЧНЫЙ ФОН (логин) ============ */
@@ -121,25 +125,33 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 @keyframes matrixScroll { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
 .matrix-bg > * { position: relative; z-index: 1; }
 
-/* ============ ЗАСТАВКА (украшенная) ============ */
+/* ============ ЗАСТАВКА (череп СВЕРХУ, текст СНИЗУ) ============ */
 #start-screen {
     position: fixed;
     inset: 0;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
     background: #000;
     z-index: 10000;
+    padding: 40px 20px;
     transition: opacity 0.6s ease, visibility 0.6s;
 }
 #start-screen.fade-out { opacity: 0; visibility: hidden; pointer-events: none; }
 
-#skull-intro { text-align: center; position: relative; }
-
+/* Череп сверху */
+#skull-intro {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
 #skull-ascii {
     color: var(--accent);
     font-family: 'Courier New', monospace;
-    font-size: 4px;
+    font-size: 4.5px;
     line-height: 1.05;
     white-space: pre;
     text-align: left;
@@ -157,14 +169,25 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     0%, 100% { text-shadow: 0 0 6px var(--accent), 0 0 15px var(--accent-dark); }
     50% { text-shadow: 0 0 12px var(--accent), 0 0 30px var(--accent), 0 0 50px var(--accent-dark); }
 }
+#skull-ascii.eating { animation: skullEat 0.9s ease-in forwards !important; }
+@keyframes skullEat {
+    0% { transform: scale(1); opacity: 1; }
+    40% { transform: scale(2.5); opacity: 1; filter: blur(2px) drop-shadow(0 0 30px var(--accent)); }
+    100% { transform: scale(10); opacity: 0; filter: blur(30px); }
+}
 
-/* Украшенный текст */
+/* Текст снизу */
+#start-subtitle-wrap {
+    width: 100%;
+    text-align: center;
+    padding-bottom: 30px;
+    min-height: 100px;
+}
 .start-subtitle {
     font-family: var(--font-head);
-    font-size: 2rem;
+    font-size: 2.4rem;
     letter-spacing: 8px;
     text-transform: uppercase;
-    margin-top: 28px;
     display: inline-block;
     position: relative;
     user-select: none;
@@ -182,7 +205,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .start-subtitle span.space { width: 0.6em; }
 @keyframes charAppear {
-    0% { opacity: 0; transform: translateY(-8px) scale(0.8); filter: blur(6px) drop-shadow(0 0 8px rgba(255,23,68,0)); }
+    0% { opacity: 0; transform: translateY(8px) scale(0.8); filter: blur(6px) drop-shadow(0 0 8px rgba(255,23,68,0)); }
     60% { opacity: 1; transform: translateY(0) scale(1.05); filter: blur(0) drop-shadow(0 0 12px rgba(255,23,68,0.9)); }
     100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0) drop-shadow(0 0 8px rgba(255,23,68,0.7)); }
 }
@@ -194,14 +217,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     92% { transform: translate(-1px, 1px); }
     94% { transform: translate(1px, -1px); }
     96% { transform: translate(-1px, 0); }
-}
-
-/* Поедание */
-#skull-ascii.eating { animation: skullEat 0.9s ease-in forwards !important; }
-@keyframes skullEat {
-    0% { transform: scale(1); opacity: 1; }
-    40% { transform: scale(2.5); opacity: 1; filter: blur(2px) drop-shadow(0 0 30px var(--accent)); }
-    100% { transform: scale(10); opacity: 0; filter: blur(30px); }
 }
 
 /* ============ ЛОГИН ============ */
@@ -220,7 +235,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .login-card::before, .login-card::after { content: ''; position: absolute; width: 20px; height: 20px; border: 1px solid var(--accent); pointer-events: none; }
 .login-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
 .login-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
-.login-logo { text-align: center; font-family: var(--font-head); font-size: 2.1rem; letter-spacing: 8px; color: var(--accent); text-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent-dark); margin-bottom: 4px; }
+.login-logo { text-align: center; font-family: var(--font-head); font-size: 2.2rem; letter-spacing: 8px; color: var(--accent); text-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent-dark); margin-bottom: 4px; }
 .login-version { text-align: center; color: var(--text-3); font-size: 0.7rem; letter-spacing: 4px; margin-bottom: 32px; font-family: var(--font-digit); }
 .login-subtitle { text-align: center; color: var(--text-3); font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 24px; }
 .login-subtitle::before { content: '▸ '; color: var(--accent); }
@@ -296,11 +311,31 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 9px 16px; color: var(--text-2); font-size: 0.85rem; transition: all 0.1s; position: relative; cursor: pointer; border-left: 2px solid transparent; white-space: nowrap; }
 .sidebar-item:hover { background: var(--surface-2); color: var(--text); border-left-color: var(--accent-dark); }
 .sidebar-item.active { background: var(--accent-dim); color: var(--accent); border-left-color: var(--accent); text-shadow: 0 0 6px var(--accent); }
-.sidebar-item-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+.sidebar-item-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; position: relative; }
 .sidebar-item-label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-.sidebar-collapsed .sidebar-item-label { display: none; }
-.sidebar-collapsed .sidebar-item { justify-content: center; padding: 10px; }
-.sidebar-collapsed .sidebar-item-icon { font-size: 1.1rem; }
+
+/* Точка "новый контент" */
+.sidebar-item-new-dot {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent), 0 0 14px var(--accent);
+    animation: newDotPulse 1.5s ease-in-out infinite;
+}
+@keyframes newDotPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.7; }
+}
+.sidebar-collapsed .sidebar-item-new-dot {
+    top: 6px;
+    right: 6px;
+    width: 6px;
+    height: 6px;
+}
 
 .sidebar-item-badge { background: var(--accent); color: #000; font-size: 0.6rem; font-weight: 700; padding: 1px 6px; border-radius: 2px; min-width: 18px; text-align: center; font-family: var(--font-digit); }
 .sidebar-collapsed .sidebar-item-badge { position: absolute; top: 4px; right: 6px; padding: 0 4px; font-size: 0.55rem; }
@@ -362,7 +397,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .card:hover { border-left-color: var(--accent); background: var(--surface-2); box-shadow: 0 0 20px rgba(255, 23, 68, 0.08), inset 0 0 20px rgba(255, 23, 68, 0.02); }
 .card-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .card-author-block { flex: 1; min-width: 0; }
-.card-author { font-size: 0.9rem; font-weight: 600; color: var(--text); cursor: pointer; transition: color 0.15s; display: inline-flex; align-items: center; gap: 4px; position: relative; }
+.card-author { font-size: 0.9rem; font-weight: 600; color: var(--text); cursor: pointer; transition: color 0.15s; display: inline-flex; align-items: center; gap: 4px; position: relative; padding-right: 4px; }
 .card-author:hover { color: var(--accent); }
 .card-meta { font-size: 0.7rem; color: var(--text-3); margin-top: 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .card-meta .role { color: var(--accent); text-transform: uppercase; letter-spacing: 1px; font-size: 0.65rem; }
@@ -385,7 +420,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .comment-item { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
 .comment-item:last-child { border-bottom: none; }
 .comment-body { flex: 1; min-width: 0; }
-.comment-author { color: var(--text); font-weight: 600; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; position: relative; }
+.comment-author { color: var(--text); font-weight: 600; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; position: relative; padding-right: 2px; }
 .comment-author:hover { color: var(--accent); }
 .comment-text { color: var(--text-2); font-size: 0.78rem; line-height: 1.5; margin-top: 2px; word-break: break-word; }
 .comment-meta { color: var(--text-4); font-size: 0.65rem; margin-top: 3px; font-family: var(--font-digit); display: flex; gap: 10px; }
@@ -412,17 +447,82 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .right-block-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 6px var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
 .right-block-title::before { content: '▸'; color: var(--accent-dark); }
 .online-list { display: flex; flex-direction: column; gap: 6px; }
-.online-item { display: flex; align-items: center; gap: 8px; padding: 6px; cursor: pointer; transition: background 0.15s; font-size: 0.8rem; position: relative; }
+
+/* Онлайн-строка — переделана */
+.online-item {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.8rem;
+    border-radius: 3px;
+}
 .online-item:hover { background: var(--surface-2); }
-.online-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); position: relative; display: inline-flex; align-items: center; gap: 3px; }
-.online-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); box-shadow: 0 0 4px var(--success); flex-shrink: 0; }
+.online-name-wrap {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.online-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.online-name {
+    color: var(--text-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.82rem;
+}
+.online-role-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: var(--text-4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.online-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 5px var(--success);
+    flex-shrink: 0;
+}
+.online-item.offline .online-dot {
+    background: var(--text-4);
+    box-shadow: none;
+}
+
+/* Роль-бейдж в онлайне */
+.online-role-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 4px currentColor);
+    animation: roleBadgePop 2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+.online-role-badge.admin { color: #ffd700; }
+.online-role-badge.mod { color: #00e5ff; }
+
 .top-clan-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 0.8rem; }
 .top-clan-rank { width: 20px; color: var(--accent); font-family: var(--font-digit); font-weight: 700; text-shadow: 0 0 6px var(--accent); }
 .top-clan-name { flex: 1; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .top-clan-rating { color: var(--text-3); font-size: 0.7rem; font-family: var(--font-digit); }
-.announce-mini { padding: 6px 0; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 0.78rem; color: var(--text-2); line-height: 1.4; transition: color 0.15s; }
+.announce-mini { padding: 8px 6px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 0.78rem; color: var(--text-2); line-height: 1.4; transition: all 0.15s; border-radius: 2px; }
 .announce-mini:last-child { border-bottom: none; }
-.announce-mini:hover { color: var(--accent); }
+.announce-mini:hover { color: var(--accent); background: var(--surface-2); }
 .announce-mini-time { font-size: 0.65rem; color: var(--text-4); margin-top: 2px; font-family: var(--font-digit); }
 
 /* ============ НИЖНЯЯ ПАНЕЛЬ ============ */
@@ -480,7 +580,8 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .chat-msg-left { flex-shrink: 0; }
 .chat-msg-right { flex: 1; min-width: 0; }
 .chat-header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
-.chat-time { color: var(--text-4); font-size: 0.65rem; font-family: var(--font-digit); letter-spacing: 1px; margin-left: auto; }
+/* Время рядом с ником, а не справа */
+.chat-time { color: var(--text-4); font-size: 0.65rem; font-family: var(--font-digit); letter-spacing: 1px; }
 .chat-text { font-size: 0.85rem; line-height: 1.5; word-break: break-word; color: var(--text-2); }
 .chat-text img { max-width: 240px; border: 1px solid var(--border-2); margin: 6px 0; display: block; }
 .chat-text .mention { color: var(--accent); background: var(--accent-dim); padding: 1px 4px; cursor: pointer; }
@@ -529,15 +630,13 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .chat-avatar-frame { width: 36px; height: 36px; }
 .card-avatar { width: 40px; height: 40px; }
 .comment-avatar { width: 26px; height: 26px; font-size: 0.85rem; }
-.online-avatar { width: 24px; height: 24px; font-size: 0.9rem; }
+.online-avatar { width: 32px; height: 32px; font-size: 0.95rem; }
 .feed-profile-avatar { width: 80px; height: 80px; font-size: 2.5rem; }
 .feed-profile-avatar > .inner { font-size: 2.5rem; }
 
 /* ============================================================
-   ЭФФЕКТЫ РАМОК (красивые)
+   ЭФФЕКТЫ РАМОК
    ============================================================ */
-
-/* Ангельская — мягкий эллиптический нимб */
 .f-angelic { border-color: rgba(255, 249, 196, 0.7); box-shadow: 0 0 15px rgba(255, 255, 200, 0.5), inset 0 0 8px rgba(255, 249, 196, 0.2); }
 .f-angelic::before {
     content: '';
@@ -556,7 +655,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     50% { transform: translateX(-50%) rotateX(65deg) scale(1.1); opacity: 1; }
 }
 
-/* Демоническая — изогнутые рожки */
 .f-demonic { border-color: rgba(183, 28, 28, 0.8); box-shadow: 0 0 15px rgba(255, 0, 0, 0.5), inset 0 0 8px rgba(183, 28, 28, 0.3); }
 .f-demonic::before, .f-demonic::after {
     content: '';
@@ -576,7 +674,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     50% { filter: brightness(1.3) drop-shadow(0 0 12px #ff0000); }
 }
 
-/* Огненная — языки пламени снизу */
 .f-fire { border-color: #ff6d00; box-shadow: 0 0 15px rgba(255, 109, 0, 0.7), inset 0 -8px 12px -6px rgba(255, 61, 0, 0.5); }
 .f-fire::before {
     content: '';
@@ -596,26 +693,20 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     100% { transform: scaleY(1.4) translateY(-2px); opacity: 1; }
 }
 
-/* Ледяная — сосульки снизу */
 .f-ice { border-color: #80deea; box-shadow: 0 0 15px rgba(128, 222, 234, 0.6), inset 0 0 10px rgba(128, 222, 234, 0.25); }
 .f-ice::after {
     content: '';
     position: absolute;
     bottom: -6px; left: 20%;
     width: 60%; height: 8px;
-    background:
-        linear-gradient(180deg, transparent 0%, #80deea 40%, #4dd0e1 100%);
+    background: linear-gradient(180deg, transparent 0%, #80deea 40%, #4dd0e1 100%);
     clip-path: polygon(0% 0%, 10% 100%, 20% 0%, 30% 80%, 40% 0%, 50% 100%, 60% 0%, 70% 90%, 80% 0%, 90% 80%, 100% 0%);
     filter: drop-shadow(0 0 4px #80deea);
     animation: iceShimmer 3s ease-in-out infinite;
     pointer-events: none;
 }
-@keyframes iceShimmer {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; filter: drop-shadow(0 0 8px #80deea); }
-}
+@keyframes iceShimmer { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; filter: drop-shadow(0 0 8px #80deea); } }
 
-/* Кровавая — несколько капель */
 .f-blood { border-color: #d50000; box-shadow: 0 0 15px rgba(213, 0, 0, 0.6), inset 0 0 8px rgba(213, 0, 0, 0.3); }
 .f-blood::before, .f-blood::after {
     content: '';
@@ -639,14 +730,12 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     100% { opacity: 0; transform: translateY(18px) scale(0.4); }
 }
 
-/* Неоновая — пульсация как неоновая трубка */
 .f-neon { border-color: #76ff03; box-shadow: 0 0 15px rgba(118, 255, 3, 0.6), inset 0 0 8px rgba(118, 255, 3, 0.3); animation: neonPulse 1.8s ease-in-out infinite; }
 @keyframes neonPulse {
     0%, 100% { box-shadow: 0 0 10px rgba(118, 255, 3, 0.5), inset 0 0 6px rgba(118, 255, 3, 0.2); }
     50% { box-shadow: 0 0 20px rgba(118, 255, 3, 0.9), inset 0 0 12px rgba(118, 255, 3, 0.4); }
 }
 
-/* Глючная — RGB-разрыв */
 .f-glitch { border-color: rgba(118, 255, 3, 0.6); animation: glitchFrame 2.5s steps(3) infinite; }
 .f-glitch::before, .f-glitch::after {
     content: '';
@@ -661,7 +750,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 @keyframes glitchShift1 { 0% { transform: translate(-2px, 0); } 100% { transform: translate(-3px, 1px); } }
 @keyframes glitchShift2 { 0% { transform: translate(2px, 0); } 100% { transform: translate(3px, -1px); } }
 
-/* Теневая — дымка */
 .f-shadow { border-color: rgba(80, 80, 80, 0.6); box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(0, 0, 0, 0.6); }
 .f-shadow::before {
     content: '';
@@ -675,10 +763,8 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 @keyframes shadowPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
 
-/* Черепная */
 .f-skull { border-color: rgba(255, 255, 255, 0.8); box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), inset 0 0 6px rgba(255, 255, 255, 0.2); }
 
-/* Кибер — уголки HUD */
 .f-cyber { border-color: #00e5ff; box-shadow: 0 0 12px rgba(0, 229, 255, 0.6), inset 0 0 8px rgba(0, 229, 255, 0.2); }
 .f-cyber::before, .f-cyber::after {
     content: '';
@@ -690,7 +776,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .f-cyber::before { top: -3px; left: -3px; border-right: none; border-bottom: none; }
 .f-cyber::after { bottom: -3px; right: -3px; border-left: none; border-top: none; }
 
-/* Хрустальная — блики */
 .f-crystal { border-color: rgba(200, 220, 255, 0.7); box-shadow: 0 0 15px rgba(180, 210, 255, 0.5), inset 0 0 10px rgba(180, 210, 255, 0.2); overflow: hidden; }
 .f-crystal::before {
     content: '';
@@ -703,7 +788,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 @keyframes crystalShine { 0% { background-position: -100% -100%; } 100% { background-position: 200% 200%; } }
 
-/* Королевская — корона */
 .f-royal { border-color: #b388ff; box-shadow: 0 0 15px rgba(179, 136, 255, 0.6), inset 0 0 8px rgba(179, 136, 255, 0.2); }
 .f-royal::before {
     content: '';
@@ -719,25 +803,21 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 @keyframes crownFloat { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-2px); } }
 
-/* Демоническая усиленная — уже есть */
-
-/* Шипованная — шипы по периметру */
 .f-spike { border-color: var(--accent); box-shadow: 0 0 15px rgba(255, 23, 68, 0.6), inset 0 0 8px rgba(255, 23, 68, 0.2); }
 .f-spike::before {
     content: '';
     position: absolute;
     inset: -4px;
-    background:
-        conic-gradient(from 0deg,
-            var(--accent) 0deg, transparent 15deg,
-            var(--accent) 45deg, transparent 60deg,
-            var(--accent) 90deg, transparent 105deg,
-            var(--accent) 135deg, transparent 150deg,
-            var(--accent) 180deg, transparent 195deg,
-            var(--accent) 225deg, transparent 240deg,
-            var(--accent) 270deg, transparent 285deg,
-            var(--accent) 315deg, transparent 330deg,
-            var(--accent) 360deg);
+    background: conic-gradient(from 0deg,
+        var(--accent) 0deg, transparent 15deg,
+        var(--accent) 45deg, transparent 60deg,
+        var(--accent) 90deg, transparent 105deg,
+        var(--accent) 135deg, transparent 150deg,
+        var(--accent) 180deg, transparent 195deg,
+        var(--accent) 225deg, transparent 240deg,
+        var(--accent) 270deg, transparent 285deg,
+        var(--accent) 315deg, transparent 330deg,
+        var(--accent) 360deg);
     clip-path: polygon(50% 0%, 55% 40%, 100% 50%, 55% 60%, 50% 100%, 45% 60%, 0% 50%, 45% 40%);
     animation: spikeRotate 8s linear infinite;
     pointer-events: none;
@@ -745,13 +825,9 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 @keyframes spikeRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* Серебряная */
 .f-silver { border-color: #cfd8dc; box-shadow: 0 0 10px rgba(207, 216, 220, 0.5), inset 0 0 6px rgba(207, 216, 220, 0.2); }
-
-/* Золотая */
 .f-gold { border-color: #ffd700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.6), inset 0 0 8px rgba(255, 215, 0, 0.2); }
 
-/* Органика — листья */
 .f-organic { border-color: #2e7d32; box-shadow: 0 0 12px rgba(46, 125, 50, 0.5), inset 0 0 8px rgba(46, 125, 50, 0.2); }
 .f-organic::before, .f-organic::after {
     content: '';
@@ -765,7 +841,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .f-organic::before { top: -4px; left: 4px; transform: rotate(-30deg); }
 .f-organic::after { bottom: -4px; right: 4px; transform: rotate(150deg); }
 
-/* Техно — винтики */
 .f-techno { border-color: #ff9100; box-shadow: 0 0 12px rgba(255, 145, 0, 0.5), inset 0 0 6px rgba(255, 145, 0, 0.2); }
 .f-techno::before, .f-techno::after {
     content: '⚙';
@@ -780,7 +855,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .f-techno::after { bottom: -6px; left: -6px; animation-direction: reverse; }
 @keyframes gearRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* Переливающаяся */
 .f-iridescent { animation: rainbowBorder 3s linear infinite; }
 @keyframes rainbowBorder {
     0% { border-color: #ff1744; box-shadow: 0 0 12px rgba(255, 23, 68, 0.6); }
@@ -793,17 +867,18 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 
 /* ============================================================
-   РОЛЬ-БЕЙДЖИКИ (👑 / 🛡) — в правом верхнем углу ника
+   РОЛЬ-БЕЙДЖИКИ (👑 / 🛡) — УВЕЛИЧЕНЫ, в правом верхнем углу ника
    ============================================================ */
 .role-badge {
     position: absolute;
-    top: -6px;
-    right: -10px;
-    font-size: 0.75rem;
+    top: -10px;
+    right: -14px;
+    font-size: 1rem;
     line-height: 1;
-    filter: drop-shadow(0 0 4px currentColor);
+    filter: drop-shadow(0 0 5px currentColor) drop-shadow(0 0 10px currentColor);
     pointer-events: none;
     animation: roleBadgePop 2s ease-in-out infinite;
+    z-index: 5;
 }
 .role-badge.admin { color: #ffd700; }
 .role-badge.mod { color: #00e5ff; }
@@ -811,19 +886,21 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.15); }
 }
-/* Для тех, у кого нет позиционирования — обёртка */
-.name-with-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; }
-.name-with-badge .badge-img { width: 16px; height: 16px; vertical-align: middle; }
+.name-with-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; padding-right: 8px; }
+.name-with-badge .badge-img { width: 20px; height: 20px; vertical-align: middle; }
+
+/* Бейджик (картинка) — увеличен */
+.badge-img {
+    width: 20px !important;
+    height: 20px !important;
+    vertical-align: middle;
+    margin-left: 4px;
+}
 
 /* ============================================================
    DISCORD-STYLE ОБЛОЖКИ
    ============================================================ */
-.discord-covers {
-    display: flex;
-    gap: 12px;
-    margin: 12px 0;
-    flex-wrap: wrap;
-}
+.discord-covers { display: flex; gap: 12px; margin: 12px 0; flex-wrap: wrap; }
 .discord-covers-main {
     flex: 0 0 280px;
     height: 160px;
@@ -838,17 +915,8 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     font-size: 0.85rem;
     position: relative;
 }
-.discord-covers-main img {
-    width: 100%; height: 100%; object-fit: cover;
-}
-.discord-covers-grid {
-    flex: 1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-content: flex-start;
-    min-width: 200px;
-}
+.discord-covers-main img { width: 100%; height: 100%; object-fit: cover; }
+.discord-covers-grid { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; min-width: 200px; }
 .discord-cover-thumb {
     width: 80px; height: 60px;
     border: 2px solid var(--border-2);
@@ -894,8 +962,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     background: transparent;
 }
 .discord-cover-add:hover { border-color: var(--accent); color: var(--accent); }
-
-/* Обложки в списке спектаклей */
 .scene-card-cover {
     width: 80px; height: 80px;
     border-radius: 6px;
@@ -907,7 +973,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .scene-card-cover img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ============================================================
-   ЭФФЕКТЫ ЦВЕТОВ (улучшенные)
+   ЭФФЕКТЫ ЦВЕТОВ
    ============================================================ */
 .color-red { color: #ff1744; text-shadow: 0 0 6px #ff1744; }
 .color-blue { color: #448aff; text-shadow: 0 0 6px #448aff; }
@@ -975,10 +1041,8 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 
 /* ============================================================
-   ЭФФЕКТЫ ШРИФТОВ (улучшенные + кириллица)
+   ЭФФЕКТЫ ШРИФТОВ
    ============================================================ */
-
-/* Cyber */
 .font-cyber { font-family: 'Courier New', monospace; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 5px #00e5ff; position: relative; }
 .font-cyber::after {
     content: '';
@@ -992,35 +1056,18 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 @keyframes cyberScan { 0% { background-position: 0 -100%; } 100% { background-position: 0 200%; } }
 
-/* Typewriter — фолбэк на моно */
 .font-typewriter { font-family: 'Special Elite', 'JetBrains Mono', monospace; letter-spacing: 1px; filter: sepia(0.4) contrast(0.9); }
-
-/* Western — фолбэк на Ruslan Display (кириллица) */
 .font-western { font-family: 'Rye', 'Ruslan Display', serif; text-transform: uppercase; letter-spacing: 3px; }
-
-/* Gothic — кириллица */
 .font-gothic { font-family: 'UnifrakturMaguntia', 'Ruslan Display', serif; }
-
-/* Rune — кириллица */
 .font-rune { font-family: 'Uncial Antiqua', 'Ruslan Display', cursive; }
-
-/* Stencil */
 .font-stencil { font-family: 'Impact', 'Ruslan Display', sans-serif; text-transform: uppercase; letter-spacing: 4px; }
-
-/* Pixel — кириллица */
 .font-pixel { font-family: 'Press Start 2P', 'Pixelify Sans', monospace; font-size: 0.85em; text-transform: uppercase; }
-
-/* Medieval — кириллица */
 .font-medieval { font-family: 'UnifrakturMaguntia', 'Ruslan Display', serif; font-size: 1.1em; }
-
-/* Comic */
 .font-comic { font-family: 'Comic Sans MS', 'Pixelify Sans', cursive; color: #ff80ab !important; }
 
-/* Neon */
 .font-neon { text-shadow: 0 0 5px #76ff03, 0 0 10px #76ff03, 0 0 20px #64dd17; animation: neonTextPulse 1.5s ease-in-out infinite; }
 @keyframes neonTextPulse { 0%, 100% { text-shadow: 0 0 5px #76ff03, 0 0 10px #76ff03, 0 0 20px #64dd17; } 50% { text-shadow: 0 0 10px #76ff03, 0 0 20px #76ff03, 0 0 30px #64dd17; } }
 
-/* Glitch — с полосками помех */
 .font-glitch { text-shadow: 1px 0 rgba(255,0,0,0.5), -1px 0 rgba(0,255,255,0.5); animation: glitchText 0.3s steps(2) infinite; position: relative; }
 @keyframes glitchText {
     0% { text-shadow: 1px 0 rgba(255,0,0,0.5), -1px 0 rgba(0,255,255,0.5); }
@@ -1037,7 +1084,6 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 @keyframes glitchLines { 0% { transform: translateY(0); } 100% { transform: translateY(4px); } }
 
-/* Кровавый — только на текст, капли падают от букв */
 .font-blood { color: #d50000 !important; text-shadow: 0 0 5px #d50000; animation: bloodPulse 2s ease-in-out infinite; position: relative; }
 .font-blood::after {
     content: '';
@@ -1090,6 +1136,8 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 .btn.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
 .btn.danger:hover { background: var(--danger); color: #000; }
 .btn.full { width: 100%; }
+.btn.in-friends { background: rgba(0, 255, 65, 0.15); border-color: var(--success); color: var(--success); }
+.btn.in-friends:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
 
 /* ============ МАГАЗИН ============ */
 .shop-layout { display: flex; gap: 16px; flex-wrap: wrap; }
@@ -1169,11 +1217,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     background: var(--bg-2);
     border-bottom: 1px solid var(--border);
 }
-.scene-covers-view {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-}
+.scene-covers-view { display: flex; gap: 8px; align-items: flex-start; }
 .scene-covers-view-main {
     flex: 0 0 320px;
     height: 200px;
@@ -1183,13 +1227,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
     border: 1px solid var(--border-2);
 }
 .scene-covers-view-main img { width: 100%; height: 100%; object-fit: cover; }
-.scene-covers-view-thumbs {
-    flex: 1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-content: flex-start;
-}
+.scene-covers-view-thumbs { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
 .scene-cover-thumb-sm {
     width: 70px; height: 50px;
     border: 2px solid var(--border-2);
@@ -1200,13 +1238,40 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 }
 .scene-cover-thumb-sm:hover, .scene-cover-thumb-sm.active { border-color: var(--accent); transform: scale(1.05); }
 .scene-cover-thumb-sm img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ============ КНОПКА ЗАКРЫТИЯ ПРОФИЛЯ (NEW) ============ */
+.profile-close-top {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.15s;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+.profile-close-top:hover {
+    background: var(--accent);
+    color: #000;
+    box-shadow: 0 0 15px var(--accent-glow);
+    transform: scale(1.05);
+}
 </style>
 </head>
 <body>
 
 <canvas id="noise-canvas"></canvas>
 
-<!-- ЗАСТАВКА -->
+<!-- ЗАСТАВКА (череп сверху, текст снизу) -->
 <div id="start-screen">
     <div id="skull-intro">
         <pre id="skull-ascii">#############################################################
@@ -1257,15 +1322,17 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 #############################################################
 #############################################################
 #############################################################</pre>
+    </div>
+    <div id="start-subtitle-wrap">
         <div class="start-subtitle" id="start-subtitle"></div>
     </div>
 </div>
 
-<!-- ЛОГИН (матричный фон) -->
+<!-- ЛОГИН -->
 <div id="login-screen" class="matrix-bg">
     <div class="login-card">
         <div class="login-logo">СИНДИКАТ</div>
-        <div class="login-version">v2.6.0 · NT-405</div>
+        <div class="login-version">v2.7.0 · NT-405</div>
         <div class="login-subtitle">АВТОРИЗАЦИЯ</div>
         <input type="text" id="agent-name" class="login-input" placeholder="Кодовое имя" autocomplete="off">
         <input type="password" id="agent-pass" class="login-input" placeholder="Ключ доступа" autocomplete="new-password">
@@ -1283,7 +1350,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
             <span class="topbar-logo-icon">▣</span>
             <span>ТЕРМИНАЛ СИНДИКАТА</span>
         </div>
-        <span class="topbar-version">v2.6.0</span>
+        <span class="topbar-version">v2.7.0</span>
         <div class="topbar-spacer"></div>
         <div class="topbar-item"><span class="topbar-clock" id="topbar-clock">--:--:--</span></div>
         <span class="topbar-sep">│</span>
@@ -1324,7 +1391,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 
 <nav class="mobile-nav" id="mobile-nav"><div class="mobile-nav-inner" id="mobile-nav-inner"></div></nav>
 
-<!-- ============ ЭКРАНЫ ПРИЛОЖЕНИЙ ============ -->
+<!-- ЭКРАНЫ ПРИЛОЖЕНИЙ (без изменений) -->
 <div class="app-screen" id="app-chat">
     <div class="app-header"><div class="app-title">💬 ЧАТ</div><button class="app-close" data-close="chat">✕</button></div>
     <div class="app-body no-pad"><div class="chat-wrap">
@@ -1440,7 +1507,7 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
 <div class="app-screen" id="app-logs"><div class="app-header"><div class="app-title">📜 ЛОГИ</div><button class="app-close" data-close="logs">✕</button></div><div class="app-body" id="logs-content"></div></div>
 <div class="app-screen" id="app-announce"><div class="app-header"><div class="app-title">📢 ОБЪЯВЛЕНИЯ</div><button class="app-close" data-close="announce">✕</button></div><div class="app-body" id="announce-content"></div></div>
 
-<!-- ============ МОДАЛКИ ============ -->
+<!-- МОДАЛКИ (без изменений, кроме доп. модалки объявления) -->
 <div class="modal-overlay" id="modal-rules">
     <div class="modal-box">
         <div class="modal-title">ПРАВИЛА</div>
@@ -1551,6 +1618,16 @@ body, a, button, input, textarea, select, [role="button"], .clickable {
             <button class="modal-btn secondary" data-close-modal="modal-announce">ОТМЕНА</button>
             <button class="modal-btn" id="create-announce-submit-btn">ОПУБЛИКОВАТЬ</button>
         </div>
+    </div>
+</div>
+
+<!-- Модалка просмотра объявления -->
+<div class="modal-overlay" id="modal-announce-view">
+    <div class="modal-box">
+        <div class="modal-title" id="modal-announce-view-title"></div>
+        <div style="color:var(--text-3);font-size:0.75rem;margin-bottom:12px;" id="modal-announce-view-meta"></div>
+        <div style="color:var(--text-2);line-height:1.6;max-height:50vh;overflow-y:auto;font-size:0.9rem;" id="modal-announce-view-text"></div>
+        <div style="margin-top:16px;text-align:right;"><button class="modal-btn secondary" data-close-modal="modal-announce-view">ЗАКРЫТЬ</button></div>
     </div>
 </div>
 

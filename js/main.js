@@ -1,5 +1,5 @@
 // ============================================================
-// ТЕРМИНАЛ СИНДИКАТА v2.6.0 — MAIN
+// ТЕРМИНАЛ СИНДИКАТА v2.7.0 — MAIN
 // ============================================================
 
 console.log('[MAIN] Модуль начал загрузку');
@@ -22,6 +22,7 @@ import { openSceneChat, closeSceneChat, sendSceneMessage, addSceneReaction, dele
 import { renderPostCard as renderPostCardFeed, attachFeedHandlers } from './feed.js';
 import { initWebGraph, destroyWebGraph } from './web.js';
 import { RP_RACES } from './config.js';
+
 console.log('[MAIN] Импорты загружены');
 
 // ============================================================
@@ -36,6 +37,23 @@ let currentView = 'feed';
 let feedAgentsCache = null;
 let feedOriginalsCache = null;
 let feedChannel = null;
+let agentsChannel = null;
+
+// Пометки "новый контент" в sidebar
+let newContentFlags = {
+    chat: false,
+    dm: false,
+    friends: false,
+    achievements: false,
+    guides: false,
+    memes: false,
+    announce: false,
+    'rp-community': false,
+    rp: false
+};
+
+// Таймер репы/ТК
+let repTkInterval = null;
 
 // ============================================================
 // ЭФФЕКТЫ (единая функция)
@@ -53,7 +71,6 @@ function getAgentFx(name, agents) {
             'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
             'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
         };
-        // Кровавый шрифт — НЕ применяется к никам (только к тексту)
         if (a.active_font !== 'fnt_blood') fontCls = map[a.active_font] || '';
     }
     let frameCls = 'f-default';
@@ -65,9 +82,8 @@ function getAgentFx(name, agents) {
     if (a.active_badge && a.active_badge !== 'b_none' && shopItems.badges) {
         let b = shopItems.badges.find(x => x.id === a.active_badge);
         if (b && b.image) badgeHtml = '<img src="' + b.image + '" class="badge-img" alt="">';
-        else if (b && b.emoji) badgeHtml = '<span style="font-size:0.9rem;">' + b.emoji + '</span>';
+        else if (b && b.emoji) badgeHtml = '<span style="font-size:1rem;">' + b.emoji + '</span>';
     }
-    // Роль-бейдж (👑 / 🛡) — в правом верхнем углу ника
     let roleBadge = '';
     if (a.role === 'admin') roleBadge = '<span class="role-badge admin" title="Администратор">👑</span>';
     else if (a.role === 'moderator') roleBadge = '<span class="role-badge mod" title="Модератор">🛡</span>';
@@ -101,7 +117,7 @@ window.confirmDialog = confirmDialog;
 // ============================================================
 document.addEventListener('click', (e) => {
     if (e.target.closest('input, textarea, select')) return;
-    let btn = e.target.closest('button, .btn, .modal-btn, .chat-icon-btn, .chat-send-btn, .app-close, .sidebar-item, .mobile-nav-btn, .feed-tab, .chat-tab, .card-action, .sidebar-profile, [data-app], .online-item, .top-clan-item, .announce-mini, .reaction-picker span, .emoji-cell, [data-emoji], .mention-item, .chat-reaction, [data-clan-emoji], [data-avatar], .hashtag-link, .cover-carousel-dot, .discord-cover-thumb');
+    let btn = e.target.closest('button, .btn, .modal-btn, .chat-icon-btn, .chat-send-btn, .app-close, .sidebar-item, .mobile-nav-btn, .feed-tab, .chat-tab, .card-action, .sidebar-profile, [data-app], .online-item, .top-clan-item, .announce-mini, .reaction-picker span, .emoji-cell, [data-emoji], .mention-item, .chat-reaction, [data-clan-emoji], [data-avatar], .hashtag-link, .discord-cover-thumb');
     if (!btn) return;
     if (btn.classList.contains('send-msg-btn') || btn.classList.contains('send-dm-btn')) return;
     if (btn.id === 'rp-send-btn' || btn.id === 'rp-scene-send-btn') return;
@@ -150,7 +166,7 @@ function startClock() {
 }
 
 // ============================================================
-// УКРАШЕННЫЙ ТЕКСТ "ТЕРМИНАЛ СИНДИКАТА"
+// УКРАШЕННЫЙ ТЕКСТ "ТЕРМИНАЛ СИНДИКАТА" (для нижней части заставки)
 // ============================================================
 function buildDecoratedTitle() {
     let el = document.getElementById('start-subtitle');
@@ -158,7 +174,7 @@ function buildDecoratedTitle() {
     let text = 'ТЕРМИНАЛ СИНДИКАТА';
     el.innerHTML = '';
     el.classList.add('glitch');
-    let delay = 1800; // начинаем через 1.8 сек (после черепа)
+    let delay = 1800;
     for (let i = 0; i < text.length; i++) {
         let ch = text[i];
         let span = document.createElement('span');
@@ -175,10 +191,10 @@ function buildDecoratedTitle() {
 buildDecoratedTitle();
 
 // ============================================================
-// ЗАСТАВКА → ЛОГИН (без лоадера)
+// ЗАСТАВКА → ЛОГИН
 // ============================================================
-const SKULL_TIME = 6000;   // 6 сек заставка
-const EAT_TIME = 900;      // 0.9 сек поедание
+const SKULL_TIME = 6000;
+const EAT_TIME = 900;
 
 setTimeout(() => {
     const skull = document.getElementById('skull-ascii');
@@ -252,11 +268,17 @@ function buildSidebar() {
             if (item.id === 'dm' && unreadMentions.dm > 0) {
                 badge = '<span class="sidebar-item-badge">' + unreadMentions.dm + '</span>';
             }
+            // Точка "новый контент"
+            let dot = '';
+            if (newContentFlags[item.id]) {
+                dot = '<span class="sidebar-item-new-dot"></span>';
+            }
             let isActive = (item.id === currentView);
             html += '<div class="sidebar-item' + (isActive ? ' active' : '') + '" data-app="' + item.id + '">';
             html += '<span class="sidebar-item-icon">' + item.icon + '</span>';
             html += '<span class="sidebar-item-label">' + item.label + '</span>';
             html += badge;
+            html += dot;
             html += '</div>';
         });
         html += '</div>';
@@ -335,7 +357,7 @@ function buildMobileNav() {
 }
 
 // ============================================================
-// ПРАВЫЙ SIDEBAR (с эффектами + роль-бейджами)
+// ПРАВЫЙ SIDEBAR (онлайн realtime + эффекты)
 // ============================================================
 async function renderRightPanel() {
     let online = document.getElementById('online-list');
@@ -343,19 +365,42 @@ async function renderRightPanel() {
         let agents = await getAgents();
         feedAgentsCache = agents;
         let now = Date.now();
-        let onlineAgents = Object.entries(agents)
-            .filter(([n, d]) => n !== 'W-C26' && d.last_seen && (now - new Date(d.last_seen).getTime()) < 300000)
-            .slice(0, 12);
-        if (onlineAgents.length === 0) {
+        let allAgents = Object.entries(agents).filter(([n]) => n !== 'W-C26');
+        // Сортируем: онлайн первыми, потом оффлайн
+        let sorted = allAgents
+            .map(([name, d]) => {
+                let isOnline = d.last_seen && (now - new Date(d.last_seen).getTime()) < 300000;
+                return { name, data: d, isOnline };
+            })
+            .sort((a, b) => {
+                if (a.isOnline && !b.isOnline) return -1;
+                if (!a.isOnline && b.isOnline) return 1;
+                return a.name.localeCompare(b.name);
+            })
+            .slice(0, 20);
+
+        if (sorted.length === 0) {
             online.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ АГЕНТОВ</div>';
         } else {
-            online.innerHTML = onlineAgents.map(([name]) => {
+            online.innerHTML = sorted.map(({ name, data, isOnline }) => {
                 let fx = getAgentFx(name, agents);
                 let avatarHtml = fx.avatar ? '<div class="inner"><img src="' + fx.avatar + '"></div>' : '<div class="inner">🕶️</div>';
-                return '<div class="online-item" data-show-agent="' + name + '">' +
+                let roleIcon = data.role === 'admin' ? '👑' : data.role === 'moderator' ? '🛡' : '🎯';
+                let roleLabel = data.role === 'admin' ? 'Админ' : data.role === 'moderator' ? 'Модер' : 'Агент';
+                let roleBadgeHtml = '';
+                if (data.role === 'admin') roleBadgeHtml = '<span class="online-role-badge admin" title="Администратор">👑</span>';
+                else if (data.role === 'moderator') roleBadgeHtml = '<span class="online-role-badge mod" title="Модератор">🛡</span>';
+                return '<div class="online-item ' + (isOnline ? '' : 'offline') + '" data-show-agent="' + name + '">' +
                     '<div class="chat-avatar-frame online-avatar ' + fx.frameCls + '">' + avatarHtml + '</div>' +
-                    '<div class="online-name ' + fx.colorCls + ' ' + fx.fontCls + ' name-with-badge">' + name + fx.roleBadge + fx.badgeHtml + '</div>' +
-                    '<div class="online-dot"></div></div>';
+                    '<div class="online-name-wrap">' +
+                    '<div class="online-name-row">' +
+                    '<span class="online-name ' + fx.colorCls + ' ' + fx.fontCls + '">' + name + '</span>' +
+                    fx.badgeHtml +
+                    '</div>' +
+                    '<div class="online-role-row">' + roleIcon + ' ' + roleLabel + roleBadgeHtml + '</div>' +
+                    '</div>' +
+                    '<div class="online-dot"></div>' +
+                    '</div>';
             }).join('');
             online.querySelectorAll('[data-show-agent]').forEach(el => {
                 el.addEventListener('click', () => showAgentInfo(el.dataset.showAgent));
@@ -388,10 +433,33 @@ async function renderRightPanel() {
                 '<div>' + escapeHtml((a.title || '').substring(0, 60)) + '</div>' +
                 '<div class="announce-mini-time">' + timeAgo(a.created_at) + '</div></div>'
             ).join('');
+            // Клик по объявлению → модалка просмотра
+            announceMini.querySelectorAll('[data-announce-id]').forEach(el => {
+                el.addEventListener('click', async () => {
+                    let id = parseInt(el.dataset.announceId);
+                    let { data: full } = await supabase.from('announcements').select('*').eq('id', id).maybeSingle();
+                    if (full) openAnnounceView(full);
+                });
+            });
         }
     }
 }
-window.__renderAnnounceMini = renderRightPanel;
+
+// ============================================================
+// МОДАЛКА ПРОСМОТРА ОБЪЯВЛЕНИЯ
+// ============================================================
+function openAnnounceView(a) {
+    let typeLabels = { news: '📰 НОВОСТЬ', event: '🎯 ИВЕНТ', auction: '💰 АУКЦИОН', update: '⚡ ОБНОВЛЕНИЕ', wanted: '🔍 РОЗЫСК' };
+    let modal = document.getElementById('modal-announce-view');
+    if (!modal) return;
+    document.getElementById('modal-announce-view-title').textContent = a.title || '';
+    document.getElementById('modal-announce-view-meta').textContent = (typeLabels[a.type] || '📰') + ' · ' + a.author + ' · ' + timeAgo(a.created_at);
+    document.getElementById('modal-announce-view-text').innerHTML = (a.text || '').replace(/\n/g, '<br>');
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('show'), 10);
+}
+window.openAnnounceView = openAnnounceView;
+
 function timeAgo(d) {
     if (!d) return '';
     let diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
@@ -638,7 +706,7 @@ function renderMemeCard(m) {
         '<div class="card-header">' +
         '<div class="chat-avatar-frame card-avatar ' + fx.frameCls + '" data-show-agent="' + escapeHtml(m.author) + '">' + avatarHtml + '</div>' +
         '<div class="card-author-block">' +
-        '<div class="card-author ' + fx.colorCls + ' ' + fx.fontCls + ' name-with-badge" data-open-post-author="' + escapeHtml(m.author) + '">' + escapeHtml(m.author) + fx.roleBadge + fx.badgeHtml + '</div>' +
+        '<div class="card-author name-with-badge ' + fx.colorCls + ' ' + fx.fontCls + '" data-open-post-author="' + escapeHtml(m.author) + '">' + escapeHtml(m.author) + fx.roleBadge + fx.badgeHtml + '</div>' +
         '<div class="card-meta"><span class="role">😂 МЕМ</span><span class="card-time">' + timeAgo(m.created_at) + '</span></div>' +
         '</div></div>' +
         (titleHtml ? '<div class="card-title">' + titleHtml + '</div>' : '') +
@@ -648,6 +716,7 @@ function renderMemeCard(m) {
 }
 
 function openFeed() {
+    window.__currentView = 'feed';
     currentView = 'feed';
     document.querySelectorAll('.app-screen').forEach(a => { a.classList.remove('show'); setTimeout(() => a.style.display = 'none', 150); });
     document.getElementById('center-content').style.display = '';
@@ -667,18 +736,9 @@ function subscribeFeedRealtime() {
     if (feedChannel) supabase.removeChannel(feedChannel);
     feedChannel = supabase.channel('feed-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_posts' }, (payload) => {
-            if (payload.eventType === 'INSERT' && payload.new.author !== CA?.name) {
-                // Чужой пост — тихо обновляем ленту
-                if (currentView === 'feed') refreshFeedOnly();
-            } else if (payload.eventType === 'UPDATE') {
-                // Обновление лайков/комментов — обновляем
-                if (currentView === 'feed') refreshFeedOnly();
-            } else if (payload.eventType === 'DELETE') {
-                if (currentView === 'feed') refreshFeedOnly();
-            }
+            if (currentView === 'feed') refreshFeedOnly();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_comments' }, () => {
-            // Обновляем счётчики в ленте через 300мс (дебаунс)
             if (currentView === 'feed') {
                 clearTimeout(window.__feedCommentDebounce);
                 window.__feedCommentDebounce = setTimeout(() => refreshFeedOnly(), 300);
@@ -694,12 +754,59 @@ function subscribeFeedRealtime() {
         .subscribe();
 }
 
+// Подписка на онлайн-статусы
+function subscribeAgentsRealtime() {
+    if (agentsChannel) supabase.removeChannel(agentsChannel);
+    agentsChannel = supabase.channel('agents-realtime')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'agents' }, () => {
+            renderRightPanel();
+        })
+        .subscribe();
+}
+
+// ============================================================
+// РЕПА/ТК ТАЙМЕР (каждые 30 мин)
+// ============================================================
+function startRepTkTimer() {
+    if (repTkInterval) clearInterval(repTkInterval);
+    // Каждые 30 минут
+    repTkInterval = setInterval(() => {
+        if (!CA) return;
+        let now = Date.now();
+        let lastRepTk = parseInt(localStorage.getItem('syndicate_last_rep_tk_' + CA.name) || '0');
+        if (now - lastRepTk >= 1800000) {
+            CA.rep = Math.min(100, (CA.rep || 0) + 1);
+            CA.crystals = (CA.crystals || 0) + 50;
+            localStorage.setItem('syndicate_last_rep_tk_' + CA.name, now);
+            saveAgent();
+            updateTopbar();
+            notif('📈 +1 репа, +50 ТК');
+        }
+    }, 60000); // проверка каждую минуту
+    // Проверка сразу при запуске
+    let now = Date.now();
+    let lastRepTk = parseInt(localStorage.getItem('syndicate_last_rep_tk_' + CA.name) || '0');
+    if (now - lastRepTk >= 1800000) {
+        CA.rep = Math.min(100, (CA.rep || 0) + 1);
+        CA.crystals = (CA.crystals || 0) + 50;
+        localStorage.setItem('syndicate_last_rep_tk_' + CA.name, now);
+        saveAgent();
+        updateTopbar();
+    }
+}
+
 // ============================================================
 // ОТКРЫТИЕ ПРИЛОЖЕНИЙ
 // ============================================================
 function openApp(id) {
+    window.__currentView = id;   // ← ДОБАВИТЬ ЭТУ СТРОКУ
     playSound('open');
     currentView = id;
+    // Сброс точки "новый контент"
+    if (newContentFlags[id]) {
+        newContentFlags[id] = false;
+        buildSidebar();
+    }
     let map = {
         chat: 'app-chat', dm: 'app-dm', shop: 'app-shop', inventory: 'app-inventory',
         clans: 'app-clans', friends: 'app-friends', achievements: 'app-achievements',
@@ -914,7 +1021,6 @@ function updateTopbar() {
     }
 }
 window.updateStatusBar = updateTopbar;
-window.__renderAnnounceMini = renderRightPanel;
 
 // ============================================================
 // WINDOW ПРОБРОС
@@ -1067,6 +1173,7 @@ function openDesktop() {
     renderRightPanel();
     checkCompletedWars();
     autoDistributeTreasury();
+    startRepTkTimer();
     console.log('[MAIN] Рабочий стол открыт');
 }
 
@@ -1088,8 +1195,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     startBgMusic();
                     subscribeChat(); subscribeDM(); subscribeAdminChat();
                     subscribeFeedRealtime();
+                    subscribeAgentsRealtime();
                     subscribeAnnouncements(() => {
                         if (currentView === 'announce') renderAnnounceApp();
+                        renderRightPanel();
                     });
                     loadChatMessages(); loadDMMessages();
                     loadGuides(); loadMemes(); loadAnnouncements();
@@ -1117,14 +1226,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     openDesktop();
                     startBgMusic();
                     subscribeChat(); subscribeDM(); subscribeFeedRealtime();
+                    subscribeAgentsRealtime();
                     subscribeAnnouncements(() => {
                         if (currentView === 'announce') renderAnnounceApp();
+                        renderRightPanel();
                     });
                     loadChatMessages(); loadDMMessages();
                     loadAnnouncements(); loadClans(); loadClanWars();
                     loadFriends(); loadMentionAgents(); checkAchievements();
                     renderRightPanel();
-                }, 420);            }
+                }, 420);
+            }
         } catch (e) { console.error('[REGISTER] Ошибка:', e); }
     });
 
@@ -1165,6 +1277,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (r.success) { closeModal('modal-avatar'); updateSidebarProfile(); renderFeed(); }
         else notif(r.error || 'ОШИБКА');
     });
+
     // Чаты
     document.querySelector('.send-msg-btn')?.addEventListener('click', e => { e.stopPropagation(); if (isClanChatActive()) sendClanMessage(); else sendMessage(); });
     document.querySelector('.send-dm-btn')?.addEventListener('click', e => { e.stopPropagation(); sendDM(); });
@@ -1290,7 +1403,6 @@ document.addEventListener('DOMContentLoaded', () => {
         el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10);
     });
 
-    // Discord-style обложки
     document.getElementById('discord-cover-add')?.addEventListener('click', () => {
         document.getElementById('scene-covers').click();
     });
@@ -1400,9 +1512,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let banBtn = e.target.closest('[data-ban]');
         if (banBtn) { banAgent(banBtn.dataset.ban); return; }
 
-        // Спектакли
+        // Спектакли — редактирование/удаление
         let editSceneBtn = e.target.closest('[data-edit-scene]');
         if (editSceneBtn) {
+            e.stopPropagation();
             let id = parseInt(editSceneBtn.dataset.editScene);
             let scene = (window.__rpScenes || []).find(s => s.id === id);
             if (!scene) return;
@@ -1424,6 +1537,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         let delSceneBtn = e.target.closest('[data-delete-scene]');
         if (delSceneBtn) {
+            e.stopPropagation();
             let id = parseInt(delSceneBtn.dataset.deleteScene);
             let scene = (window.__rpScenes || []).find(s => s.id === id);
             confirmDialog('УДАЛИТЬ СПЕКТАКЛЬ', 'Удалить «' + (scene ? scene.title : '?') + '»?', async () => {
@@ -1459,7 +1573,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateDiscountDisplay, 60000);
     setInterval(() => { if (CA && currentView === 'feed') renderRightPanel(); }, 60000);
 
-    console.log('✅ ТЕРМИНАЛ 2.6.0 ЗАГРУЖЕН');
+    console.log('✅ ТЕРМИНАЛ 2.7.0 ЗАГРУЖЕН');
 });
 
 // ============================================================
@@ -1471,7 +1585,6 @@ function renderDiscordCovers() {
     if (!main || !grid) return;
     let covers = window.__sceneCovers || [];
 
-    // Главное превью
     let activeIdx = covers.findIndex(c => c.active);
     if (activeIdx === -1 && covers.length > 0) { activeIdx = 0; covers[0].active = true; }
     if (covers.length === 0) {
@@ -1481,7 +1594,6 @@ function renderDiscordCovers() {
         main.innerHTML = '<img src="' + url + '">';
     }
 
-    // Сетка + кнопка "+"
     grid.innerHTML = '';
     covers.forEach((c, i) => {
         let url = c.preview || c.url;
@@ -1493,7 +1605,6 @@ function renderDiscordCovers() {
     if (covers.length < 5) {
         grid.innerHTML += '<div class="discord-cover-add" id="discord-cover-add" title="Добавить">+</div>';
     }
-    // Перепривязываем обработчик "+"
     let addBtn = document.getElementById('discord-cover-add');
     if (addBtn) {
         let newAdd = addBtn.cloneNode(true);
@@ -1502,3 +1613,4 @@ function renderDiscordCovers() {
     }
 }
 window.__renderDiscordCovers = renderDiscordCovers;
+window.__renderAnnounceMini = renderRightPanel;

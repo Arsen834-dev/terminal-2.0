@@ -1,6 +1,6 @@
 // ============================================================
 // FEED / ЛЕНТА — репосты, комментарии, хэштеги, эффекты
-// v2.6.0: единый getAgentFx, роль-бейджи
+// v2.7.0: роль-бейджи не наезжают, делегирование работает везде
 // ============================================================
 
 import { supabase, CA, getAgents, saveAgent } from './auth.js';
@@ -62,13 +62,13 @@ export function linkifyHashtags(escapedText) {
 }
 
 // ============================================================
-// ЭФФЕКТЫ (через единую функцию из main.js)
+// ЭФФЕКТЫ
 // ============================================================
 function fx(name, agents) {
     if (typeof window.__getAgentFx === 'function') {
         return window.__getAgentFx(name, agents);
     }
-    // Fallback, если main.js ещё не загрузился
+    // Fallback
     let a = (agents || {})[name] || {};
     let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
     let fontCls = '';
@@ -91,7 +91,7 @@ function fx(name, agents) {
     if (a.active_badge && a.active_badge !== 'b_none' && shopItems.badges) {
         let b = shopItems.badges.find(x => x.id === a.active_badge);
         if (b && b.image) badgeHtml = '<img src="' + b.image + '" class="badge-img">';
-        else if (b && b.emoji) badgeHtml = '<span style="font-size:0.9rem;">' + b.emoji + '</span>';
+        else if (b && b.emoji) badgeHtml = '<span style="font-size:1rem;">' + b.emoji + '</span>';
     }
     let roleBadge = '';
     if (a.role === 'admin') roleBadge = '<span class="role-badge admin">👑</span>';
@@ -368,25 +368,30 @@ function timeAgo(d) {
 }
 
 // ============================================================
-// ДЕЛЕГИРОВАННЫЕ ОБРАБОТЧИКИ
+// ДЕЛЕГИРОВАННЫЕ ОБРАБОТЧИКИ (универсальные — работают и в ленте, и в профиле)
 // ============================================================
 export function attachFeedHandlers(container, callbacks = {}) {
     if (!container || container.dataset.feedAttached === '1') return;
     container.dataset.feedAttached = '1';
 
     container.addEventListener('click', async (e) => {
+        // Хэштег
         let ht = e.target.closest('[data-hashtag]');
         if (ht) { e.stopPropagation(); if (callbacks.onHashtag) callbacks.onHashtag(ht.dataset.hashtag); return; }
 
+        // Показать профиль
         let sa = e.target.closest('[data-show-agent]');
         if (sa) { e.stopPropagation(); if (typeof window.showAgentInfo === 'function') window.showAgentInfo(sa.dataset.showAgent); return; }
 
+        // Открыть автора поста
         let oa = e.target.closest('[data-open-post-author]');
         if (oa) { e.stopPropagation(); if (typeof window.showAgentInfo === 'function') window.showAgentInfo(oa.dataset.openPostAuthor); return; }
 
+        // Лайк поста
         let like = e.target.closest('[data-like-post]');
         if (like) { e.stopPropagation(); let r = await likePost(parseInt(like.dataset.likePost), like); if (r) playSound('click'); return; }
 
+        // Репост
         let rp = e.target.closest('[data-repost-btn]');
         if (rp) {
             e.stopPropagation();
@@ -397,6 +402,7 @@ export function attachFeedHandlers(container, callbacks = {}) {
             return;
         }
 
+        // Раскрыть/свернуть комментарии
         let ct = e.target.closest('[data-comments-toggle]');
         if (ct) {
             e.stopPropagation();
@@ -418,6 +424,7 @@ export function attachFeedHandlers(container, callbacks = {}) {
             return;
         }
 
+        // Отправить комментарий
         let cs = e.target.closest('[data-comment-send]');
         if (cs) {
             e.stopPropagation();
@@ -442,6 +449,7 @@ export function attachFeedHandlers(container, callbacks = {}) {
             return;
         }
 
+        // Лайк комментария
         let cl = e.target.closest('[data-comment-like]');
         if (cl) {
             e.stopPropagation();
@@ -453,6 +461,7 @@ export function attachFeedHandlers(container, callbacks = {}) {
             return;
         }
 
+        // Удалить комментарий
         let cd = e.target.closest('[data-comment-del]');
         if (cd) {
             e.stopPropagation();

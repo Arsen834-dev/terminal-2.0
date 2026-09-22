@@ -1,6 +1,6 @@
 // ============================================================
 // AGENTS / ПРОФИЛИ АГЕНТОВ
-// v2.6.0: роль-бейджи, единый getAgentFx, скролл, пагинация
+// v2.7.0: кнопка закрытия сверху, друзья "✓ В друзьях"
 // ============================================================
 
 import { supabase, CA, loadAgent, getAgents, saveAgent } from './auth.js';
@@ -19,7 +19,7 @@ let wallLoaded = false;
 const WALL_PAGE_SIZE = 10;
 
 // ============================================================
-// ЭФФЕКТЫ (через main.js)
+// ЭФФЕКТЫ
 // ============================================================
 function fx(name, agents) {
     if (typeof window.__getAgentFx === 'function') return window.__getAgentFx(name, agents);
@@ -37,7 +37,7 @@ function fx(name, agents) {
     if (a.active_badge && a.active_badge !== 'b_none' && shopItems.badges) {
         let b = shopItems.badges.find(x => x.id === a.active_badge);
         if (b && b.image) badgeHtml = '<img src="' + b.image + '" class="badge-img">';
-        else if (b && b.emoji) badgeHtml = '<span style="font-size:0.9rem;">' + b.emoji + '</span>';
+        else if (b && b.emoji) badgeHtml = '<span style="font-size:1rem;">' + b.emoji + '</span>';
     }
     return { colorCls, fontCls: '', frameCls, badgeHtml, roleBadge, avatar: a.avatar_url || '' };
 }
@@ -75,7 +75,6 @@ export async function showAgentInfo(name) {
             ? '<img src="' + agent.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">'
             : '🕶️';
 
-        // Эффекты
         let e = fx(name);
 
         let now = Date.now();
@@ -90,11 +89,25 @@ export async function showAgentInfo(name) {
         if (memberClan) clanName = memberClan.emoji + ' ' + memberClan.name;
 
         let isMe = agent.name === CA?.name;
+
+        // Проверка дружбы
+        let friendsList = getFriends();
+        let isFriend = friendsList.some(f =>
+            (f.agent === CA?.name && f.friend === agent.name && f.status === 'accepted') ||
+            (f.agent === agent.name && f.friend === CA?.name && f.status === 'accepted')
+        );
+        let hasPendingRequest = friendsList.some(f =>
+            (f.agent === CA?.name && f.friend === agent.name && f.status === 'pending')
+        );
+
         let html = '';
+
+        // ============ КНОПКА ЗАКРЫТИЯ СВЕРХУ ============
+        html += '<button class="profile-close-top" onclick="window.closeModal(\'modal-agent-profile\')" title="Закрыть">✕</button>';
 
         // Обложка
         html += '<div style="position:relative;height:160px;background:' + (coverUrl ? 'url(' + coverUrl + ') center/cover' : 'linear-gradient(135deg,#1a0000,var(--accent-dark),#1a0000)') + ';flex-shrink:0;">';
-        if (isMe) html += '<button class="btn btn-secondary" style="position:absolute;top:12px;right:12px;font-size:0.75rem;padding:6px 12px;z-index:3;" onclick="window.changeCover()">📷 Обложка</button>';
+        if (isMe) html += '<button class="btn btn-secondary" style="position:absolute;top:12px;right:56px;font-size:0.75rem;padding:6px 12px;z-index:3;" onclick="window.changeCover()">📷 Обложка</button>';
         html += '</div>';
 
         // Аватар
@@ -106,7 +119,7 @@ export async function showAgentInfo(name) {
         // Имя
         html += '<div style="padding:16px 20px;">';
         html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-        html += '<span class="name-with-badge ' + e.colorCls + '" style="font-size:1.4rem;font-weight:700;position:relative;">' + agent.name + e.roleBadge + e.badgeHtml + '</span>';
+        html += '<span class="name-with-badge ' + e.colorCls + '" style="font-size:1.4rem;font-weight:700;position:relative;padding-right:12px;">' + agent.name + e.roleBadge + e.badgeHtml + '</span>';
         html += '</div>';
         html += '<div style="color:var(--text-3);font-size:0.85rem;margin-top:4px;">' + roleText + ' · ' + statusHtml + '</div>';
         if (agent.status_text) html += '<div style="color:var(--text-2);font-size:0.8rem;margin-top:6px;font-style:italic;">«' + agent.status_text + '»</div>';
@@ -130,11 +143,20 @@ export async function showAgentInfo(name) {
             else html += '<button class="btn secondary" id="profile-sub-btn" style="flex:1;">➕ Подписаться</button>';
             html += '</div>';
             html += '<div style="display:flex;gap:8px;padding:0 20px 16px;">';
-            html += '<button class="btn secondary" id="profile-add-friend-btn" style="flex:1;">🤝 Добавить</button>';
-            html += '<button class="btn danger" id="profile-block-btn" style="flex:1;">🚫 Блок</button>';
+
+            // Кнопка "Добавить / ✓ В друзьях"
+            if (isFriend) {
+                html += '<button class="btn in-friends" id="profile-add-friend-btn" style="flex:1;">✓ В ДРУЗЬЯХ</button>';
+            } else if (hasPendingRequest) {
+                html += '<button class="btn secondary" id="profile-add-friend-btn" style="flex:1;">⏳ ЗАПРОС ОТПРАВЛЕН</button>';
+            } else {
+                html += '<button class="btn secondary" id="profile-add-friend-btn" style="flex:1;">🤝 ДОБАВИТЬ</button>';
+            }
+
+            html += '<button class="btn danger" id="profile-block-btn" style="flex:1;">🚫 БЛОК</button>';
             html += '</div>';
         } else {
-            html += '<div style="padding:16px 20px;"><button class="btn full" id="profile-create-post-btn">✏️ Создать пост</button></div>';
+            html += '<div style="padding:16px 20px;"><button class="btn full" id="profile-create-post-btn">✏️ СОЗДАТЬ ПОСТ</button></div>';
         }
 
         // Стена
@@ -148,8 +170,6 @@ export async function showAgentInfo(name) {
         html += '</div>';
         html += '<div id="profile-wall-more" style="margin-top:12px;text-align:center;"></div>';
         html += '</div>';
-
-        html += '<div style="padding:0 20px 20px;"><button class="btn secondary full" data-close-modal="modal-agent-profile">Закрыть</button></div>';
 
         let content = document.getElementById('profile-content');
         if (!content) {
@@ -166,16 +186,20 @@ export async function showAgentInfo(name) {
             modalBox.style.maxHeight = '85vh';
             modalBox.style.display = 'flex';
             modalBox.style.flexDirection = 'column';
+            modalBox.style.position = 'relative';
         }
         content.style.overflowY = 'auto';
         content.style.flex = '1';
         content.style.minHeight = '0';
 
         setTimeout(() => {
+            // DM
             document.getElementById('profile-dm-btn')?.addEventListener('click', function() {
                 closeModal('modal-agent-profile');
                 if (typeof window.startDM === 'function') window.startDM(agent.name);
             });
+
+            // Подписка
             document.getElementById('profile-sub-btn')?.addEventListener('click', async function() {
                 if (iAmSubscribed) {
                     await supabase.from('subscriptions').delete().eq('subscriber', CA.name).eq('target', name);
@@ -187,13 +211,11 @@ export async function showAgentInfo(name) {
                 closeModal('modal-agent-profile');
                 setTimeout(() => showAgentInfo(name), 300);
             });
+
+            // Друзья
             document.getElementById('profile-add-friend-btn')?.addEventListener('click', async function() {
-                let friendsList = getFriends();
-                let isFriend = friendsList.some(f =>
-                    (f.agent === CA?.name && f.friend === agent.name && f.status === 'accepted') ||
-                    (f.agent === agent.name && f.friend === CA?.name && f.status === 'accepted')
-                );
                 if (isFriend) {
+                    // Удалить из друзей
                     let rec = friendsList.find(f =>
                         (f.agent === CA?.name && f.friend === agent.name) ||
                         (f.agent === agent.name && f.friend === CA?.name)
@@ -208,11 +230,15 @@ export async function showAgentInfo(name) {
                 closeModal('modal-agent-profile');
                 setTimeout(() => showAgentInfo(name), 300);
             });
+
+            // Блок
             document.getElementById('profile-block-btn')?.addEventListener('click', async function() {
                 await blockAgent(agent.name);
                 notif('🚫 Заблокирован');
                 closeModal('modal-agent-profile');
             });
+
+            // Создать пост
             document.getElementById('profile-create-post-btn')?.addEventListener('click', function() {
                 closeModal('modal-agent-profile');
                 if (typeof window.showCreatePost === 'function') window.showCreatePost();

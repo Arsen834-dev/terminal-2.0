@@ -1,4 +1,5 @@
 // ============ CHAT / СООБЩЕНИЯ ============
+// v2.7.0: реакции при перезаходе, звук только в активном канале
 import { supabase, CA, activeItems, saveAgent, loadAgent, getAgents } from './auth.js';
 import { shopItems, getActiveColorClassForId } from './shop.js';
 import { clans } from './clans.js';
@@ -24,12 +25,33 @@ let clanChannel = null;
 let pinnedChatSubscription = null;
 let mentionAgents = [];
 
+// ==================== ПРОВЕРКА АКТИВНОГО КАНАЛА ====================
+function isChatOpenAndGeneral() {
+    if (!window.__currentView) return false;
+    return window.__currentView === 'chat' && chatTabActive === 'general';
+}
+function isDmOpenFor(agent) {
+    if (!window.__currentView) return false;
+    return window.__currentView === 'dm' && currentDM === agent;
+}
+function isClanChatOpen(clanId) {
+    if (!window.__currentView) return false;
+    return window.__currentView === 'chat' && chatTabActive === 'clan' && currentClanId === clanId;
+}
+function isAdminChatOpen() {
+    if (!window.__currentView) return false;
+    return window.__currentView === 'chat' && chatTabActive === 'admin';
+}
+
 // ==================== ОБЩИЙ ЧАТ ====================
 export async function loadChatMessages() {
     try {
         let { data } = await supabase.from('chat_messages')
             .select('*').order('id', { ascending: false }).limit(CHAT_PAGE_SIZE);
-        if (data) { chatMessages = data.reverse(); renderChat(); }
+        if (data) {
+            chatMessages = data.reverse();
+            renderChat();
+        }
     } catch (e) {}
 }
 
@@ -49,12 +71,29 @@ export function subscribeChat() {
     if (chatChannel) supabase.removeChannel(chatChannel);
     chatChannel = supabase.channel('chat-room')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
-            if (payload.new.author !== CA?.name) playSound('receive');
-            chatMessages.push(payload.new);
+            let msg = payload.new;
+            chatMessages.push(msg);
             if (chatMessages.length > 100) chatMessages.shift();
-            checkMentions(payload.new.text);
-            if (chatTabActive === 'general') renderChat();
-            else glowIcon('icon-chat');
+            // Звук только если открыт общий чат и это чужое сообщение
+            if (msg.author !== CA?.name && isChatOpenAndGeneral()) {
+                playSound('receive');
+            }
+            checkMentions(msg.text);
+            if (chatTabActive === 'general' && window.__currentView === 'chat') {
+                renderChat();
+            } else {
+                glowIcon('icon-chat');
+            }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_messages' }, payload => {
+            let existing = chatMessages.find(m => m.id === payload.new.id);
+            if (existing) Object.assign(existing, payload.new);
+            else chatMessages.push(payload.new);
+            renderChat();
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, payload => {
+            chatMessages = chatMessages.filter(m => m.id !== payload.old.id);
+            renderChat();
         })
         .subscribe();
     if (pinnedChatSubscription) supabase.removeChannel(pinnedChatSubscription);
@@ -118,7 +157,7 @@ export function renderChat(keepScroll = false) {
         let fc = m.author_font ? { 'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune', 'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western', 'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil', 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon', 'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic' }[m.author_font] || '' : '';
         let frc = m.author_frame ? (shopItems.frames.find(f => f.id === m.author_frame)?.cssClass || 'f-default') : 'f-default';
         let bdg = shopItems.badges.find(b => b.id === m.author_badge);
-        let be = bdg ? (bdg.image ? '<img src="' + bdg.image + '" style="width:28px;height:28px;vertical-align:middle;">' : (bdg.emoji || '')) : '';
+        let be = bdg ? (bdg.image ? '<img src="' + bdg.image + '" class="badge-img">' : (bdg.emoji || '')) : '';
         let react = m.reactions || {}, rh = '';
         Object.keys(react).forEach(k => {
             if (k.endsWith('_by')) return;
@@ -144,7 +183,7 @@ export function renderChat(keepScroll = false) {
         return '<div class="chat-msg' + (m.pinned ? ' pinned' : '') + '" data-msg-id="' + m.id + '">' +
             '<div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div>' +
             '<div class="chat-msg-right"><div class="chat-header-row">' +
-            '<span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;">' + (m.author || '???') + ri + '</span>' + be +
+            '<span class="chat-author name-with-badge ' + cs + '" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;position:relative;padding-right:6px;">' + (m.author || '???') + ri + '</span>' + be +
             '<span class="chat-time">' + (m.time || '') + '</span>' + menu + '</div>' +
             (m.pinned ? '<div class="chat-pin-info" style="color:var(--warning);font-size:0.75rem;">📌 Закреплено' + (m.pinned_by ? ' агентом ' + m.pinned_by : '') + '</div>' : '') +
             (m.reply_to ? '<div style="color:#880000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_author || '???') + ': ' + (m.reply_text || '...') + '</div>' : '') +
@@ -163,7 +202,7 @@ export function checkMentions(text) {
     if (mm) mm.forEach(m => { if (m.substring(1) === CA.name) { notif('📢 ВАС УПОМЯНУЛИ'); unreadMentions.chat++; updateBadgeIcons(); } });
 }
 
-export function addReaction(msgId, emoji) {
+export async function addReaction(msgId, emoji) {
     let msg = chatMessages.find(m => m.id == msgId);
     if (!msg || !CA) return;
     if (!msg.reactions) msg.reactions = {};
@@ -178,15 +217,17 @@ export function addReaction(msgId, emoji) {
         msg.reactions[key].push(CA.name);
         msg.reactions[emoji] = (msg.reactions[emoji] || 0) + 1;
     }
-    supabase.from('chat_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
+    // Локально сразу
     chatMessages = chatMessages.map(m => m.id == msgId ? { ...m, reactions: msg.reactions } : m);
     renderChat();
+    // Потом в БД
+    await supabase.from('chat_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
 }
 
-export function deleteMessage(msgId) {
+export async function deleteMessage(msgId) {
     chatMessages = chatMessages.filter(m => m.id != msgId);
-    supabase.from('chat_messages').delete().eq('id', msgId);
     renderChat();
+    await supabase.from('chat_messages').delete().eq('id', msgId);
 }
 
 export async function pinChatMessage(msgId) {
@@ -242,6 +283,7 @@ export function subscribeAdminChat() {
     adminChannel = supabase.channel('admin-room')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_messages' }, payload => {
             adminMessages.push(payload.new);
+            if (payload.new.author !== CA?.name && isAdminChatOpen()) playSound('receive');
             if (chatTabActive === 'admin') renderAdminChat();
         }).subscribe();
 }
@@ -320,8 +362,11 @@ export function subscribeDM() {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dm_messages' }, payload => {
             let msg = payload.new;
             if (msg.to_agent === CA?.name || msg.from_agent === CA?.name) {
-                if (msg.from_agent !== CA?.name) playSound('receive');
                 dmMessagesAll.push(msg);
+                // Звук только если открыт ЛС с этим отправителем
+                if (msg.from_agent !== CA?.name && isDmOpenFor(msg.from_agent)) {
+                    playSound('receive');
+                }
                 if (msg.text && msg.text.includes('@' + CA.name)) { notif('📩 ВАС УПОМЯНУЛИ В ЛИЧКЕ'); unreadMentions.dm++; updateBadgeIcons(); }
                 glowIcon('icon-dm');
                 renderDMList();
@@ -418,7 +463,7 @@ export async function sendDM() {
     if (CA.muted) return notif('🔇 ВЫ ЗАМУЧЕНЫ');
     let mentions = msg.match(/@(\S+)/g);
     if (mentions) { for (let m of mentions) { let name = m.substring(1); let ag = await loadAgent(name); if (!ag) notif('⛔ АГЕНТ ' + name + ' НЕ НАЙДЕН'); } }
-    let md = { from_agent: CA.name, to_agent: currentDM, avatar_url: CA.avatar_url || '', text: msg, time: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow' }), author_color: activeItems.color, author_frame: activeItems.frame, author_badge: activeItems.badge, author_font: activeItems.font };
+    let md = { from_agent: CA.name, to_agent: currentDM, avatar_url: CA.avatar_url || '', text: msg, time: new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow' }), author_color: activeItems.color, author_frame: activeItems.frame, author_badge: activeItems.badge, author_font: activeItems.font, reactions: {} };
     if (dmReplyTo) { md.reply_to = dmReplyTo.msgId; md.reply_author = dmReplyTo.author; md.reply_text = dmReplyTo.text; }
     try { await supabase.from('dm_messages').insert(md); } catch (e) {}
     playSound('send');
@@ -434,9 +479,9 @@ export async function addDMReaction(msgId, emoji) {
     let ui = msg.reactions[key].indexOf(CA.name);
     if (ui !== -1) { msg.reactions[key].splice(ui, 1); msg.reactions[emoji] = Math.max(0, (msg.reactions[emoji] || 1) - 1); }
     else { msg.reactions[key].push(CA.name); msg.reactions[emoji] = (msg.reactions[emoji] || 0) + 1; }
-    await supabase.from('dm_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
     dmMessagesAll = dmMessagesAll.map(m => m.id == msgId ? { ...m, reactions: msg.reactions } : m);
     renderDMMessages();
+    await supabase.from('dm_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
 }
 
 export function cancelDmReply() { dmReplyTo = null; let ri = document.getElementById('dm-reply-indicator'); if (ri) ri.style.display = 'none'; }
@@ -475,7 +520,7 @@ export function subscribeClanChat(clanId) {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'clan_messages', filter: 'clan_id=eq.' + clanId }, payload => {
             if (!clanChats[clanId]) clanChats[clanId] = [];
             clanChats[clanId].push(payload.new);
-            if (payload.new.author !== CA?.name) playSound('receive');
+            if (payload.new.author !== CA?.name && isClanChatOpen(clanId)) playSound('receive');
             if (payload.new.text && payload.new.text.includes('@' + CA?.name) && payload.new.author !== CA?.name) { unreadMentions.clan++; updateBadgeIcons(); notif('📢 УПОМЯНУЛИ В ОТРЯДЕ'); }
             if (currentClanId == clanId && chatTabActive === 'clan') renderClanMessages();
         }).subscribe();
@@ -584,8 +629,8 @@ export async function addClanReaction(msgId, emoji) {
     if (ui !== -1) { msg.reactions[key].splice(ui, 1); msg.reactions[emoji] = Math.max(0, (msg.reactions[emoji] || 1) - 1); }
     else { msg.reactions[key].push(CA.name); msg.reactions[emoji] = (msg.reactions[emoji] || 0) + 1; }
     clanChats[currentClanId] = msgs.map(m => String(m.id) === String(msgId) ? { ...m, reactions: { ...msg.reactions } } : m);
-    await supabase.from('clan_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
     renderClanMessages();
+    await supabase.from('clan_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
 }
 
 function renderClanList() {
