@@ -78,6 +78,15 @@ body::after {
     opacity: 0.4;
 }
 
+/* Отключаем тяжёлые эффекты на заставке */
+body.splash-active::before,
+body.splash-active::after {
+    display: none !important;
+}
+body.splash-active #noise-canvas {
+    display: none !important;
+}
+
 #noise-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.03; mix-blend-mode: overlay; }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -159,11 +168,10 @@ a:active, button:active, a:focus, button:focus {
     animation: fadeIn 0.5s ease-out forwards;
     display: inline-block;
     text-shadow:
-        0 0 4px #ff1744,
-        0 0 10px #ff1744,
-        0 0 20px #b3123f,
-        0 0 40px #b3123f;
+        0 0 8px #ff1744,
+        0 0 16px #b3123f;
 }
+
 #skull-ascii.eating { animation: skullEat 0.7s ease-in forwards !important; }
 
 @keyframes fadeIn {
@@ -397,38 +405,40 @@ a:active, button:active, a:focus, button:focus {
 .card-action.liked { color: var(--accent); text-shadow: 0 0 6px var(--accent); }
 
 /* ============================================================
-   КАРТИНКИ ПОСТОВ
+   КАРТИНКИ ПОСТОВ — СОХРАНЯЮТ ПРОПОРЦИИ
    ============================================================ */
 .post-image {
     display: block;
-    width: 100%;
+    width: auto;
     max-width: 100%;
     height: auto;
     max-height: 400px;
     margin: 10px 0;
     border: 1px solid var(--border-2);
     border-radius: 4px;
-    object-fit: cover;
+    object-fit: contain;
+    background: var(--bg-3);
 }
-/* В стене профиля — во всю ширину карточки */
+/* В стене профиля — на всю ширину, пропорции сохранены */
 #profile-wall .post-image {
-    width: calc(100% + 32px);
-    max-width: calc(100% + 32px);
-    height: auto;
-    max-height: 500px;
-    margin-left: -16px;
-    margin-right: -16px;
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
-}
-/* В ленте — компактнее */
-#feed .post-image {
     width: 100%;
     max-width: 100%;
+    height: auto;
+    max-height: 500px;
+    margin: 10px 0;
+    border-radius: 4px;
+    object-fit: contain;
+    background: var(--bg-3);
+}
+/* В ленте — компактнее, но пропорции сохранены */
+#feed .post-image {
+    width: auto;
+    max-width: 100%;
+    height: auto;
     max-height: 320px;
     margin: 10px 0;
-    object-fit: cover;
+    object-fit: contain;
+    background: var(--bg-3);
 }
 
 /* ============ ПРАВЫЙ SIDEBAR ============ */
@@ -920,44 +930,46 @@ a:active, button:active, a:focus, button:focus {
     50% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.2); border-color: #fff; }
 }
 
-/* ЧЕРЕПНАЯ — круг из черепов вокруг рамки */
 .f-skull {
     border-color: rgba(255, 255, 255, 0.8);
     box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), inset 0 0 6px rgba(255, 255, 255, 0.2);
     position: relative;
 }
 .f-skull::before {
-    content: '💀';
+    content: '💀  💀  💀';
     position: absolute;
-    top: -14px;
+    top: -18px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 12px;
+    font-size: 11px;
+    letter-spacing: 6px;
+    white-space: nowrap;
     pointer-events: none;
     filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.9));
-    animation: skullTopBob 1.8s ease-in-out infinite;
+    animation: skullOrbitTop 3s ease-in-out infinite;
     z-index: 3;
 }
 .f-skull::after {
-    content: '💀 💀';
+    content: '💀  💀';
     position: absolute;
-    bottom: -14px;
+    bottom: -18px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 12px;
-    letter-spacing: 8px;
+    font-size: 11px;
+    letter-spacing: 6px;
+    white-space: nowrap;
     pointer-events: none;
     filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.9));
-    animation: skullBottomBob 1.8s ease-in-out infinite 0.9s;
+    animation: skullOrbitBottom 3s ease-in-out infinite 1.5s;
     z-index: 3;
 }
-@keyframes skullTopBob {
-    0%, 100% { transform: translateX(-50%) translateY(0) rotate(0deg); }
-    50% { transform: translateX(-50%) translateY(-3px) rotate(8deg); }
+@keyframes skullOrbitTop {
+    0%, 100% { transform: translateX(-50%) translateY(0) rotate(-3deg); }
+    50% { transform: translateX(-50%) translateY(-3px) rotate(3deg); }
 }
-@keyframes skullBottomBob {
-    0%, 100% { transform: translateX(-50%) translateY(0) rotate(0deg); }
-    50% { transform: translateX(-50%) translateY(3px) rotate(-8deg); }
+@keyframes skullOrbitBottom {
+    0%, 100% { transform: translateX(-50%) translateY(0) rotate(3deg); }
+    50% { transform: translateX(-50%) translateY(3px) rotate(-3deg); }
 }
 
 /* КИБЕР */

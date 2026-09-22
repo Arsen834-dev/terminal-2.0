@@ -213,8 +213,10 @@ buildDecoratedTitle();
 // ============================================================
 // ЗАСТАВКА → ЛОГИН
 // ============================================================
-const SKULL_TIME = 3500;
+const SKULL_TIME = 4000;
 const EAT_TIME = 900;
+
+document.body.classList.add('splash-active');
 
 setTimeout(() => {
     const skull = document.getElementById('skull-ascii');
@@ -228,12 +230,16 @@ setTimeout(() => {
                 login.style.display = 'flex';
                 setTimeout(() => login.classList.add('visible'), 50);
             }
-            setTimeout(() => { if (start) start.style.display = 'none'; }, 700);
+            setTimeout(() => {
+                if (start) start.style.display = 'none';
+                document.body.classList.remove('splash-active');
+            }, 700);
             console.log('[MAIN] Логин-экран показан');
         }, EAT_TIME);
     } else {
         let login = document.getElementById('login-screen');
         if (login) { login.style.display = 'flex'; setTimeout(() => login.classList.add('visible'), 50); }
+        document.body.classList.remove('splash-active');
     }
 }, SKULL_TIME);
 
