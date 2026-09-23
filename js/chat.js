@@ -1,5 +1,7 @@
-// ============ CHAT / СООБЩЕНИЯ ============
-// v2.7.0: реакции при перезаходе, звук только в активном канале
+// ============================================================
+// CHAT / СООБЩЕНИЯ
+// v2.9.5: сброс высоты textarea, Shift+Enter — новый абзац
+// ============================================================
 import { supabase, CA, activeItems, saveAgent, loadAgent, getAgents } from './auth.js';
 import { shopItems, getActiveColorClassForId } from './shop.js';
 import { clans } from './clans.js';
@@ -24,6 +26,14 @@ let currentClanId = null;
 let clanChannel = null;
 let pinnedChatSubscription = null;
 let mentionAgents = [];
+
+// ============================================================
+// ХЕЛПЕР: сброс высоты textarea после отправки
+// ============================================================
+function resetTextareaHeight(el) {
+    if (!el || el.tagName !== 'TEXTAREA') return;
+    el.style.height = '36px';
+}
 
 // ==================== ПРОВЕРКА АКТИВНОГО КАНАЛА ====================
 function isChatOpenAndGeneral() {
@@ -74,7 +84,6 @@ export function subscribeChat() {
             let msg = payload.new;
             chatMessages.push(msg);
             if (chatMessages.length > 100) chatMessages.shift();
-            // Звук только если открыт общий чат и это чужое сообщение
             if (msg.author !== CA?.name && isChatOpenAndGeneral()) {
                 playSound('receive');
             }
@@ -135,7 +144,12 @@ export async function sendMessage() {
     playSound('send');
     CA.chatCount = (CA.chatCount || 0) + 1;
     CA.crystals = (CA.crystals || 0) + 15;
-    inp.value = ''; replyTo = null; cancelReply(); saveAgent(); hideMentionSuggestions();
+    inp.value = '';
+    resetTextareaHeight(inp);
+    replyTo = null;
+    cancelReply();
+    saveAgent();
+    hideMentionSuggestions();
 }
 
 export function renderChat(keepScroll = false) {
@@ -181,7 +195,7 @@ export function renderChat(keepScroll = false) {
         }
         let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : (m.avatar || '🕶️');
         return '<div class="chat-msg' + (m.pinned ? ' pinned' : '') + '" data-msg-id="' + m.id + '">' +
-            '<div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div>' +
+            '<div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="inner">' + avatarHtml + '</span></span></div>' +
             '<div class="chat-msg-right"><div class="chat-header-row">' +
             '<span class="chat-author name-with-badge ' + cs + '" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;position:relative;padding-right:6px;">' + (m.author || '???') + ri + '</span>' + be +
             '<span class="chat-time">' + (m.time || '') + '</span>' + menu + '</div>' +
@@ -217,10 +231,8 @@ export async function addReaction(msgId, emoji) {
         msg.reactions[key].push(CA.name);
         msg.reactions[emoji] = (msg.reactions[emoji] || 0) + 1;
     }
-    // Локально сразу
     chatMessages = chatMessages.map(m => m.id == msgId ? { ...m, reactions: msg.reactions } : m);
     renderChat();
-    // Потом в БД
     await supabase.from('chat_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
 }
 
@@ -296,6 +308,7 @@ export async function sendAdminMessage() {
     try { await supabase.from('admin_messages').insert(md); } catch (e) {}
     playSound('send');
     inp.value = '';
+    resetTextareaHeight(inp);
 }
 
 export function renderAdminChat() {
@@ -321,7 +334,7 @@ export function renderAdminChat() {
             if (m.author === CA?.name) menu += '<div class="chat-menu-item" data-delete-admin-msg="' + m.id + '">🗑 УДАЛИТЬ</div>';
             menu += '</div></span>';
         }
-        return '<div class="chat-msg"><div class="chat-msg-left"><span class="chat-avatar-frame f-default"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right"><div class="chat-header-row"><span class="chat-author">' + m.author + '</span><span class="chat-time">' + m.time + '</span>' + menu + '</div><div class="chat-text">' + txt + '</div><div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="admin" data-msgid="' + m.id + '">+</span></div></div></div>';
+        return '<div class="chat-msg"><div class="chat-msg-left"><span class="chat-avatar-frame f-default"><span class="inner">' + avatarHtml + '</span></span></div><div class="chat-msg-right"><div class="chat-header-row"><span class="chat-author">' + m.author + '</span><span class="chat-time">' + m.time + '</span>' + menu + '</div><div class="chat-text">' + txt + '</div><div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="admin" data-msgid="' + m.id + '">+</span></div></div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
 }
@@ -363,7 +376,6 @@ export function subscribeDM() {
             let msg = payload.new;
             if (msg.to_agent === CA?.name || msg.from_agent === CA?.name) {
                 dmMessagesAll.push(msg);
-                // Звук только если открыт ЛС с этим отправителем
                 if (msg.from_agent !== CA?.name && isDmOpenFor(msg.from_agent)) {
                     playSound('receive');
                 }
@@ -451,7 +463,7 @@ export function renderDMMessages() {
         txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
         let replyHtml = m.reply_to ? '<div style="color:#880000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_author || '???') + ': ' + (m.reply_text || '...') + '</div>' : '';
         let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : '🕶️';
-        return '<div class="chat-msg"><div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right">' + replyHtml + '<div class="chat-header-row"><span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.from_agent + '\')" style="cursor:pointer;">' + m.from_agent + '</span><span class="chat-time">' + m.time + '</span>' + menu + '</div><div class="chat-text ' + fc + '">' + txt + '</div><div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="dm" data-msgid="' + m.id + '">+</span></div></div></div>';
+        return '<div class="chat-msg"><div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="inner">' + avatarHtml + '</span></span></div><div class="chat-msg-right">' + replyHtml + '<div class="chat-header-row"><span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.from_agent + '\')" style="cursor:pointer;">' + m.from_agent + '</span><span class="chat-time">' + m.time + '</span>' + menu + '</div><div class="chat-text ' + fc + '">' + txt + '</div><div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="dm" data-msgid="' + m.id + '">+</span></div></div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
 }
@@ -467,7 +479,11 @@ export async function sendDM() {
     if (dmReplyTo) { md.reply_to = dmReplyTo.msgId; md.reply_author = dmReplyTo.author; md.reply_text = dmReplyTo.text; }
     try { await supabase.from('dm_messages').insert(md); } catch (e) {}
     playSound('send');
-    inp.value = ''; dmReplyTo = null; cancelDmReply(); hideMentionSuggestions();
+    inp.value = '';
+    resetTextareaHeight(inp);
+    dmReplyTo = null;
+    cancelDmReply();
+    hideMentionSuggestions();
 }
 
 export async function addDMReaction(msgId, emoji) {
@@ -537,7 +553,12 @@ export async function sendClanMessage() {
     playSound('send');
     CA.chatCount = (CA.chatCount || 0) + 1;
     CA.crystals = (CA.crystals || 0) + 15;
-    inp.value = ''; replyTo = null; cancelReply(); saveAgent(); hideMentionSuggestions();
+    inp.value = '';
+    resetTextareaHeight(inp);
+    replyTo = null;
+    cancelReply();
+    saveAgent();
+    hideMentionSuggestions();
 }
 
 export function renderClanMessages() {
@@ -581,7 +602,7 @@ export function renderClanMessages() {
             menu += '</div></span>';
         }
         let avatarHtml = m.avatar_url ? '<img src="' + m.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">' : '🕶️';
-        return '<div class="chat-msg' + (m.pinned ? ' pinned' : '') + '" data-msg-id="' + m.id + '"><div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="chat-avatar">' + avatarHtml + '</span></span></div><div class="chat-msg-right"><div class="chat-header-row"><span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;">' + (m.author || '???') + '</span><span class="chat-time">' + (m.time || '') + '</span>' + menu + '</div>' + (m.pinned ? '<div style="color:var(--warning);font-size:0.75rem;">📌 Закреплено</div>' : '') + '<div class="chat-text ' + fc + '">' + txt + '</div><div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="clan" data-msgid="' + m.id + '">+</span></div></div></div>';
+        return '<div class="chat-msg' + (m.pinned ? ' pinned' : '') + '" data-msg-id="' + m.id + '"><div class="chat-msg-left"><span class="chat-avatar-frame ' + frc + '"><span class="inner">' + avatarHtml + '</span></span></div><div class="chat-msg-right"><div class="chat-header-row"><span class="chat-author ' + cs + '" onclick="window.showAgentInfo(\'' + m.author + '\')" style="cursor:pointer;">' + (m.author || '???') + '</span><span class="chat-time">' + (m.time || '') + '</span>' + menu + '</div>' + (m.pinned ? '<div style="color:var(--warning);font-size:0.75rem;">📌 Закреплено</div>' : '') + '<div class="chat-text ' + fc + '">' + txt + '</div><div class="chat-reactions">' + rh + '<span class="chat-reaction" data-reaction-picker="clan" data-msgid="' + m.id + '">+</span></div></div></div>';
     }).join('');
     c.scrollTop = c.scrollHeight;
 }

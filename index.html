@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>ТЕРМИНАЛ СИНДИКАТА v2.9.4</title>
+<title>ТЕРМИНАЛ СИНДИКАТА v2.9.5</title>
 <link rel="icon" href="https://wiki.adven.space/items/contraband/pais.png">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=VT323&family=Share+Tech+Mono&family=Ruslan+Display&family=Pixelify+Sans:wght@400;600;700&family=Special+Elite&family=MedievalSharp&family=Smokum&family=Pirata+One&family=Uncial+Antiqua&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=VT323&family=Share+Tech+Mono&family=Ruslan+Display&family=Pixelify+Sans:wght@400;600;700&family=Special+Elite&family=MedievalSharp&family=Rye&family=UnifrakturMaguntia&family=Cinzel+Decorative:wght@400;700&family=Orbitron:wght@400;700;900&family=Press+Start+2P&family=Bebas+Neue&family=Bangers&family=Audiowide&family=Rubik+Glitch&family=Nosifer&display=swap" rel="stylesheet">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#06060a">
 <style>
 /* ============================================================
-   ТЕРМИНАЛ СИНДИКАТА v2.9.4
+   ТЕРМИНАЛ СИНДИКАТА v2.9.5
    ============================================================ */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -80,21 +80,16 @@ body::after {
 
 #noise-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.03; mix-blend-mode: overlay; }
 
-/* Отключаем тяжёлые эффекты на заставке */
 body.splash-active::before,
-body.splash-active::after {
-    display: none !important;
-}
-body.splash-active #noise-canvas {
-    display: none !important;
-}
+body.splash-active::after { display: none !important; }
+body.splash-active #noise-canvas { display: none !important; }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-2); }
 ::-webkit-scrollbar-thumb { background: var(--accent-dark); border: 1px solid var(--bg); }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-/* ============ КУРСОР ============ */
+/* КУРСОР */
 html, body, *, *::before, *::after,
 a, button, input, textarea, select, [role="button"], .clickable,
 a:hover, button:hover, input:hover, textarea:hover, select:hover,
@@ -102,7 +97,7 @@ a:active, button:active, a:focus, button:focus {
     cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><line x1='12' y1='0' x2='12' y2='9' stroke='%23ff1744' stroke-width='1.8'/><line x1='12' y1='15' x2='12' y2='24' stroke='%23ff1744' stroke-width='1.8'/><line x1='0' y1='12' x2='9' y2='12' stroke='%23ff1744' stroke-width='1.8'/><line x1='15' y1='12' x2='24' y2='12' stroke='%23ff1744' stroke-width='1.8'/><circle cx='12' cy='12' r='2.5' fill='none' stroke='%23ff1744' stroke-width='1.5'/><circle cx='12' cy='12' r='1' fill='%23ff1744'/></svg>") 12 12, crosshair !important;
 }
 
-/* ============ МАТРИЧНЫЙ ФОН (логин) ============ */
+/* МАТРИЧНЫЙ ФОН (логин) */
 .matrix-bg { position: relative; overflow: hidden; }
 .matrix-bg::before {
     content: '';
@@ -134,7 +129,7 @@ a:active, button:active, a:focus, button:focus {
 @keyframes matrixScroll { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
 .matrix-bg > * { position: relative; z-index: 1; }
 
-/* ============ ЗАСТАВКА ============ */
+/* ЗАСТАВКА */
 #start-screen {
     position: fixed;
     inset: 0;
@@ -152,12 +147,7 @@ a:active, button:active, a:focus, button:focus {
 #start-screen.visible { opacity: 1; }
 #start-screen.fade-out { opacity: 0; pointer-events: none; }
 
-#skull-intro {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-}
+#skull-intro { display: flex; align-items: center; justify-content: center; width: 100%; }
 
 #skull-ascii {
     color: #ff3355;
@@ -170,24 +160,17 @@ a:active, button:active, a:focus, button:focus {
     opacity: 0;
     transform: scale(0.92);
     transition: opacity 1s ease-out, transform 1s ease-out;
-    text-shadow:
-        0 0 6px #ff1744,
-        0 0 14px #b3123f;
+    text-shadow: 0 0 6px #ff1744, 0 0 14px #b3123f;
     will-change: opacity, transform;
 }
-#skull-ascii.visible {
-    opacity: 1;
-    transform: scale(1);
-}
+#skull-ascii.visible { opacity: 1; transform: scale(1); }
 #skull-ascii.eating {
     transition: transform 0.8s cubic-bezier(0.5, 0, 0.8, 1), opacity 0.8s ease-in;
     transform: scale(6);
     opacity: 0;
 }
 
-#start-subtitle-wrap {
-    text-align: center;
-}
+#start-subtitle-wrap { text-align: center; }
 
 .start-subtitle {
     font-family: var(--font-head);
@@ -202,12 +185,9 @@ a:active, button:active, a:focus, button:focus {
     user-select: none;
     text-shadow: 0 0 10px var(--accent), 0 0 22px var(--accent-dark);
 }
-.start-subtitle.visible {
-    opacity: 1;
-    transform: translateY(0);
-}
+.start-subtitle.visible { opacity: 1; transform: translateY(0); }
 
-/* ============ ЛОГИН ============ */
+/* ЛОГИН */
 #login-screen { position: fixed; inset: 0; z-index: 8000; display: none; justify-content: center; align-items: center; padding: 20px; background: var(--bg); opacity: 0; transition: opacity 0.6s ease; }
 #login-screen.visible { opacity: 1; }
 .login-card {
@@ -241,7 +221,7 @@ a:active, button:active, a:focus, button:focus {
 .login-register::after { content: ']'; color: var(--accent); }
 .login-register:hover { color: var(--accent); }
 
-/* ============ ВЕРХНЯЯ ПАНЕЛЬ ============ */
+/* ВЕРХНЯЯ ПАНЕЛЬ */
 #desktop { display: none; height: 100vh; width: 100vw; flex-direction: column; position: relative; z-index: 10; }
 .topbar { height: 44px; background: var(--bg-2); border-bottom: 1px solid var(--accent-dark); display: flex; align-items: center; padding: 0 16px; gap: 20px; position: relative; z-index: 100; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); }
 .topbar-logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-head); font-size: 1.1rem; letter-spacing: 4px; color: var(--accent); text-shadow: 0 0 8px var(--accent); cursor: pointer; transition: all 0.15s; }
@@ -262,7 +242,7 @@ a:active, button:active, a:focus, button:focus {
     .topbar-logo { font-size: 0.9rem; letter-spacing: 2px; }
 }
 
-/* ============ ОСНОВНОЙ LAYOUT ============ */
+/* ОСНОВНОЙ LAYOUT */
 .main-layout { flex: 1; display: grid; grid-template-columns: 240px 1fr 280px; overflow: hidden; height: calc(100vh - 44px - 22px); }
 .main-layout.sidebar-collapsed { grid-template-columns: 60px 1fr 280px; }
 @media (max-width: 1100px) {
@@ -276,7 +256,7 @@ a:active, button:active, a:focus, button:focus {
     .right-panel { display: none !important; }
 }
 
-/* ============ SIDEBAR ============ */
+/* SIDEBAR */
 .left-sidebar { background: var(--bg-2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; position: relative; }
 .sidebar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 0; }
 .sidebar-profile { padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; position: relative; }
@@ -317,17 +297,12 @@ a:active, button:active, a:focus, button:focus {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.3); opacity: 0.7; }
 }
-.sidebar-collapsed .sidebar-item-new-dot {
-    top: 6px;
-    right: 6px;
-    width: 6px;
-    height: 6px;
-}
+.sidebar-collapsed .sidebar-item-new-dot { top: 6px; right: 6px; width: 6px; height: 6px; }
 
 .sidebar-item-badge { background: var(--accent); color: #000; font-size: 0.6rem; font-weight: 700; padding: 1px 6px; border-radius: 2px; min-width: 18px; text-align: center; font-family: var(--font-digit); }
 .sidebar-collapsed .sidebar-item-badge { position: absolute; top: 4px; right: 6px; padding: 0 4px; font-size: 0.55rem; }
 
-/* ============ ЦЕНТР (ЛЕНТА) ============ */
+/* ЦЕНТР (ЛЕНТА) */
 .center-content { overflow-y: auto; overflow-x: hidden; background: var(--bg); position: relative; }
 .feed-profile-block { border-bottom: 1px solid var(--border); background: var(--bg-2); position: relative; }
 .feed-profile-cover { height: 100px; background: linear-gradient(135deg, var(--accent-dark), #1a0000, var(--accent-dark)); position: relative; overflow: hidden; }
@@ -379,7 +354,7 @@ a:active, button:active, a:focus, button:focus {
 .feed-empty { text-align: center; padding: 60px 20px; color: var(--text-3); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px; }
 .feed-empty::before { content: '[ ─ ─ ─ ]'; display: block; font-size: 1.2rem; color: var(--accent-dark); margin-bottom: 16px; letter-spacing: 4px; }
 
-/* ============ КАРТОЧКИ ============ */
+/* КАРТОЧКИ */
 .card { background: var(--surface); border: 1px solid var(--border-2); border-left: 2px solid var(--accent-dark); padding: 14px 16px; transition: all 0.15s; position: relative; cursor: pointer; }
 .card:hover { border-left-color: var(--accent); background: var(--surface-2); box-shadow: 0 0 20px rgba(255, 23, 68, 0.08), inset 0 0 20px rgba(255, 23, 68, 0.02); }
 .card-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
@@ -397,36 +372,35 @@ a:active, button:active, a:focus, button:focus {
 .card-action:hover { color: var(--accent); text-shadow: 0 0 6px var(--accent); }
 .card-action.liked { color: var(--accent); text-shadow: 0 0 6px var(--accent); }
 
-/* ============================================================
-   КАРТИНКИ ПОСТОВ — ПРОПОРЦИИ СОХРАНЕНЫ
-   ============================================================ */
+/* КАРТИНКИ ПОСТОВ */
 .post-image {
     display: block;
-    width: 100%;
+    width: auto;
     max-width: 100%;
     height: auto;
-    max-height: 400px;
+    max-height: 360px;
     margin: 10px auto;
     border: 1px solid var(--border-2);
-    border-radius: 4px;
+    border-radius: 6px;
     object-fit: contain;
     background: var(--bg-3);
 }
 #profile-wall .post-image {
-    width: 100%;
+    width: auto;
     max-width: 100%;
     height: auto;
-    max-height: 500px;
+    max-height: 420px;
     margin: 10px auto;
-    border-radius: 4px;
+    border-radius: 6px;
     object-fit: contain;
     background: var(--bg-3);
+    display: block;
 }
 #feed .post-image {
-    width: 100%;
+    width: auto;
     max-width: 100%;
     height: auto;
-    max-height: 320px;
+    max-height: 300px;
     margin: 10px auto;
     object-fit: contain;
     background: var(--bg-3);
@@ -463,24 +437,14 @@ a:active, button:active, a:focus, button:focus {
 .card-action.liked.pop { animation: likePop 0.4s ease-out; color: var(--accent); }
 .card-action.pop { animation: likePop 0.4s ease-out; }
 
-/* ============ ПРАВЫЙ SIDEBAR ============ */
+/* ПРАВЫЙ SIDEBAR */
 .right-panel { background: var(--bg-2); border-left: 1px solid var(--border); overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 .right-block { border: 1px solid var(--border-2); background: var(--surface); padding: 12px; }
 .right-block-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 6px var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
 .right-block-title::before { content: '▸'; color: var(--accent-dark); }
 .online-list { display: flex; flex-direction: column; gap: 6px; }
 
-.online-item {
-    display: grid;
-    grid-template-columns: 32px 1fr auto;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 8px;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-size: 0.8rem;
-    border-radius: 3px;
-}
+.online-item { display: grid; grid-template-columns: 32px 1fr auto; align-items: center; gap: 10px; padding: 6px 8px; cursor: pointer; transition: background 0.15s; font-size: 0.8rem; border-radius: 3px; }
 .online-item:hover { background: var(--surface-2); }
 .online-name-wrap { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .online-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -489,16 +453,7 @@ a:active, button:active, a:focus, button:focus {
 .online-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 5px var(--success); flex-shrink: 0; }
 .online-item.offline .online-dot { background: var(--text-4); box-shadow: none; }
 
-.online-role-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-    line-height: 1;
-    filter: drop-shadow(0 0 4px currentColor);
-    animation: roleBadgePop 2s ease-in-out infinite;
-    flex-shrink: 0;
-}
+.online-role-badge { display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; line-height: 1; filter: drop-shadow(0 0 4px currentColor); animation: roleBadgePop 2s ease-in-out infinite; flex-shrink: 0; }
 .online-role-badge.admin { color: #ffd700; }
 .online-role-badge.mod { color: #00e5ff; }
 
@@ -511,14 +466,14 @@ a:active, button:active, a:focus, button:focus {
 .announce-mini:hover { color: var(--accent); background: var(--surface-2); }
 .announce-mini-time { font-size: 0.65rem; color: var(--text-4); margin-top: 2px; font-family: var(--font-digit); }
 
-/* ============ НИЖНЯЯ ПАНЕЛЬ ============ */
+/* НИЖНЯЯ ПАНЕЛЬ */
 .bottombar { height: 22px; background: var(--bg-2); border-top: 1px solid var(--accent-dark); display: flex; align-items: center; padding: 0 12px; gap: 16px; font-size: 0.65rem; color: var(--text-3); font-family: var(--font-digit); letter-spacing: 1px; position: relative; z-index: 100; }
 .bottombar-item { display: flex; align-items: center; gap: 4px; cursor: pointer; transition: color 0.15s; text-transform: uppercase; }
 .bottombar-item:hover { color: var(--accent); }
 .bottombar-spacer { flex: 1; }
 .bottombar-status { color: var(--success); text-shadow: 0 0 6px var(--success); animation: blink 4s infinite; }
 
-/* ============ МОБИЛЬНАЯ НАВИГАЦИЯ ============ */
+/* МОБИЛЬНАЯ НАВИГАЦИЯ */
 .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--bg-2); border-top: 1px solid var(--accent-dark); z-index: 100; padding-bottom: env(safe-area-inset-bottom, 0); box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6); }
 .mobile-nav-inner { display: flex; height: 100%; max-width: 500px; margin: 0 auto; }
 .mobile-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: transparent; border: none; color: var(--text-3); font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s; position: relative; }
@@ -528,7 +483,7 @@ a:active, button:active, a:focus, button:focus {
 .mobile-nav-badge { position: absolute; top: 6px; right: 20%; background: var(--accent); color: #000; font-size: 0.55rem; font-weight: 700; padding: 1px 4px; border-radius: 2px; min-width: 14px; text-align: center; }
 @media (max-width: 768px) { .mobile-nav { display: block; } }
 
-/* ============ ЭКРАНЫ ПРИЛОЖЕНИЙ ============ */
+/* ЭКРАНЫ ПРИЛОЖЕНИЙ */
 .app-screen { position: fixed; top: 44px; left: 0; right: 0; bottom: 22px; z-index: 200; background: var(--bg); display: none; flex-direction: column; opacity: 0; transition: opacity 0.15s; }
 @media (max-width: 768px) { .app-screen { top: 44px; bottom: 60px; } }
 .app-screen.show { opacity: 1; }
@@ -539,7 +494,7 @@ a:active, button:active, a:focus, button:focus {
 .app-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
 .app-body.no-pad { padding: 0; display: flex; flex-direction: column; }
 
-/* ============ ЧАТ ============ */
+/* ЧАТ */
 .chat-wrap { display: flex; flex-direction: column; height: 100%; }
 .chat-tabs { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg-2); overflow-x: auto; scrollbar-width: none; }
 .chat-tabs::-webkit-scrollbar { display: none; }
@@ -551,10 +506,23 @@ a:active, button:active, a:focus, button:focus {
 .chat-online-bar .online-name { color: var(--text-2); cursor: pointer; transition: color 0.15s; }
 .chat-online-bar .online-name:hover { color: var(--accent); }
 .chat-messages { flex: 1; overflow-y: auto; padding: 12px 16px; }
-.chat-input-row { display: flex; gap: 6px; padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0)); border-top: 1px solid var(--accent-dark); background: var(--bg-2); align-items: center; }
+.chat-input-row { display: flex; gap: 6px; padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0)); border-top: 1px solid var(--accent-dark); background: var(--bg-2); align-items: flex-end; }
 .chat-input { flex: 1; padding: 10px 14px; background: var(--bg-3); border: 1px solid var(--border-2); color: var(--text); font-family: var(--font-mono); font-size: 0.85rem; transition: all 0.15s; }
 .chat-input::placeholder { color: var(--text-4); letter-spacing: 1px; }
 .chat-input:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(255, 23, 68, 0.15), inset 0 0 8px rgba(255, 23, 68, 0.05); outline: none; }
+
+/* TEXTAREA вместо input для многострочного ввода */
+textarea.chat-input {
+    resize: none;
+    min-height: 36px;
+    max-height: 120px;
+    overflow-y: auto;
+    line-height: 1.4;
+    padding: 9px 14px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
 .chat-icon-btn { width: 36px; height: 36px; border: 1px solid var(--border-2); background: transparent; color: var(--text-3); display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.15s; flex-shrink: 0; }
 .chat-icon-btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px var(--accent-dim); }
 .chat-send-btn { width: 36px; height: 36px; background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text); display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.15s; flex-shrink: 0; }
@@ -572,9 +540,7 @@ a:active, button:active, a:focus, button:focus {
 .chat-text .mention { color: var(--accent); background: var(--accent-dim); padding: 1px 4px; cursor: pointer; }
 .chat-text .mention:hover { box-shadow: 0 0 8px var(--accent-dim); }
 
-/* ============================================================
-   УНИВЕРСАЛЬНАЯ РАМКА (для всех аватарок)
-   ============================================================ */
+/* УНИВЕРСАЛЬНАЯ РАМКА */
 .chat-avatar-frame,
 .card-avatar,
 .comment-avatar,
@@ -610,7 +576,9 @@ a:active, button:active, a:focus, button:focus {
     overflow: hidden;
     border-radius: 3px;
     font-size: 1.1rem;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     z-index: 1;
 }
 
@@ -640,17 +608,11 @@ a:active, button:active, a:focus, button:focus {
 .feed-profile-avatar { width: 80px; height: 80px; font-size: 2.5rem; }
 .feed-profile-avatar > .inner { font-size: 2.5rem; }
 
-/* ============================================================
-   ЭФФЕКТЫ РАМОК
-   ============================================================ */
-
+/* ЭФФЕКТЫ РАМОК */
 .f-default { border-color: var(--border-2); }
-
 .f-silver { border-color: #cfd8dc; box-shadow: 0 0 10px rgba(207, 216, 220, 0.5), inset 0 0 6px rgba(207, 216, 220, 0.2); }
-
 .f-gold { border-color: #ffd700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.6), inset 0 0 8px rgba(255, 215, 0, 0.2); }
 
-/* ШИПОВАННАЯ */
 .f-spike {
     border-color: #ff1744;
     box-shadow: 0 0 15px rgba(255, 23, 68, 0.6), inset 0 0 10px rgba(255, 23, 68, 0.25);
@@ -681,16 +643,9 @@ a:active, button:active, a:focus, button:focus {
     filter: drop-shadow(0 0 3px #ff1744);
     animation: spikePulse 1.8s ease-in-out infinite;
 }
-@keyframes spikePulse {
-    0%, 100% { opacity: 0.85; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.02); }
-}
+@keyframes spikePulse { 0%, 100% { opacity: 0.85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.02); } }
 
-/* ОГНЕННАЯ */
-.f-fire {
-    border-color: #ff6d00;
-    box-shadow: 0 0 15px rgba(255, 109, 0, 0.7), inset 0 -8px 12px -6px rgba(255, 61, 0, 0.5);
-}
+.f-fire { border-color: #ff6d00; box-shadow: 0 0 15px rgba(255, 109, 0, 0.7), inset 0 -8px 12px -6px rgba(255, 61, 0, 0.5); }
 .f-fire::before {
     content: '';
     position: absolute;
@@ -717,17 +672,9 @@ a:active, button:active, a:focus, button:focus {
     animation: flameFlicker 0.5s ease-in-out infinite alternate 0.2s;
     pointer-events: none;
 }
-@keyframes flameFlicker {
-    0% { transform: scaleY(0.9) scaleX(1) translateY(0); opacity: 0.85; }
-    100% { transform: scaleY(1.2) scaleX(0.9) translateY(-2px); opacity: 1; }
-}
+@keyframes flameFlicker { 0% { transform: scaleY(0.9) scaleX(1) translateY(0); opacity: 0.85; } 100% { transform: scaleY(1.2) scaleX(0.9) translateY(-2px); opacity: 1; } }
 
-/* ЛЕДЯНАЯ — свисающие льдинки */
-.f-ice {
-    border-color: #80deea;
-    box-shadow: 0 0 15px rgba(128, 222, 234, 0.6), inset 0 0 10px rgba(128, 222, 234, 0.25);
-    position: relative;
-}
+.f-ice { border-color: #80deea; box-shadow: 0 0 15px rgba(128, 222, 234, 0.6), inset 0 0 10px rgba(128, 222, 234, 0.25); position: relative; }
 .f-ice::before {
     content: '';
     position: absolute;
@@ -748,17 +695,9 @@ a:active, button:active, a:focus, button:focus {
     filter: drop-shadow(0 0 4px #80deea) drop-shadow(0 0 8px #4dd0e1);
     animation: icicleShimmer 2.5s ease-in-out infinite;
 }
-@keyframes icicleShimmer {
-    0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 4px #80deea); }
-    50% { opacity: 1; filter: drop-shadow(0 0 8px #80deea) drop-shadow(0 0 14px #4dd0e1); }
-}
+@keyframes icicleShimmer { 0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 4px #80deea); } 50% { opacity: 1; filter: drop-shadow(0 0 8px #80deea) drop-shadow(0 0 14px #4dd0e1); } }
 
-/* ОРГАНИКА — лозы-эмодзи */
-.f-organic {
-    border-color: #2e7d32;
-    box-shadow: 0 0 12px rgba(46, 125, 50, 0.5), inset 0 0 8px rgba(46, 125, 50, 0.2);
-    position: relative;
-}
+.f-organic { border-color: #2e7d32; box-shadow: 0 0 12px rgba(46, 125, 50, 0.5), inset 0 0 8px rgba(46, 125, 50, 0.2); position: relative; }
 .f-organic::before {
     content: '🌿';
     position: absolute;
@@ -781,17 +720,9 @@ a:active, button:active, a:focus, button:focus {
     pointer-events: none;
     transform-origin: bottom center;
 }
-@keyframes vineSway {
-    0%, 100% { transform: rotate(-12deg); }
-    50% { transform: rotate(12deg); }
-}
+@keyframes vineSway { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
 
-/* ТЕХНО — группы шестерёнок */
-.f-techno {
-    border-color: #ff9100;
-    box-shadow: 0 0 12px rgba(255, 145, 0, 0.5), inset 0 0 6px rgba(255, 145, 0, 0.2);
-    position: relative;
-}
+.f-techno { border-color: #ff9100; box-shadow: 0 0 12px rgba(255, 145, 0, 0.5), inset 0 0 6px rgba(255, 145, 0, 0.2); position: relative; }
 .f-techno::before {
     content: '⚙⚙';
     position: absolute;
@@ -818,28 +749,12 @@ a:active, button:active, a:focus, button:focus {
     pointer-events: none;
     transform-origin: center;
 }
-@keyframes gearRotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+@keyframes gearRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* НЕОН */
-.f-neon {
-    border-color: #76ff03;
-    box-shadow: 0 0 15px rgba(118, 255, 3, 0.6), inset 0 0 8px rgba(118, 255, 3, 0.3);
-    animation: neonPulse 1.8s ease-in-out infinite;
-}
-@keyframes neonPulse {
-    0%, 100% { box-shadow: 0 0 10px rgba(118, 255, 3, 0.5), inset 0 0 6px rgba(118, 255, 3, 0.2); }
-    50% { box-shadow: 0 0 20px rgba(118, 255, 3, 0.9), inset 0 0 12px rgba(118, 255, 3, 0.4); }
-}
+.f-neon { border-color: #76ff03; box-shadow: 0 0 15px rgba(118, 255, 3, 0.6), inset 0 0 8px rgba(118, 255, 3, 0.3); animation: neonPulse 1.8s ease-in-out infinite; }
+@keyframes neonPulse { 0%, 100% { box-shadow: 0 0 10px rgba(118, 255, 3, 0.5), inset 0 0 6px rgba(118, 255, 3, 0.2); } 50% { box-shadow: 0 0 20px rgba(118, 255, 3, 0.9), inset 0 0 12px rgba(118, 255, 3, 0.4); } }
 
-/* КРОВАВАЯ — капли по углам */
-.f-blood {
-    border-color: #d50000;
-    box-shadow: 0 0 15px rgba(213, 0, 0, 0.6), inset 0 0 8px rgba(213, 0, 0, 0.3);
-    position: relative;
-}
+.f-blood { border-color: #d50000; box-shadow: 0 0 15px rgba(213, 0, 0, 0.6), inset 0 0 8px rgba(213, 0, 0, 0.3); position: relative; }
 .f-blood::before {
     content: '';
     position: absolute;
@@ -868,20 +783,10 @@ a:active, button:active, a:focus, button:focus {
     pointer-events: none;
     z-index: 3;
 }
-@keyframes bloodDripCorner1 {
-    0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; }
-    50% { transform: translateY(3px) scale(1.15); opacity: 1; }
-}
-@keyframes bloodDripCorner2 {
-    0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; }
-    50% { transform: translateY(3px) scale(1.15); opacity: 1; }
-}
+@keyframes bloodDripCorner1 { 0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; } 50% { transform: translateY(3px) scale(1.15); opacity: 1; } }
+@keyframes bloodDripCorner2 { 0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; } 50% { transform: translateY(3px) scale(1.15); opacity: 1; } }
 
-/* ГЛЮЧНАЯ */
-.f-glitch {
-    border-color: rgba(118, 255, 3, 0.6);
-    animation: glitchShake 2.5s steps(8) infinite;
-}
+.f-glitch { border-color: rgba(118, 255, 3, 0.6); animation: glitchShake 2.5s steps(8) infinite; }
 .f-glitch::before {
     content: '';
     position: absolute;
@@ -907,33 +812,16 @@ a:active, button:active, a:focus, button:focus {
     93% { transform: translate(-1px, 0); filter: hue-rotate(60deg); }
     95% { transform: translate(1px, 1px); filter: hue-rotate(-60deg); }
 }
-@keyframes glitchShift1 {
-    0% { transform: translate(-2px, 0); opacity: 0.8; }
-    50% { transform: translate(-3px, 1px); opacity: 0.5; }
-    100% { transform: translate(-2px, 0); opacity: 0.8; }
-}
-@keyframes glitchShift2 {
-    0% { transform: translate(2px, 0); opacity: 0.8; }
-    50% { transform: translate(3px, -1px); opacity: 0.5; }
-    100% { transform: translate(2px, 0); opacity: 0.8; }
-}
+@keyframes glitchShift1 { 0% { transform: translate(-2px, 0); opacity: 0.8; } 50% { transform: translate(-3px, 1px); opacity: 0.5; } 100% { transform: translate(-2px, 0); opacity: 0.8; } }
+@keyframes glitchShift2 { 0% { transform: translate(2px, 0); opacity: 0.8; } 50% { transform: translate(3px, -1px); opacity: 0.5; } 100% { transform: translate(2px, 0); opacity: 0.8; } }
 
-/* ТЕНЕВАЯ */
-.f-shadow {
-    border-color: rgba(120, 120, 120, 0.6);
-    animation: shadowVibrate 0.8s linear infinite;
-}
+.f-shadow { border-color: rgba(120, 120, 120, 0.6); animation: shadowVibrate 0.8s linear infinite; }
 @keyframes shadowVibrate {
     0%, 100% { box-shadow: 0 0 12px rgba(0, 0, 0, 0.9), inset 0 0 8px rgba(0, 0, 0, 0.7); border-color: #000; }
     50% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.2); border-color: #fff; }
 }
 
-/* ЧЕРЕПНАЯ — качающиеся черепа */
-.f-skull {
-    border-color: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), inset 0 0 6px rgba(255, 255, 255, 0.2);
-    position: relative;
-}
+.f-skull { border-color: rgba(255, 255, 255, 0.8); box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), inset 0 0 6px rgba(255, 255, 255, 0.2); position: relative; }
 .f-skull::before {
     content: '💀  💀  💀';
     position: absolute;
@@ -962,22 +850,11 @@ a:active, button:active, a:focus, button:focus {
     animation: skullOrbitBottom 3s ease-in-out infinite 1.5s;
     z-index: 3;
 }
-@keyframes skullOrbitTop {
-    0%, 100% { transform: translateX(-50%) translateY(0) rotate(-3deg); }
-    50% { transform: translateX(-50%) translateY(-3px) rotate(3deg); }
-}
-@keyframes skullOrbitBottom {
-    0%, 100% { transform: translateX(-50%) translateY(0) rotate(3deg); }
-    50% { transform: translateX(-50%) translateY(3px) rotate(-3deg); }
-}
+@keyframes skullOrbitTop { 0%, 100% { transform: translateX(-50%) translateY(0) rotate(-3deg); } 50% { transform: translateX(-50%) translateY(-3px) rotate(3deg); } }
+@keyframes skullOrbitBottom { 0%, 100% { transform: translateX(-50%) translateY(0) rotate(3deg); } 50% { transform: translateX(-50%) translateY(3px) rotate(-3deg); } }
 
-/* КИБЕР */
-.f-cyber {
-    border-color: #00e5ff;
-    box-shadow: 0 0 12px rgba(0, 229, 255, 0.6), inset 0 0 8px rgba(0, 229, 255, 0.2);
-}
-.f-cyber::before,
-.f-cyber::after {
+.f-cyber { border-color: #00e5ff; box-shadow: 0 0 12px rgba(0, 229, 255, 0.6), inset 0 0 8px rgba(0, 229, 255, 0.2); }
+.f-cyber::before, .f-cyber::after {
     content: '';
     position: absolute;
     width: 10px;
@@ -986,31 +863,11 @@ a:active, button:active, a:focus, button:focus {
     pointer-events: none;
     box-shadow: 0 0 6px #00e5ff;
 }
-.f-cyber::before {
-    top: -3px;
-    left: -3px;
-    border-right: none;
-    border-bottom: none;
-    animation: cyberCorner 3s ease-in-out infinite;
-}
-.f-cyber::after {
-    bottom: -3px;
-    right: -3px;
-    border-left: none;
-    border-top: none;
-    animation: cyberCorner 3s ease-in-out infinite 1.5s;
-}
-@keyframes cyberCorner {
-    0%, 100% { transform: scale(1); opacity: 0.8; }
-    50% { transform: scale(1.2); opacity: 1; }
-}
+.f-cyber::before { top: -3px; left: -3px; border-right: none; border-bottom: none; animation: cyberCorner 3s ease-in-out infinite; }
+.f-cyber::after { bottom: -3px; right: -3px; border-left: none; border-top: none; animation: cyberCorner 3s ease-in-out infinite 1.5s; }
+@keyframes cyberCorner { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.2); opacity: 1; } }
 
-/* ХРУСТАЛЬНАЯ */
-.f-crystal {
-    border-color: rgba(200, 220, 255, 0.7);
-    box-shadow: 0 0 15px rgba(180, 210, 255, 0.5), inset 0 0 10px rgba(180, 210, 255, 0.2);
-    overflow: hidden;
-}
+.f-crystal { border-color: rgba(200, 220, 255, 0.7); box-shadow: 0 0 15px rgba(180, 210, 255, 0.5), inset 0 0 10px rgba(180, 210, 255, 0.2); overflow: hidden; }
 .f-crystal::before {
     content: '';
     position: absolute;
@@ -1020,16 +877,9 @@ a:active, button:active, a:focus, button:focus {
     animation: crystalShine 3s linear infinite;
     pointer-events: none;
 }
-@keyframes crystalShine {
-    0% { background-position: -100% -100%; }
-    100% { background-position: 200% 200%; }
-}
+@keyframes crystalShine { 0% { background-position: -100% -100%; } 100% { background-position: 200% 200%; } }
 
-/* КОРОЛЕВСКАЯ */
-.f-royal {
-    border-color: #b388ff;
-    box-shadow: 0 0 15px rgba(179, 136, 255, 0.6), inset 0 0 8px rgba(179, 136, 255, 0.2);
-}
+.f-royal { border-color: #b388ff; box-shadow: 0 0 15px rgba(179, 136, 255, 0.6), inset 0 0 8px rgba(179, 136, 255, 0.2); }
 .f-royal::before {
     content: '';
     position: absolute;
@@ -1044,18 +894,10 @@ a:active, button:active, a:focus, button:focus {
     animation: crownFloat 2.5s ease-in-out infinite;
     pointer-events: none;
 }
-@keyframes crownFloat {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(-2px); }
-}
+@keyframes crownFloat { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-2px); } }
 
-/* ДЕМОНИЧЕСКАЯ — уменьшенные рога */
-.f-demonic {
-    border-color: rgba(183, 28, 28, 0.9);
-    box-shadow: 0 0 15px rgba(255, 0, 0, 0.5), inset 0 0 8px rgba(183, 28, 28, 0.35);
-}
-.f-demonic::before,
-.f-demonic::after {
+.f-demonic { border-color: rgba(183, 28, 28, 0.9); box-shadow: 0 0 15px rgba(255, 0, 0, 0.5), inset 0 0 8px rgba(183, 28, 28, 0.35); }
+.f-demonic::before, .f-demonic::after {
     content: '';
     position: absolute;
     top: -10px;
@@ -1069,16 +911,9 @@ a:active, button:active, a:focus, button:focus {
 }
 .f-demonic::before { left: 4px; transform: rotate(-28deg); transform-origin: bottom center; }
 .f-demonic::after { right: 4px; transform: rotate(28deg); transform-origin: bottom center; }
-@keyframes hornPulse {
-    0%, 100% { filter: brightness(1) drop-shadow(0 0 5px #ff0000); }
-    50% { filter: brightness(1.3) drop-shadow(0 0 10px #ff0000); }
-}
+@keyframes hornPulse { 0%, 100% { filter: brightness(1) drop-shadow(0 0 5px #ff0000); } 50% { filter: brightness(1.3) drop-shadow(0 0 10px #ff0000); } }
 
-/* АНГЕЛЬСКАЯ — уменьшенный нимб */
-.f-angelic {
-    border-color: rgba(255, 249, 196, 0.9);
-    box-shadow: 0 0 15px rgba(255, 255, 200, 0.5), inset 0 0 8px rgba(255, 249, 196, 0.25);
-}
+.f-angelic { border-color: rgba(255, 249, 196, 0.9); box-shadow: 0 0 15px rgba(255, 255, 200, 0.5), inset 0 0 8px rgba(255, 249, 196, 0.25); }
 .f-angelic::before {
     content: '';
     position: absolute;
@@ -1093,15 +928,9 @@ a:active, button:active, a:focus, button:focus {
     animation: haloFloat 2.5s ease-in-out infinite;
     pointer-events: none;
 }
-@keyframes haloFloat {
-    0%, 100% { transform: translateX(-50%) rotateX(65deg) scale(1); opacity: 0.9; }
-    50% { transform: translateX(-50%) rotateX(65deg) scale(1.08); opacity: 1; }
-}
+@keyframes haloFloat { 0%, 100% { transform: translateX(-50%) rotateX(65deg) scale(1); opacity: 0.9; } 50% { transform: translateX(-50%) rotateX(65deg) scale(1.08); opacity: 1; } }
 
-/* ПЕРЕЛИВАЮЩАЯСЯ */
-.f-iridescent {
-    animation: rainbowBorder 3s linear infinite;
-}
+.f-iridescent { animation: rainbowBorder 3s linear infinite; }
 @keyframes rainbowBorder {
     0% { border-color: #ff1744; box-shadow: 0 0 12px rgba(255, 23, 68, 0.6); }
     16% { border-color: #ffd700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.6); }
@@ -1112,9 +941,7 @@ a:active, button:active, a:focus, button:focus {
     100% { border-color: #ff1744; box-shadow: 0 0 12px rgba(255, 23, 68, 0.6); }
 }
 
-/* ============================================================
-   РОЛЬ-БЕЙДЖИКИ
-   ============================================================ */
+/* РОЛЬ-БЕЙДЖИКИ */
 .role-badge {
     position: absolute;
     top: -10px;
@@ -1128,10 +955,7 @@ a:active, button:active, a:focus, button:focus {
 }
 .role-badge.admin { color: #ffd700; }
 .role-badge.mod { color: #00e5ff; }
-@keyframes roleBadgePop {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.15); }
-}
+@keyframes roleBadgePop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
 
 .card-author .role-badge,
 .comment-author .role-badge,
@@ -1148,107 +972,31 @@ a:active, button:active, a:focus, button:focus {
 .name-with-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; padding-right: 8px; }
 .name-with-badge .badge-img { width: 32px; height: 32px; vertical-align: middle; }
 
-.badge-img {
-    width: 32px !important;
-    height: 32px !important;
-    vertical-align: middle;
-    margin-left: 6px;
-    image-rendering: pixelated;
-}
-
-.chat-author .badge-img {
-    width: 36px !important;
-    height: 36px !important;
-}
-
+.badge-img { width: 32px !important; height: 32px !important; vertical-align: middle; margin-left: 6px; image-rendering: pixelated; }
+.chat-author .badge-img { width: 36px !important; height: 36px !important; }
 .card-author .badge-img,
 .comment-author .badge-img,
 .repost-author .badge-img,
 .repost-header .badge-img,
-.feed-profile-name .badge-img {
-    width: 26px !important;
-    height: 26px !important;
-    margin-left: 4px;
-}
+.feed-profile-name .badge-img { width: 26px !important; height: 26px !important; margin-left: 4px; }
 
-/* ============================================================
-   DISCORD-STYLE ОБЛОЖКИ
-   ============================================================ */
+/* ОБЛОЖКИ */
 .discord-covers { display: flex; gap: 12px; margin: 12px 0; flex-wrap: wrap; }
-.discord-covers-main {
-    flex: 0 0 280px;
-    height: 160px;
-    background: var(--bg-3);
-    border: 1px solid var(--border-2);
-    border-radius: 6px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-3);
-    font-size: 0.85rem;
-    position: relative;
-}
+.discord-covers-main { flex: 0 0 280px; height: 160px; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 0.85rem; position: relative; }
 .discord-covers-main img { width: 100%; height: 100%; object-fit: cover; }
 .discord-covers-grid { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; min-width: 200px; }
-.discord-cover-thumb {
-    width: 80px; height: 60px;
-    border: 2px solid var(--border-2);
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
-    cursor: pointer;
-    transition: all 0.15s;
-    background: var(--bg-3);
-}
+.discord-cover-thumb { width: 80px; height: 60px; border: 2px solid var(--border-2); border-radius: 4px; overflow: hidden; position: relative; cursor: pointer; transition: all 0.15s; background: var(--bg-3); }
 .discord-cover-thumb:hover { border-color: var(--accent); transform: scale(1.05); }
 .discord-cover-thumb.active { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
 .discord-cover-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.discord-cover-thumb .remove {
-    position: absolute;
-    top: -6px; right: -6px;
-    width: 18px; height: 18px;
-    background: var(--danger);
-    color: #fff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 0 0 6px var(--danger);
-    transition: transform 0.15s;
-    z-index: 2;
-}
+.discord-cover-thumb .remove { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: var(--danger); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; cursor: pointer; box-shadow: 0 0 6px var(--danger); transition: transform 0.15s; z-index: 2; }
 .discord-cover-thumb .remove:hover { transform: scale(1.2); }
-.discord-cover-add {
-    width: 80px; height: 60px;
-    border: 2px dashed var(--border-2);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-3);
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    background: transparent;
-}
+.discord-cover-add { width: 80px; height: 60px; border: 2px dashed var(--border-2); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 1.5rem; cursor: pointer; transition: all 0.15s; background: transparent; }
 .discord-cover-add:hover { border-color: var(--accent); color: var(--accent); }
-.scene-card-cover {
-    width: 80px; height: 80px;
-    border-radius: 6px;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: var(--bg-3);
-    border: 1px solid var(--border-2);
-}
+.scene-card-cover { width: 80px; height: 80px; border-radius: 6px; overflow: hidden; flex-shrink: 0; background: var(--bg-3); border: 1px solid var(--border-2); }
 .scene-card-cover img { width: 100%; height: 100%; object-fit: cover; }
 
-/* ============================================================
-   ЭФФЕКТЫ ЦВЕТОВ
-   ============================================================ */
+/* ЭФФЕКТЫ ЦВЕТОВ */
 .color-red { color: #ff1744; text-shadow: 0 0 6px #ff1744; }
 .color-blue { color: #448aff; text-shadow: 0 0 6px #448aff; }
 .color-green { color: #00ff41; text-shadow: 0 0 6px #00ff41; }
@@ -1262,7 +1010,6 @@ a:active, button:active, a:focus, button:focus {
 .color-silver { color: #cfd8dc; text-shadow: 0 0 6px #cfd8dc; }
 .color-dark-purple { color: #7c4dff; text-shadow: 0 0 6px #7c4dff; }
 
-/* ЗОЛОТОЙ */
 .color-gold {
     background: linear-gradient(90deg, #ffd700, #fff8b0, #c9a800, #ffd700, #fff8b0, #c9a800);
     background-size: 300% 100%;
@@ -1274,7 +1021,6 @@ a:active, button:active, a:focus, button:focus {
 }
 @keyframes goldShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
 
-/* САПФИРОВЫЙ */
 .color-sapphire {
     background: linear-gradient(90deg, #1565c0, #42a5f5, #0d47a1, #64b5f6, #1565c0);
     background-size: 300% 100%;
@@ -1286,7 +1032,6 @@ a:active, button:active, a:focus, button:focus {
 }
 @keyframes sapphireShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
 
-/* ОГНЕННЫЙ */
 .color-fire {
     background: linear-gradient(90deg, #ff3d00, #ff9100, #ff1744, #ff6d00, #ff3d00);
     background-size: 300% 100%;
@@ -1298,7 +1043,6 @@ a:active, button:active, a:focus, button:focus {
 }
 @keyframes fireShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
 
-/* ЛЕДЯНОЙ */
 .color-ice {
     background: linear-gradient(90deg, #80deea, #4dd0e1, #b3e5fc, #00bcd4, #80deea);
     background-size: 300% 100%;
@@ -1310,7 +1054,6 @@ a:active, button:active, a:focus, button:focus {
 }
 @keyframes iceShimmerText { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
 
-/* КРОВАВО-КРАСНЫЙ — капли по углам */
 .color-blood {
     color: #d50000;
     text-shadow: 0 0 8px #d50000, 0 0 16px #b71c1c;
@@ -1344,16 +1087,9 @@ a:active, button:active, a:focus, button:focus {
     animation: bloodCorner2 2.5s ease-in-out infinite 1.2s;
     pointer-events: none;
 }
-@keyframes bloodCorner1 {
-    0%, 100% { transform: scale(1) translateY(0); opacity: 0.85; }
-    50% { transform: scale(1.2) translateY(2px); opacity: 1; }
-}
-@keyframes bloodCorner2 {
-    0%, 100% { transform: scale(1) translateY(0); opacity: 0.85; }
-    50% { transform: scale(1.2) translateY(2px); opacity: 1; }
-}
+@keyframes bloodCorner1 { 0%, 100% { transform: scale(1) translateY(0); opacity: 0.85; } 50% { transform: scale(1.2) translateY(2px); opacity: 1; } }
+@keyframes bloodCorner2 { 0%, 100% { transform: scale(1) translateY(0); opacity: 0.85; } 50% { transform: scale(1.2) translateY(2px); opacity: 1; } }
 
-/* МАТРИЦА — цифры */
 .color-matrix {
     color: #00ff41;
     font-family: var(--font-digit);
@@ -1402,7 +1138,6 @@ a:active, button:active, a:focus, button:focus {
     100% { transform: translateY(4px); opacity: 0; }
 }
 
-/* ПУСТОТА */
 .color-void {
     color: #b39ddb;
     text-shadow: 0 0 8px #ce93d8, 0 0 16px #ab47bc, 0 0 24px rgba(171, 71, 188, 0.4);
@@ -1429,12 +1164,8 @@ a:active, button:active, a:focus, button:focus {
     animation: voidTwinkle 2.5s ease-in-out infinite 1.2s;
     pointer-events: none;
 }
-@keyframes voidTwinkle {
-    0%, 100% { opacity: 0.3; transform: scale(0.9) rotate(0deg); }
-    50% { opacity: 1; transform: scale(1.2) rotate(20deg); }
-}
+@keyframes voidTwinkle { 0%, 100% { opacity: 0.3; transform: scale(0.9) rotate(0deg); } 50% { opacity: 1; transform: scale(1.2) rotate(20deg); } }
 
-/* СЕВЕРНОЕ СИЯНИЕ */
 .color-aurora {
     background: linear-gradient(90deg, #00e676, #00b0ff, #b388ff, #00e676, #00b0ff, #b388ff);
     background-size: 400% 100%;
@@ -1447,7 +1178,6 @@ a:active, button:active, a:focus, button:focus {
 }
 @keyframes auroraFlow { 0% { background-position: 0% 50%; } 100% { background-position: 400% 50%; } }
 
-/* РАДУГА */
 .color-rainbow, .rainbow-text {
     background: linear-gradient(90deg, #ff1744, #ffd700, #00ff41, #448aff, #b388ff, #ff80ab, #ff1744);
     background-size: 400% 100%;
@@ -1457,23 +1187,16 @@ a:active, button:active, a:focus, button:focus {
     animation: rainbowFlow 3s linear infinite;
     filter: drop-shadow(0 0 6px currentColor);
 }
-@keyframes rainbowFlow {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 400% 50%; }
-}
+@keyframes rainbowFlow { 0% { background-position: 0% 50%; } 100% { background-position: 400% 50%; } }
 
-/* НЕОН-ЗЕЛЁНЫЙ */
 .color-neon-green { color: #76ff03; text-shadow: 0 0 6px #76ff03, 0 0 14px #64dd17; animation: neonGreenPulse 1.5s ease-in-out infinite; }
 @keyframes neonGreenPulse { 0%, 100% { text-shadow: 0 0 6px #76ff03, 0 0 14px #64dd17; } 50% { text-shadow: 0 0 12px #76ff03, 0 0 24px #64dd17, 0 0 32px #76ff03; } }
 
-/* НЕОН-СИНИЙ */
 .color-neon-blue { color: #40c4ff; text-shadow: 0 0 6px #40c4ff, 0 0 14px #0091ea; animation: neonBluePulse 1.5s ease-in-out infinite; }
 @keyframes neonBluePulse { 0%, 100% { text-shadow: 0 0 6px #40c4ff, 0 0 14px #0091ea; } 50% { text-shadow: 0 0 12px #40c4ff, 0 0 24px #0091ea, 0 0 32px #40c4ff; } }
 
-/* ============================================================
-   ЭФФЕКТЫ ШРИФТОВ
-   ============================================================ */
-.font-cyber { font-family: 'Courier New', monospace; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 5px #00e5ff; position: relative; }
+/* ЭФФЕКТЫ ШРИФТОВ */
+.font-cyber { font-family: 'Orbitron', 'Ruslan Display', sans-serif; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 5px #00e5ff; position: relative; font-weight: 700; }
 .font-cyber::after {
     content: '';
     position: absolute;
@@ -1487,18 +1210,25 @@ a:active, button:active, a:focus, button:focus {
 @keyframes cyberScan { 0% { background-position: 0 -100%; } 100% { background-position: 0 200%; } }
 
 .font-typewriter { font-family: 'Special Elite', 'JetBrains Mono', monospace; letter-spacing: 1px; filter: sepia(0.4) contrast(0.9); }
-.font-western { font-family: 'Smokum', 'Ruslan Display', serif; text-transform: uppercase; letter-spacing: 3px; font-size: 1.15em; }
-.font-gothic { font-family: 'Pirata One', 'Ruslan Display', serif; letter-spacing: 1px; font-size: 1.15em; }
-.font-rune { font-family: 'Uncial Antiqua', 'Ruslan Display', cursive; }
-.font-stencil { font-family: 'Impact', 'Ruslan Display', sans-serif; text-transform: uppercase; letter-spacing: 4px; }
-.font-pixel { font-family: 'Press Start 2P', 'Pixelify Sans', monospace; font-size: 0.85em; text-transform: uppercase; }
-.font-medieval { font-family: 'MedievalSharp', 'Ruslan Display', serif; font-size: 1.1em; letter-spacing: 0.5px; }
-.font-comic { font-family: 'Comic Sans MS', 'Pixelify Sans', cursive; color: #ff80ab !important; }
+.font-western { font-family: 'Rye', 'Ruslan Display', serif; text-transform: uppercase; letter-spacing: 2px; font-size: 1.1em; }
+.font-gothic { font-family: 'UnifrakturMaguntia', 'Ruslan Display', serif; letter-spacing: 1px; font-size: 1.2em; }
+.font-rune { font-family: 'Cinzel Decorative', 'Ruslan Display', serif; letter-spacing: 2px; font-weight: 700; font-size: 1.05em; }
+.font-stencil { font-family: 'Bebas Neue', 'Ruslan Display', sans-serif; text-transform: uppercase; letter-spacing: 4px; font-size: 1.2em; }
+.font-pixel { font-family: 'Press Start 2P', 'Pixelify Sans', monospace; font-size: 0.75em; text-transform: uppercase; }
+.font-medieval { font-family: 'MedievalSharp', 'Ruslan Display', serif; font-size: 1.15em; letter-spacing: 0.5px; }
+.font-comic { font-family: 'Bangers', 'Comic Sans MS', cursive; letter-spacing: 2px; font-size: 1.15em; }
 
-.font-neon { text-shadow: 0 0 5px #76ff03, 0 0 10px #76ff03, 0 0 20px #64dd17; animation: neonTextPulse 1.5s ease-in-out infinite; }
+.font-neon { font-family: 'Audiowide', 'Ruslan Display', sans-serif; text-shadow: 0 0 5px #76ff03, 0 0 10px #76ff03, 0 0 20px #64dd17; animation: neonTextPulse 1.5s ease-in-out infinite; }
 @keyframes neonTextPulse { 0%, 100% { text-shadow: 0 0 5px #76ff03, 0 0 10px #76ff03, 0 0 20px #64dd17; } 50% { text-shadow: 0 0 10px #76ff03, 0 0 20px #76ff03, 0 0 30px #64dd17; } }
 
-.font-glitch { text-shadow: 1px 0 rgba(255,0,0,0.5), -1px 0 rgba(0,255,255,0.5); animation: glitchText 0.3s steps(2) infinite; position: relative; }
+.font-glitch {
+    font-family: 'Rubik Glitch', 'Ruslan Display', cursive;
+    text-shadow: 1px 0 rgba(255,0,0,0.5), -1px 0 rgba(0,255,255,0.5);
+    animation: glitchText 0.3s steps(2) infinite;
+    position: relative;
+    letter-spacing: 1px;
+    font-size: 1.1em;
+}
 @keyframes glitchText {
     0% { text-shadow: 1px 0 rgba(255,0,0,0.5), -1px 0 rgba(0,255,255,0.5); }
     50% { text-shadow: -1px 0 rgba(255,0,0,0.5), 1px 0 rgba(0,255,255,0.5); }
@@ -1514,30 +1244,17 @@ a:active, button:active, a:focus, button:focus {
 }
 @keyframes glitchLines { 0% { transform: translateY(0); } 100% { transform: translateY(4px); } }
 
-.font-blood { color: #d50000 !important; text-shadow: 0 0 5px #d50000; animation: bloodPulse 2s ease-in-out infinite; position: relative; }
-.font-blood::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(circle at 20% 100%, #d50000 0px, #d50000 1px, transparent 2px),
-        radial-gradient(circle at 55% 100%, #d50000 0px, #d50000 1px, transparent 2px),
-        radial-gradient(circle at 80% 100%, #d50000 0px, #d50000 1px, transparent 2px);
-    background-size: 100% 200%;
-    animation: bloodDropsFall 3s linear infinite;
-    opacity: 0.8;
+.font-blood {
+    font-family: 'Nosifer', 'Ruslan Display', cursive;
+    color: #d50000 !important;
+    text-shadow: 0 0 8px #d50000, 0 0 16px #7a0000;
+    animation: bloodPulse 2s ease-in-out infinite;
+    position: relative;
+    font-size: 1.05em;
 }
-@keyframes bloodPulse { 0%, 100% { text-shadow: 0 0 5px #d50000; } 50% { text-shadow: 0 0 10px #d50000, 0 0 20px #b71c1c; } }
-@keyframes bloodDropsFall {
-    0% { background-position: 0 -20%; opacity: 0; }
-    20% { opacity: 0.9; }
-    100% { background-position: 0 120%; opacity: 0; }
-}
+@keyframes bloodPulse { 0%, 100% { text-shadow: 0 0 8px #d50000; } 50% { text-shadow: 0 0 14px #d50000, 0 0 24px #b71c1c; } }
 
-/* ============================================================
-   МОДАЛКИ
-   ============================================================ */
+/* МОДАЛКИ */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 500; display: none; justify-content: center; align-items: center; padding: 20px; opacity: 0; transition: opacity 0.15s; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
 .modal-overlay.show { opacity: 1; }
 .modal-box { background: var(--bg-2); border: 1px solid var(--accent-dark); padding: 24px; max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto; position: relative; box-shadow: 0 0 60px rgba(255, 23, 68, 0.15), inset 0 0 40px rgba(255, 23, 68, 0.02); transform: scale(0.95); transition: transform 0.15s; }
@@ -1558,7 +1275,7 @@ a:active, button:active, a:focus, button:focus {
 .modal-btn.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
 .modal-btn.danger:hover { background: var(--danger); color: #000; }
 
-/* ============ КНОПКИ ============ */
+/* КНОПКИ */
 .btn { padding: 8px 16px; background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; white-space: nowrap; }
 .btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent-glow); }
 .btn.secondary { background: transparent; border-color: var(--border-2); color: var(--text-2); }
@@ -1569,7 +1286,7 @@ a:active, button:active, a:focus, button:focus {
 .btn.in-friends { background: rgba(0, 255, 65, 0.15); border-color: var(--success); color: var(--success); }
 .btn.in-friends:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
 
-/* ============ МАГАЗИН ============ */
+/* МАГАЗИН */
 .shop-layout { display: flex; gap: 16px; flex-wrap: wrap; }
 .shop-cats { flex: 0 0 180px; display: flex; flex-direction: column; gap: 4px; }
 .shop-items { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; min-width: 250px; }
@@ -1583,7 +1300,7 @@ a:active, button:active, a:focus, button:focus {
 .shop-item-price { font-family: var(--font-digit); color: var(--accent); font-size: 0.85rem; font-weight: 700; text-shadow: 0 0 6px var(--accent); }
 .shop-item-badge { font-size: 0.65rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
 
-/* ============ ПАУТИНА ============ */
+/* ПАУТИНА */
 #web-canvas-wrap { position: relative; width: 100%; height: calc(100vh - 44px - 22px - 60px); min-height: 500px; overflow: hidden; background: radial-gradient(circle at 30% 30%, rgba(255,23,68,0.04), transparent 50%), radial-gradient(circle at 70% 70%, rgba(255,23,68,0.03), transparent 50%), var(--bg); }
 @media (max-width: 768px) { #web-canvas-wrap { height: calc(100vh - 44px - 60px - 60px); } }
 #web-canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
@@ -1592,7 +1309,7 @@ a:active, button:active, a:focus, button:focus {
 @media (max-width: 600px) { .web-fallback { display: block; } }
 .web-fallback-list { display: flex; flex-direction: column; gap: 8px; }
 
-/* ============ ПРОЧЕЕ ============ */
+/* ПРОЧЕЕ */
 .empty-state { text-align: center; padding: 40px 20px; color: var(--text-3); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; }
 .empty-state::before { content: '[ ─ ─ ─ ]'; display: block; font-size: 1rem; color: var(--accent-dark); margin-bottom: 12px; letter-spacing: 3px; }
 .hidden { display: none !important; }
@@ -1641,35 +1358,17 @@ a:active, button:active, a:focus, button:focus {
 .mono { font-family: var(--font-digit); letter-spacing: 1px; }
 .uppercase { text-transform: uppercase; letter-spacing: 1px; }
 
-/* ============ СПЕКТАКЛЬ (обложки) ============ */
-#rp-scene-covers {
-    padding: 12px 16px;
-    background: var(--bg-2);
-    border-bottom: 1px solid var(--border);
-}
+/* СПЕКТАКЛЬ */
+#rp-scene-covers { padding: 12px 16px; background: var(--bg-2); border-bottom: 1px solid var(--border); }
 .scene-covers-view { display: flex; gap: 8px; align-items: flex-start; }
-.scene-covers-view-main {
-    flex: 0 0 320px;
-    height: 200px;
-    border-radius: 6px;
-    overflow: hidden;
-    background: var(--bg-3);
-    border: 1px solid var(--border-2);
-}
+.scene-covers-view-main { flex: 0 0 320px; height: 200px; border-radius: 6px; overflow: hidden; background: var(--bg-3); border: 1px solid var(--border-2); }
 .scene-covers-view-main img { width: 100%; height: 100%; object-fit: cover; }
 .scene-covers-view-thumbs { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
-.scene-cover-thumb-sm {
-    width: 70px; height: 50px;
-    border: 2px solid var(--border-2);
-    border-radius: 4px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.15s;
-}
+.scene-cover-thumb-sm { width: 70px; height: 50px; border: 2px solid var(--border-2); border-radius: 4px; overflow: hidden; cursor: pointer; transition: all 0.15s; }
 .scene-cover-thumb-sm:hover, .scene-cover-thumb-sm.active { border-color: var(--accent); transform: scale(1.05); }
 .scene-cover-thumb-sm img { width: 100%; height: 100%; object-fit: cover; }
 
-/* ============ КНОПКА ЗАКРЫТИЯ ПРОФИЛЯ ============ */
+/* КНОПКА ЗАКРЫТИЯ ПРОФИЛЯ */
 .profile-close-top {
     position: absolute;
     top: 12px;
@@ -1689,12 +1388,7 @@ a:active, button:active, a:focus, button:focus {
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
 }
-.profile-close-top:hover {
-    background: var(--accent);
-    color: #000;
-    box-shadow: 0 0 15px var(--accent-glow);
-    transform: scale(1.05);
-}
+.profile-close-top:hover { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent-glow); transform: scale(1.05); }
 </style>
 </head>
 <body>
@@ -1762,7 +1456,7 @@ a:active, button:active, a:focus, button:focus {
 <div id="login-screen" class="matrix-bg">
     <div class="login-card">
         <div class="login-logo">СИНДИКАТ</div>
-        <div class="login-version">v2.9.4 · NT-405</div>
+        <div class="login-version">v2.9.5 · NT-405</div>
         <div class="login-subtitle">АВТОРИЗАЦИЯ</div>
         <input type="text" id="agent-name" class="login-input" placeholder="Кодовое имя" autocomplete="off">
         <input type="password" id="agent-pass" class="login-input" placeholder="Ключ доступа" autocomplete="new-password">
@@ -1780,7 +1474,7 @@ a:active, button:active, a:focus, button:focus {
             <span class="topbar-logo-icon">▣</span>
             <span>ТЕРМИНАЛ СИНДИКАТА</span>
         </div>
-        <span class="topbar-version">v2.9.4</span>
+        <span class="topbar-version">v2.9.5</span>
         <div class="topbar-spacer"></div>
         <div class="topbar-item"><span class="topbar-clock" id="topbar-clock">--:--:--</span></div>
         <span class="topbar-sep">│</span>
@@ -1837,7 +1531,7 @@ a:active, button:active, a:focus, button:focus {
             <button class="chat-icon-btn" id="chat-emoji-btn">☺</button>
             <button class="chat-icon-btn" id="chat-file-btn">⎙</button>
             <input type="file" id="chat-file-input" accept="image/*" style="display:none">
-            <input type="text" class="chat-input" id="chat-input" placeholder="ВВЕДИТЕ СООБЩЕНИЕ...">
+            <textarea class="chat-input" id="chat-input" placeholder="ВВЕДИТЕ СООБЩЕНИЕ..." rows="1"></textarea>
             <button class="chat-send-btn send-msg-btn">▶</button>
         </div>
     </div></div>
@@ -1854,7 +1548,7 @@ a:active, button:active, a:focus, button:focus {
                     <button class="chat-icon-btn" id="dm-emoji-btn">☺</button>
                     <button class="chat-icon-btn" id="dm-file-btn">⎙</button>
                     <input type="file" id="dm-file-input" accept="image/*" style="display:none">
-                    <input type="text" class="chat-input" id="dm-input" placeholder="ВВЕДИТЕ СООБЩЕНИЕ...">
+                    <textarea class="chat-input" id="dm-input" placeholder="ВВЕДИТЕ СООБЩЕНИЕ..." rows="1"></textarea>
                     <button class="chat-send-btn send-dm-btn">▶</button>
                 </div>
             </div>
@@ -1896,7 +1590,7 @@ a:active, button:active, a:focus, button:focus {
         <div class="chat-tabs"><button class="chat-tab active" data-rp-room="space-x">SPACE-X</button></div>
         <div class="chat-messages" id="rp-messages"></div>
         <div class="chat-input-row">
-            <input type="text" class="chat-input" id="rp-input" placeholder="ОТЫГРЫВАЙ РОЛЬ...">
+            <textarea class="chat-input" id="rp-input" placeholder="ОТЫГРЫВАЙ РОЛЬ..." rows="1"></textarea>
             <button class="chat-send-btn" id="rp-send-btn">▶</button>
         </div>
     </div></div>
@@ -1914,7 +1608,7 @@ a:active, button:active, a:focus, button:focus {
         <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg-2);"><div id="rp-scene-desc" style="color:var(--text-2);font-size:0.85rem;line-height:1.5;"></div></div>
         <div class="chat-messages" id="rp-scene-messages"></div>
         <div class="chat-input-row">
-            <input type="text" class="chat-input" id="rp-scene-input" placeholder="ОТЫГРЫВАЙ РОЛЬ...">
+            <textarea class="chat-input" id="rp-scene-input" placeholder="ОТЫГРЫВАЙ РОЛЬ..." rows="1"></textarea>
             <button class="chat-send-btn" id="rp-scene-send-btn">▶</button>
         </div>
     </div></div>

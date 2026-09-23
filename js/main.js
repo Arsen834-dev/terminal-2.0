@@ -1,5 +1,5 @@
 // ============================================================
-// ТЕРМИНАЛ СИНДИКАТА v2.8.0 — MAIN
+// ТЕРМИНАЛ СИНДИКАТА v2.9.5 — MAIN
 // ============================================================
 
 console.log('[MAIN] Модуль начал загрузку');
@@ -54,14 +54,13 @@ let newContentFlags = {
 let repTkInterval = null;
 
 // ============================================================
-// ЭФФЕКТЫ (единая функция)
+// ЭФФЕКТЫ
 // ============================================================
 function getAgentFx(name, agents) {
     if (!agents) agents = feedAgentsCache || {};
     let a = agents[name] || {};
     let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
     let fontCls = '';
-    // Шрифт НЕ применяется на свой ник
     if (a.active_font && name !== CA?.name) {
         let map = {
             'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
@@ -102,10 +101,15 @@ async function rerenderAll() {
             await refreshFeedOnly();
         }
 
+        // Профиль в модалке — перезагружаем
         let profileModal = document.getElementById('modal-agent-profile');
         if (profileModal && profileModal.classList.contains('show')) {
-            if (typeof window.__reloadProfileWall === 'function') {
-                window.__reloadProfileWall();
+            let profileContent = document.getElementById('profile-content');
+            if (profileContent && profileContent.dataset.agentName) {
+                let openAgentName = profileContent.dataset.agentName;
+                if (openAgentName && typeof showAgentInfo === 'function') {
+                    showAgentInfo(openAgentName);
+                }
             }
         }
 
@@ -120,7 +124,33 @@ async function rerenderAll() {
             renderDMMessages();
         }
 
+        if (currentView === 'clans') {
+            if (typeof renderClans === 'function') renderClans();
+        }
+
+        if (currentView === 'friends') {
+            if (typeof renderFriends === 'function') renderFriends();
+        }
+
+        if (currentView === 'inventory') {
+            if (typeof renderInventory === 'function') renderInventory();
+        }
+
+        if (currentView === 'shop') {
+            if (typeof renderShopItems === 'function') renderShopItems();
+        }
+
+        if (currentView === 'rp') {
+            if (typeof renderRpMessages === 'function') renderRpMessages();
+        }
+
+        if (currentView === 'rp-community') {
+            if (typeof renderRpScenes === 'function') renderRpScenes();
+        }
+
         renderRightPanel();
+
+        if (typeof updateSidebarProfile === 'function') updateSidebarProfile();
 
         if (currentView === 'announce') renderAnnounceApp();
     } catch (e) { console.error('[rerenderAll]', e); }
@@ -201,7 +231,7 @@ function startClock() {
 }
 
 // ============================================================
-// УКРАШЕННЫЙ ТЕКСТ (упрощено — без побуквенной анимации)
+// УКРАШЕННЫЙ ТЕКСТ
 // ============================================================
 function buildDecoratedTitle() {
     let el = document.getElementById('start-subtitle');
@@ -213,10 +243,10 @@ buildDecoratedTitle();
 // ============================================================
 // ЗАСТАВКА → ЛОГИН
 // ============================================================
-const FADE_IN_TIME  = 1000;  // плавное появление черепа и текста
-const HOLD_TIME     = 2500;  // пауза после появления
-const EAT_TIME      = 800;   // съедание черепа
-const FADE_OUT_TIME = 600;   // плавный переход на логин
+const FADE_IN_TIME  = 1000;
+const HOLD_TIME     = 2500;
+const EAT_TIME      = 800;
+const FADE_OUT_TIME = 600;
 
 document.body.classList.add('splash-active');
 
@@ -224,7 +254,6 @@ let startScreenEl = document.getElementById('start-screen');
 let skullEl = document.getElementById('skull-ascii');
 let subtitleEl = document.getElementById('start-subtitle');
 
-// 1. Показываем заставку + запускаем появление
 if (startScreenEl) {
     startScreenEl.style.display = 'flex';
     requestAnimationFrame(() => startScreenEl.classList.add('visible'));
@@ -233,22 +262,18 @@ if (startScreenEl) {
 if (skullEl) skullEl.classList.add('visible');
 if (subtitleEl) subtitleEl.classList.add('visible');
 
-// 2. Через FADE_IN + HOLD — съедание
 setTimeout(() => {
     if (skullEl) skullEl.classList.add('eating');
 
-    // 3. Через EAT_TIME — плавный fade-out заставки
     setTimeout(() => {
         if (startScreenEl) startScreenEl.classList.add('fade-out');
 
-        // 4. Показываем логин под заставкой
         let login = document.getElementById('login-screen');
         if (login) {
             login.style.display = 'flex';
             requestAnimationFrame(() => login.classList.add('visible'));
         }
 
-        // 5. Полностью скрываем заставку
         setTimeout(() => {
             if (startScreenEl) startScreenEl.style.display = 'none';
             document.body.classList.remove('splash-active');
@@ -1194,7 +1219,7 @@ window.replyToSceneMessage = replyToSceneMessage;
 window.closeSceneChat = closeSceneChat;
 
 // ============================================================
-// DISCORD-STYLE ОБЛОЖКИ (рендер)
+// DISCORD-STYLE ОБЛОЖКИ
 // ============================================================
 function renderDiscordCovers() {
     let main = document.getElementById('discord-covers-main');
@@ -1246,6 +1271,15 @@ function openDesktop() {
     autoDistributeTreasury();
     startRepTkTimer();
     console.log('[MAIN] Рабочий стол открыт');
+}
+
+// ============================================================
+// AUTO-RESIZE TEXTAREA
+// ============================================================
+function autoResizeTextarea(el) {
+    if (!el || el.tagName !== 'TEXTAREA') return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
 // ============================================================
@@ -1413,6 +1447,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dm-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'dm-input'));
     document.getElementById('guide-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'guide-text'));
 
+    // ENTER — отправить, SHIFT+ENTER — новый абзац
     document.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
             if (document.activeElement === document.getElementById('chat-input')) { e.preventDefault(); if (isClanChatActive()) sendClanMessage(); else sendMessage(); }
@@ -1420,8 +1455,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.activeElement === document.getElementById('rp-input')) { e.preventDefault(); sendRpMessage(); }
             if (document.activeElement === document.getElementById('rp-scene-input')) { e.preventDefault(); sendSceneMessage(); }
         }
+        // Shift+Enter — браузер сам вставит \n в textarea, ничего не делаем
     });
+
+    // AUTO-RESIZE TEXTAREA
     document.addEventListener('input', e => {
+        if (e.target.tagName === 'TEXTAREA' && e.target.classList.contains('chat-input')) {
+            autoResizeTextarea(e.target);
+        }
         if (e.target.id === 'chat-input') showMentionSuggestions('chat-input');
         if (e.target.id === 'dm-input') showMentionSuggestions('dm-input');
     });
@@ -1631,5 +1672,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateDiscountDisplay, 60000);
     setInterval(() => { if (CA && currentView === 'feed') renderRightPanel(); }, 60000);
 
-    console.log('✅ ТЕРМИНАЛ 2.8.0 ЗАГРУЖЕН');
+    console.log('✅ ТЕРМИНАЛ 2.9.5 ЗАГРУЖЕН');
 });

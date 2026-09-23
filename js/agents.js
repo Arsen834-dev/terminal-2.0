@@ -1,6 +1,6 @@
 // ============================================================
 // AGENTS / ПРОФИЛИ АГЕНТОВ
-// v2.8.0: кнопка закрытия сверху, друзья "✓ В друзьях", reloadWall
+// v2.9.5: сохранение dataset.agentName, обновление эффектов
 // ============================================================
 
 import { supabase, CA, loadAgent, getAgents, saveAgent } from './auth.js';
@@ -43,6 +43,10 @@ export async function showAgentInfo(name) {
     if (!name) return;
     const modal = document.getElementById('modal-agent-profile');
     if (!modal) return;
+
+    // Запоминаем имя открытого агента для перезагрузки после примерки
+    let profileContentEl = document.getElementById('profile-content');
+    if (profileContentEl) profileContentEl.dataset.agentName = name;
 
     try {
         const agent = await loadAgent(name);
@@ -161,6 +165,8 @@ export async function showAgentInfo(name) {
             content = document.getElementById('profile-content');
         }
         content.innerHTML = html;
+        // Возвращаем dataset после innerHTML
+        content.dataset.agentName = name;
 
         let modalBox = modal.querySelector('.modal-box');
         if (modalBox) {
@@ -245,7 +251,6 @@ export async function showAgentInfo(name) {
                 });
             }
 
-            // Проброс для rerenderAll
             window.__reloadProfileWall = function() {
                 wallPosts = [];
                 wallPage = 0;

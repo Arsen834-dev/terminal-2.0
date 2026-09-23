@@ -1,6 +1,6 @@
 // ============================================================
 // SHOP / МАГАЗИН И ИНВЕНТАРЬ
-// v2.9.0: переработаны цвета и рамки, добавлены анимации
+// v2.9.5: обновление эффектов после примерки, setTimeout
 // ============================================================
 
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, saveAgent, setInventory } from './auth.js';
@@ -79,16 +79,16 @@ export const shopItems = {
     ],
     fonts: [
         { id: 'fnt_default', name: 'Стандартный', price: 0 },
-        { id: 'fnt_rune', name: 'Древние руны', price: 200 },
+        { id: 'fnt_rune', name: 'Руны', price: 200 },
         { id: 'fnt_typewriter', name: 'Машинопись', price: 200 },
         { id: 'fnt_comic', name: 'Комикс', price: 200 },
         { id: 'fnt_cyber', name: 'Кибер', price: 300 },
-        { id: 'fnt_gothic', name: 'Готический', price: 300 },
-        { id: 'fnt_western', name: 'Дикий запад', price: 300 },
+        { id: 'fnt_gothic', name: 'Готика', price: 300 },
+        { id: 'fnt_western', name: 'Дикий Запад', price: 300 },
         { id: 'fnt_stencil', name: 'Трафарет', price: 350 },
         { id: 'fnt_medieval', name: 'Средневековье', price: 350 },
-        { id: 'fnt_pixel', name: 'Пиксельный', price: 450 },
-        { id: 'fnt_neon', name: 'Неоновый', price: 600 },
+        { id: 'fnt_pixel', name: 'Пиксель', price: 450 },
+        { id: 'fnt_neon', name: 'Неон', price: 600 },
         { id: 'fnt_glitch', name: 'Глитч', price: 900 },
         { id: 'fnt_blood', name: 'Кровавый', price: 1500 }
     ],
@@ -292,7 +292,7 @@ export function previewItem(cat, id) {
         c = '<div style="font-size:2.2rem;padding:20px;display:inline-block;" class="' + colClass + '">АГЕНТ</div>';
     } else if (cat === 'frame') {
         c = '<div style="display:inline-flex;align-items:center;justify-content:center;width:100px;height:100px;border-radius:12px;position:relative;" class="chat-avatar-frame ' + (item.cssClass || 'f-default') + '">' +
-            '<div style="font-size:2.5rem;">🕶️</div></div>';
+            '<div class="inner" style="font-size:2.5rem;">🕶️</div></div>';
     } else if (cat === 'badge') {
         c = item.image
             ? '<img src="' + item.image + '" style="max-width:120px;max-height:120px;">'
@@ -375,7 +375,7 @@ export function renderShopItems() {
             prev = '<span class="' + getActiveColorClassForId(item.id) + '" style="font-size:1.1rem;padding:8px;display:inline-block;">АГЕНТ</span>';
         } else if (shopCategory === 'frames') {
             prev = '<div style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:9px;position:relative;" class="chat-avatar-frame ' + (item.cssClass || 'f-default') + '">' +
-                '<span style="font-size:1.8rem;">🕶️</span></div>';
+                '<span class="inner" style="font-size:1.8rem;">🕶️</span></div>';
         } else if (shopCategory === 'badges') {
             prev = item.image
                 ? '<img src="' + item.image + '" style="max-width:64px;max-height:64px;">'
@@ -470,7 +470,9 @@ export function applyItem(cat, id) {
                     activeItems.sound = reader.result;
                     saveAgent();
                     window.notif('✅ Звук загружен');
-                    if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+                    setTimeout(() => {
+                        if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+                    }, 50);
                 };
                 reader.readAsDataURL(file);
             };
@@ -481,7 +483,9 @@ export function applyItem(cat, id) {
         saveInventory(); saveAgent();
         renderShopItems(); renderInventory();
         if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
-        if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+        setTimeout(() => {
+            if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+        }, 50);
         return;
     }
     if (cat === 'booster') {
@@ -494,7 +498,9 @@ export function applyItem(cat, id) {
         saveInventory(); saveAgent();
         renderShopItems(); renderInventory();
         if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
-        if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+        setTimeout(() => {
+            if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+        }, 50);
         window.notif('⚡ Активирован: ' + item.name);
         playSound('buy');
         return;
@@ -503,7 +509,9 @@ export function applyItem(cat, id) {
     saveInventory(); saveAgent();
     renderShopItems(); renderInventory();
     if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
-    if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+    setTimeout(() => {
+        if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+    }, 50);
     window.notif('✅ Применено');
 }
 
@@ -513,7 +521,9 @@ export function resetItem(cat) {
         activeItems.sound = '';
         saveInventory(); saveAgent();
         renderShopItems(); renderInventory();
-        if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+        setTimeout(() => {
+            if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+        }, 50);
         window.notif('🔇 Звук сброшен');
         return;
     }
@@ -523,7 +533,9 @@ export function resetItem(cat) {
     saveInventory(); saveAgent();
     renderShopItems(); renderInventory();
     if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
-    if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+    setTimeout(() => {
+        if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+    }, 50);
     window.notif('🔄 Сброшено');
 }
 
@@ -555,7 +567,7 @@ export function renderInventory() {
             if (item.category === 'color') prev = '<span class="' + getActiveColorClassForId(item.id) + '" style="font-size:1rem;padding:6px;display:inline-block;">АГЕНТ</span>';
             else if (item.category === 'frame') {
                 let fi = shopItems.frames.find(i => i.id === item.id);
-                prev = '<div style="display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:8px;position:relative;" class="chat-avatar-frame ' + (fi ? fi.cssClass : 'f-default') + '"><span style="font-size:1.5rem;">🕶️</span></div>';
+                prev = '<div style="display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:8px;position:relative;" class="chat-avatar-frame ' + (fi ? fi.cssClass : 'f-default') + '"><span class="inner" style="font-size:1.5rem;">🕶️</span></div>';
             }
             else if (item.category === 'badge') {
                 let bi = shopItems.badges.find(i => i.id === item.id);
