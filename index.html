@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ТЕРМИНАЛ СИНДИКАТА v2.9.5</title>
 <link rel="icon" href="https://wiki.adven.space/items/contraband/pais.png">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=VT323&family=Share+Tech+Mono&family=Ruslan+Display&family=Pixelify+Sans:wght@400;600;700&family=Special+Elite&family=MedievalSharp&family=Orbitron:wght@400;700;900&family=Press+Start+2P&family=Bebas+Neue&family=Audiowide&family=Rubik+Glitch&family=Nosifer&display=swap" rel="stylesheet"><meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#06060a">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=VT323&family=Share+Tech+Mono&family=Ruslan+Display&family=Pixelify+Sans:wght@400;600;700&family=Special+Elite&family=MedievalSharp&family=Orbitron:wght@400;700;900&family=Press+Start+2P&family=Stardos+Stencil:wght@700&family=Bangers&family=Audiowide&family=Rubik+Glitch&family=Nosifer&display=swap" rel="stylesheet"><meta name="theme-color" content="#06060a">
 <style>
 /* ============================================================
    ТЕРМИНАЛ СИНДИКАТА v2.9.5
@@ -1208,9 +1207,21 @@ textarea.chat-input {
 @keyframes cyberScan { 0% { background-position: 0 -100%; } 100% { background-position: 0 200%; } }
 
 .font-typewriter { font-family: 'Special Elite', 'JetBrains Mono', monospace; letter-spacing: 1px; filter: sepia(0.4) contrast(0.9); }
-.font-stencil { font-family: 'Bebas Neue', 'Ruslan Display', sans-serif; text-transform: uppercase; letter-spacing: 4px; font-size: 1.2em; }
+
+/* ТРАФАРЕТ — свой отдельный шрифт */
+.font-stencil { font-family: 'Stardos Stencil', 'Bebas Neue', 'Ruslan Display', sans-serif; text-transform: uppercase; letter-spacing: 3px; font-size: 1.15em; font-weight: 700; }
+
 .font-pixel { font-family: 'Press Start 2P', 'Pixelify Sans', monospace; font-size: 0.75em; text-transform: uppercase; }
 .font-medieval { font-family: 'MedievalSharp', 'Ruslan Display', serif; font-size: 1.15em; letter-spacing: 0.5px; }
+
+/* КОМИКС — розовый смешной */
+.font-comic {
+    font-family: 'Bangers', 'Comic Sans MS', cursive;
+    color: #ff80ab !important;
+    letter-spacing: 2px;
+    font-size: 1.2em;
+    text-shadow: 2px 2px 0 #000, -1px -1px 0 #ff1744, 0 0 8px rgba(255, 128, 171, 0.6);
+}
 
 .font-neon { font-family: 'Audiowide', 'Ruslan Display', sans-serif; text-shadow: 0 0 5px #76ff03, 0 0 10px #76ff03, 0 0 20px #64dd17; animation: neonTextPulse 1.5s ease-in-out infinite; }
 @keyframes neonTextPulse { 0%, 100% { text-shadow: 0 0 5px #76ff03, 0 0 10px #76ff03, 0 0 20px #64dd17; } 50% { text-shadow: 0 0 10px #76ff03, 0 0 20px #76ff03, 0 0 30px #64dd17; } }
@@ -1238,6 +1249,7 @@ textarea.chat-input {
 }
 @keyframes glitchLines { 0% { transform: translateY(0); } 100% { transform: translateY(4px); } }
 
+/* КРОВАВЫЙ — стекающие капли ПО ТЕКСТУ */
 .font-blood {
     font-family: 'Nosifer', 'Ruslan Display', cursive;
     color: #d50000 !important;
@@ -1245,36 +1257,29 @@ textarea.chat-input {
     animation: bloodPulse 2s ease-in-out infinite;
     position: relative;
     font-size: 1.05em;
+    display: inline-block;
 }
 .font-blood::before {
     content: '';
     position: absolute;
-    top: -6px;
-    left: -6px;
-    width: 5px;
-    height: 8px;
-    background: radial-gradient(ellipse at 50% 0%, #ff1744 0%, #d50000 60%, transparent 100%);
-    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
-    box-shadow: 0 0 6px #d50000, 0 0 10px rgba(213, 0, 0, 0.6);
-    animation: bloodDrop1 2.5s ease-in-out infinite;
+    inset: 0;
     pointer-events: none;
-}
-.font-blood::after {
-    content: '';
-    position: absolute;
-    bottom: -6px;
-    right: -6px;
-    width: 5px;
-    height: 8px;
-    background: radial-gradient(ellipse at 50% 0%, #ff1744 0%, #d50000 60%, transparent 100%);
-    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
-    box-shadow: 0 0 6px #d50000, 0 0 10px rgba(213, 0, 0, 0.6);
-    animation: bloodDrop2 2.5s ease-in-out infinite 1.2s;
-    pointer-events: none;
+    background:
+        radial-gradient(circle at 12% 100%, #d50000 0px, #d50000 2px, transparent 3px),
+        radial-gradient(circle at 35% 100%, #ff1744 0px, #d50000 2.5px, transparent 3.5px),
+        radial-gradient(circle at 58% 100%, #d50000 0px, #d50000 2px, transparent 3px),
+        radial-gradient(circle at 82% 100%, #b71c1c 0px, #d50000 2px, transparent 3px);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    animation: bloodDripText 3s linear infinite;
+    opacity: 0.9;
 }
 @keyframes bloodPulse { 0%, 100% { text-shadow: 0 0 8px #d50000; } 50% { text-shadow: 0 0 14px #d50000, 0 0 24px #b71c1c; } }
-@keyframes bloodDrop1 { 0%, 100% { transform: scale(1) translateY(0); opacity: 0.85; } 50% { transform: scale(1.2) translateY(2px); opacity: 1; } }
-@keyframes bloodDrop2 { 0%, 100% { transform: scale(1) translateY(0); opacity: 0.85; } 50% { transform: scale(1.2) translateY(2px); opacity: 1; } }
+@keyframes bloodDripText {
+    0% { background-position: 0 -8px; opacity: 0; }
+    15% { opacity: 1; }
+    100% { background-position: 0 14px; opacity: 0; }
+}
 
 /* МОДАЛКИ */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 500; display: none; justify-content: center; align-items: center; padding: 20px; opacity: 0; transition: opacity 0.15s; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
@@ -1641,9 +1646,7 @@ textarea.chat-input {
     <div class="app-body">
         <button class="btn secondary full mb-8" id="change-name-btn">📝 СМЕНИТЬ ИМЯ</button>
         <button class="btn secondary full mb-8" id="change-pass-btn">🔑 СМЕНИТЬ ПАРОЛЬ</button>
-        <button class="btn secondary full mb-8" id="change-avatar-btn">📷 СМЕНИТЬ АВАТАР</button>
-        <button class="btn secondary full mb-8" id="change-cover-btn">🖼 СМЕНИТЬ ОБЛОЖКУ</button>
-        <button class="btn secondary full mb-8" id="toggle-sound-btn">🔊 ЗВУК: ВКЛ/ВЫКЛ</button>
+        <button class="btn secondary full mb-8" id="change-image-btn">🖼 ЗАГРУЗИТЬ ИЗОБРАЖЕНИЕ</button>        <button class="btn secondary full mb-8" id="toggle-sound-btn">🔊 ЗВУК: ВКЛ/ВЫКЛ</button>
         <button class="btn secondary full mb-8" id="toggle-music-btn">🎵 МУЗЫКА: ВКЛ/ВЫКЛ</button>
         <button class="btn secondary full mb-8" id="next-track-btn">⏭ СЛЕДУЮЩИЙ ТРЕК</button>
     </div>
@@ -1728,14 +1731,17 @@ textarea.chat-input {
     </div>
 </div>
 
-<div class="modal-overlay" id="modal-avatar">
+<div class="modal-overlay" id="modal-image-choice">
     <div class="modal-box">
-        <div class="modal-title">СМЕНИТЬ АВАТАР</div>
-        <div style="color:var(--text-3);font-size:0.8rem;margin-bottom:12px;">ФАЙЛ ДО 2 МБ. КВАДРАТНЫЙ ФОРМАТ.</div>
-        <input type="file" class="modal-input" id="avatar-file-input" accept="image/*">
+        <div class="modal-title">КУДА ПОСТАВИТЬ?</div>
+        <div style="color:var(--text-3);font-size:0.8rem;margin-bottom:12px;">ФАЙЛ ДО 2 МБ</div>
+        <input type="file" class="modal-input" id="image-choice-file" accept="image/*">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;">
+            <button class="btn full" data-img-target="avatar">📷 АВАТАР</button>
+            <button class="btn full" data-img-target="cover">🖼 ОБЛОЖКА</button>
+        </div>
         <div style="margin-top:16px;text-align:right;">
-            <button class="modal-btn secondary" data-close-modal="modal-avatar">ОТМЕНА</button>
-            <button class="modal-btn" id="upload-avatar-btn">ЗАГРУЗИТЬ</button>
+            <button class="modal-btn secondary" data-close-modal="modal-image-choice">ОТМЕНА</button>
         </div>
     </div>
 </div>

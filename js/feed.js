@@ -76,10 +76,12 @@ function fx(name, agents) {
             'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
             'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
             'fnt_pixel': 'font-pixel', 'fnt_neon': 'font-neon',
-            'fnt_medieval': 'font-medieval'
+            'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic',
+            'fnt_blood': 'font-blood'
         };
         fontCls = map[a.active_font] || '';
-    }    let frameCls = 'f-default';
+    }    
+    let frameCls = 'f-default';
     if (a.active_frame && shopItems.frames) {
         let f = shopItems.frames.find(x => x.id === a.active_frame);
         if (f) frameCls = f.cssClass || 'f-default';

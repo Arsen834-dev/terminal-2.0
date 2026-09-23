@@ -43,7 +43,8 @@ const FONT_MAP = {
     'fnt_pixel': 'font-pixel',
     'fnt_blood': 'font-blood',
     'fnt_neon': 'font-neon',
-    'fnt_medieval': 'font-medieval'
+    'fnt_medieval': 'font-medieval',
+    'fnt_comic': 'font-comic',
 };
 
 // ==================== ПРОВЕРКА АКТИВНОГО КАНАЛА ====================

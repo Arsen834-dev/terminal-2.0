@@ -76,13 +76,12 @@ function getAgentFx(name, agents) {
     let fontCls = '';
     if (a.active_font && name !== CA?.name) {
         let map = {
-            'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
-            'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
+            'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
             'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
             'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
             'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
         };
-        if (a.active_font !== 'fnt_blood') fontCls = map[a.active_font] || '';
+        fontCls = map[a.active_font] || '';
     }
     let frameCls = 'f-default';
     if (a.active_frame && shopItems.frames) {
@@ -1414,8 +1413,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('change-name-btn')?.addEventListener('click', () => { document.getElementById('new-name').value = CA?.name || ''; let el = document.getElementById('modal-name'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
     document.getElementById('change-pass-btn')?.addEventListener('click', () => { document.getElementById('old-pass').value = ''; document.getElementById('new-pass').value = ''; let el = document.getElementById('modal-password'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
-    document.getElementById('change-avatar-btn')?.addEventListener('click', () => { document.getElementById('avatar-file-input').value = ''; let el = document.getElementById('modal-avatar'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
-    document.getElementById('change-cover-btn')?.addEventListener('click', () => window.changeCover());
+    document.getElementById('change-image-btn')?.addEventListener('click', () => {
+    document.getElementById('image-choice-file').value = '';
+    let el = document.getElementById('modal-image-choice');
+    el.style.display = 'flex';
+    setTimeout(() => el.classList.add('show'), 10);
+});
+
+// Универсальный обработчик выбора
+document.addEventListener('click', async (e) => {
+    let target = e.target.closest('[data-img-target]');
+    if (!target) return;
+    let file = document.getElementById('image-choice-file')?.files[0];
+    if (!file) return notif('⛔ ВЫБЕРИ ФАЙЛ');
+    let kind = target.dataset.imgTarget; // 'avatar' | 'cover'
+
+    if (kind === 'avatar') {
+        let r = await changeAvatar(file);
+        if (r.success) {
+            closeModal('modal-image-choice');
+            updateSidebarProfile();
+            renderFeed();
+        } else notif(r.error || 'ОШИБКА');
+    } else if (kind === 'cover') {
+        let r = await changeCover(file);
+        if (r.success) {
+            closeModal('modal-image-choice');
+            updateSidebarProfile();
+            renderFeed();
+        } else notif(r.error || 'ОШИБКА');
+    }
+});
     document.getElementById('toggle-sound-btn')?.addEventListener('click', () => { toggleSound(); notif(getSoundEnabled() ? '🔊 ВКЛ' : '🔇 ВЫКЛ'); });
     document.getElementById('toggle-music-btn')?.addEventListener('click', () => { let on = toggleMusic(); notif(on ? '🎵 ВКЛ' : '🎵 ВЫКЛ'); });
     document.getElementById('next-track-btn')?.addEventListener('click', () => { nextBgTrack(); notif('⏭ СЛЕДУЮЩИЙ ТРЕК'); });

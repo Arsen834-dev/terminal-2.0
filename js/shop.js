@@ -79,6 +79,7 @@ export const shopItems = {
     ],
     fonts: [
         { id: 'fnt_default', name: 'Стандартный', price: 0 },
+        { id: 'fnt_comic', name: 'Комикс', price: 200 },
         { id: 'fnt_typewriter', name: 'Машинопись', price: 200 },
         { id: 'fnt_cyber', name: 'Кибер', price: 350 },
         { id: 'fnt_stencil', name: 'Трафарет', price: 400 },
@@ -134,7 +135,7 @@ export function getActiveFontClass() {
         'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
         'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
         'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-        'fnt_medieval': 'font-medieval'
+        'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
     };
     return m[activeItems.font] || '';
 }
@@ -298,8 +299,8 @@ export function previewItem(cat, id) {
             'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
             'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
             'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-            'fnt_medieval': 'font-medieval'
-        }[item.id] || '';
+            'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
+        }[item.id] || '';        
         c = '<div style="font-size:2rem;padding:20px;" class="' + fc + '">Пример текста</div>';
     } else if (cat === 'sound') {
         c = '<div style="font-size:2rem;padding:10px;">🎵 ' + item.name + '</div>';
@@ -375,12 +376,12 @@ export function renderShopItems() {
                 ? '<img src="' + item.image + '" style="max-width:64px;max-height:64px;">'
                 : '<div style="font-size:2.2rem;">🏅</div>';
         } else if (shopCategory === 'fonts') {
-            let ff = {
-                'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
-                'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
-                'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-                'fnt_medieval': 'font-medieval'
-            }[item.id] || '';
+        let ff = {
+            'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
+            'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
+            'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
+            'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
+        }[item.id] || '';
             prev = '<div style="padding:8px;font-size:1.1rem;" class="' + ff + '">АБВГД</div>';
         } else if (shopCategory === 'sounds') {
             prev = '<div style="font-size:1.6rem;padding:10px;">🔔</div>';
@@ -592,7 +593,7 @@ export function renderInventory() {
                     'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
                     'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
                     'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-                    'fnt_medieval': 'font-medieval'
+                    'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
                 }[item.id] || '';
                 prev = '<div style="padding:8px;font-size:0.9rem;" class="' + ff + '">АБВГД</div>';
             }
