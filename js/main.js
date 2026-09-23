@@ -213,35 +213,49 @@ buildDecoratedTitle();
 // ============================================================
 // ЗАСТАВКА → ЛОГИН
 // ============================================================
-const SKULL_TIME = 4000;
-const EAT_TIME = 900;
+const FADE_IN_TIME  = 1000;  // плавное появление черепа и текста
+const HOLD_TIME     = 2500;  // пауза после появления
+const EAT_TIME      = 800;   // съедание черепа
+const FADE_OUT_TIME = 600;   // плавный переход на логин
 
 document.body.classList.add('splash-active');
 
+let startScreenEl = document.getElementById('start-screen');
+let skullEl = document.getElementById('skull-ascii');
+let subtitleEl = document.getElementById('start-subtitle');
+
+// 1. Показываем заставку + запускаем появление
+if (startScreenEl) {
+    startScreenEl.style.display = 'flex';
+    requestAnimationFrame(() => startScreenEl.classList.add('visible'));
+}
+
+if (skullEl) skullEl.classList.add('visible');
+if (subtitleEl) subtitleEl.classList.add('visible');
+
+// 2. Через FADE_IN + HOLD — съедание
 setTimeout(() => {
-    const skull = document.getElementById('skull-ascii');
-    if (skull) {
-        skull.classList.add('eating');
-        setTimeout(() => {
-            let start = document.getElementById('start-screen');
-            if (start) start.classList.add('fade-out');
-            let login = document.getElementById('login-screen');
-            if (login) {
-                login.style.display = 'flex';
-                setTimeout(() => login.classList.add('visible'), 50);
-            }
-            setTimeout(() => {
-                if (start) start.style.display = 'none';
-                document.body.classList.remove('splash-active');
-            }, 700);
-            console.log('[MAIN] Логин-экран показан');
-        }, EAT_TIME);
-    } else {
+    if (skullEl) skullEl.classList.add('eating');
+
+    // 3. Через EAT_TIME — плавный fade-out заставки
+    setTimeout(() => {
+        if (startScreenEl) startScreenEl.classList.add('fade-out');
+
+        // 4. Показываем логин под заставкой
         let login = document.getElementById('login-screen');
-        if (login) { login.style.display = 'flex'; setTimeout(() => login.classList.add('visible'), 50); }
-        document.body.classList.remove('splash-active');
-    }
-}, SKULL_TIME);
+        if (login) {
+            login.style.display = 'flex';
+            requestAnimationFrame(() => login.classList.add('visible'));
+        }
+
+        // 5. Полностью скрываем заставку
+        setTimeout(() => {
+            if (startScreenEl) startScreenEl.style.display = 'none';
+            document.body.classList.remove('splash-active');
+            console.log('[MAIN] Досье открыто');
+        }, FADE_OUT_TIME);
+    }, EAT_TIME);
+}, FADE_IN_TIME + HOLD_TIME);
 
 // ============================================================
 // SIDEBAR
