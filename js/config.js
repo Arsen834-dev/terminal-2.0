@@ -51,7 +51,7 @@ export const RP_RACES = [
     { id: 'vulpkanin', name: 'Вульпканин', icon: '🦊' },
     { id: 'skrell', name: 'Скрелл', icon: '🐸' },
     { id: 'ipc', name: 'Киборг', icon: '🤖' },
-    { id: 'arcana', name: 'Аркан', icon: '🔮' }  // NEW
+    { id: 'arcana', name: 'Аркан', icon: '🔮' }
 ];
 
 // Тикер
@@ -84,5 +84,9 @@ export const TICKER_TEXTS = [
     "Связь: Движение Фонариков желает вам удачи!"
 ];
 
-// Удалённые ID предметов
-export const REMOVED_ITEM_IDS = ['c_inverted', 'c_hellfire', 'c_obsidian', 'c_hexagon', 'c_emerald', 'c_ruby', 'b_pais', 'b_mauler', 'b_gygax'];
+// Удалённые ID предметов (включая старые шрифты)
+export const REMOVED_ITEM_IDS = [
+    'c_inverted', 'c_hellfire', 'c_obsidian', 'c_hexagon', 'c_emerald', 'c_ruby',
+    'b_pais', 'b_mauler', 'b_gygax',
+    'fnt_rune', 'fnt_gothic', 'fnt_western', 'fnt_comic'
+];

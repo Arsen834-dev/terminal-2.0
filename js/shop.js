@@ -1,6 +1,6 @@
 // ============================================================
 // SHOP / МАГАЗИН И ИНВЕНТАРЬ
-// v2.9.5: обновление эффектов после примерки, setTimeout
+// v2.9.6: убраны руны/готика/western, ревизия цен, синхронизация CA
 // ============================================================
 
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, saveAgent, setInventory } from './auth.js';
@@ -21,38 +21,38 @@ export const shopItems = {
         { id: 'c_pink', name: 'Розовый', price: 150, color: '#ff80ab' },
         { id: 'c_dark_purple', name: 'Тёмный-фиолет', price: 450, color: '#7c4dff' },
         { id: 'c_silver', name: 'Серебряный', price: 500, color: '#cfd8dc' },
-        { id: 'c_gold', name: 'Золотой', price: 600, color: '#c9a800' },
-        { id: 'c_sapphire', name: 'Сапфировый', price: 900, color: '#1565c0' },
+        { id: 'c_gold', name: 'Золотой', price: 700, color: '#c9a800' },
+        { id: 'c_sapphire', name: 'Сапфировый', price: 850, color: '#1565c0' },
         { id: 'c_neon_green', name: 'Неон-зелёный', price: 900, color: '#76ff03' },
         { id: 'c_neon_blue', name: 'Неон-синий', price: 900, color: '#40c4ff' },
-        { id: 'c_fire', name: 'Огненный', price: 1100, color: '#ff3d00' },
-        { id: 'c_ice', name: 'Ледяной', price: 1100, color: '#80deea' },
-        { id: 'c_blood', name: 'Кроваво-красный', price: 1300, color: '#d50000' },
-        { id: 'c_matrix', name: 'Матрица', price: 1500, color: '#00ff41' },
+        { id: 'c_fire', name: 'Огненный', price: 1000, color: '#ff3d00' },
+        { id: 'c_ice', name: 'Ледяной', price: 1000, color: '#80deea' },
+        { id: 'c_blood', name: 'Кроваво-красный', price: 1200, color: '#d50000' },
+        { id: 'c_matrix', name: 'Матрица', price: 1400, color: '#00ff41' },
+        { id: 'c_void', name: 'Пустота', price: 2000, color: '#0a0a0a' },
         { id: 'c_rainbow', name: 'Переливающийся', price: 2200, color: 'rainbow' },
-        { id: 'c_void', name: 'Пустота', price: 2200, color: '#0a0a0a' },
         { id: 'c_aurora', name: 'Северное сияние', price: 2500, color: '#00e676' }
     ],
     frames: [
         { id: 'f_default', name: 'Без рамки', price: 0, cssClass: 'f-default' },
         { id: 'f_silver', name: 'Серебряная', price: 250, cssClass: 'f-silver' },
-        { id: 'f_gold', name: 'Золотая', price: 300, cssClass: 'f-gold' },
-        { id: 'f_spike', name: 'Шипованная', price: 300, cssClass: 'f-spike' },
-        { id: 'f_fire', name: 'Огненная', price: 350, cssClass: 'f-fire' },
-        { id: 'f_ice', name: 'Ледяная', price: 350, cssClass: 'f-ice' },
-        { id: 'f_organic', name: 'Органика', price: 400, cssClass: 'f-organic' },
-        { id: 'f_techno', name: 'Техно', price: 400, cssClass: 'f-techno' },
-        { id: 'f_neon', name: 'Неоновая', price: 450, cssClass: 'f-neon' },
-        { id: 'f_blood', name: 'Кровавая', price: 500, cssClass: 'f-blood' },
-        { id: 'f_glitch', name: 'Глючная', price: 500, cssClass: 'f-glitch' },
-        { id: 'f_shadow', name: 'Теневая', price: 500, cssClass: 'f-shadow' },
-        { id: 'f_skull', name: 'Черепная', price: 550, cssClass: 'f-skull' },
-        { id: 'f_cyber', name: 'Кибер-рамка', price: 600, cssClass: 'f-cyber' },
-        { id: 'f_crystal', name: 'Хрустальная', price: 650, cssClass: 'f-crystal' },
-        { id: 'f_royal', name: 'Королевская', price: 700, cssClass: 'f-royal' },
-        { id: 'f_demonic', name: 'Демоническая', price: 850, cssClass: 'f-demonic' },
-        { id: 'f_angelic', name: 'Ангельская', price: 850, cssClass: 'f-angelic' },
-        { id: 'f_iridescent', name: 'Переливающаяся', price: 1100, cssClass: 'f-iridescent' }
+        { id: 'f_gold', name: 'Золотая', price: 350, cssClass: 'f-gold' },
+        { id: 'f_spike', name: 'Шипованная', price: 400, cssClass: 'f-spike' },
+        { id: 'f_fire', name: 'Огненная', price: 450, cssClass: 'f-fire' },
+        { id: 'f_ice', name: 'Ледяная', price: 450, cssClass: 'f-ice' },
+        { id: 'f_organic', name: 'Органика', price: 500, cssClass: 'f-organic' },
+        { id: 'f_techno', name: 'Техно', price: 500, cssClass: 'f-techno' },
+        { id: 'f_neon', name: 'Неоновая', price: 550, cssClass: 'f-neon' },
+        { id: 'f_blood', name: 'Кровавая', price: 600, cssClass: 'f-blood' },
+        { id: 'f_glitch', name: 'Глючная', price: 650, cssClass: 'f-glitch' },
+        { id: 'f_shadow', name: 'Теневая', price: 650, cssClass: 'f-shadow' },
+        { id: 'f_skull', name: 'Черепная', price: 700, cssClass: 'f-skull' },
+        { id: 'f_cyber', name: 'Кибер-рамка', price: 750, cssClass: 'f-cyber' },
+        { id: 'f_crystal', name: 'Хрустальная', price: 800, cssClass: 'f-crystal' },
+        { id: 'f_royal', name: 'Королевская', price: 900, cssClass: 'f-royal' },
+        { id: 'f_demonic', name: 'Демоническая', price: 1100, cssClass: 'f-demonic' },
+        { id: 'f_angelic', name: 'Ангельская', price: 1100, cssClass: 'f-angelic' },
+        { id: 'f_iridescent', name: 'Переливающаяся', price: 1500, cssClass: 'f-iridescent' }
     ],
     badges: [
         { id: 'b_none', name: 'Без бейджика', price: 0, emoji: '', image: '' },
@@ -79,17 +79,13 @@ export const shopItems = {
     ],
     fonts: [
         { id: 'fnt_default', name: 'Стандартный', price: 0 },
-        { id: 'fnt_rune', name: 'Руны', price: 200 },
         { id: 'fnt_typewriter', name: 'Машинопись', price: 200 },
-        { id: 'fnt_comic', name: 'Комикс', price: 200 },
-        { id: 'fnt_cyber', name: 'Кибер', price: 300 },
-        { id: 'fnt_gothic', name: 'Готика', price: 300 },
-        { id: 'fnt_western', name: 'Дикий Запад', price: 300 },
-        { id: 'fnt_stencil', name: 'Трафарет', price: 350 },
-        { id: 'fnt_medieval', name: 'Средневековье', price: 350 },
-        { id: 'fnt_pixel', name: 'Пиксель', price: 450 },
-        { id: 'fnt_neon', name: 'Неон', price: 600 },
-        { id: 'fnt_glitch', name: 'Глитч', price: 900 },
+        { id: 'fnt_cyber', name: 'Кибер', price: 350 },
+        { id: 'fnt_stencil', name: 'Трафарет', price: 400 },
+        { id: 'fnt_medieval', name: 'Средневековье', price: 400 },
+        { id: 'fnt_pixel', name: 'Пиксель', price: 500 },
+        { id: 'fnt_neon', name: 'Неон', price: 700 },
+        { id: 'fnt_glitch', name: 'Глитч', price: 1000 },
         { id: 'fnt_blood', name: 'Кровавый', price: 1500 }
     ],
     sounds: [
@@ -135,11 +131,10 @@ export function getActiveFrameClass() {
 
 export function getActiveFontClass() {
     let m = {
-        'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
-        'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
+        'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
         'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
         'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-        'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
+        'fnt_medieval': 'font-medieval'
     };
     return m[activeItems.font] || '';
 }
@@ -300,11 +295,10 @@ export function previewItem(cat, id) {
         c += '<div style="margin-top:8px;color:var(--text-2);font-size:0.85rem;">' + item.name + '</div>';
     } else if (cat === 'font') {
         let fc = {
-            'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
-            'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
+            'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
             'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
             'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-            'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
+            'fnt_medieval': 'font-medieval'
         }[item.id] || '';
         c = '<div style="font-size:2rem;padding:20px;" class="' + fc + '">Пример текста</div>';
     } else if (cat === 'sound') {
@@ -382,11 +376,10 @@ export function renderShopItems() {
                 : '<div style="font-size:2.2rem;">🏅</div>';
         } else if (shopCategory === 'fonts') {
             let ff = {
-                'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
-                'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
+                'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
                 'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
                 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-                'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
+                'fnt_medieval': 'font-medieval'
             }[item.id] || '';
             prev = '<div style="padding:8px;font-size:1.1rem;" class="' + ff + '">АБВГД</div>';
         } else if (shopCategory === 'sounds') {
@@ -458,6 +451,7 @@ export function buyItem(cat, id) {
 
 export function applyItem(cat, id) {
     if (!CA) return;
+
     if (cat === 'sound') {
         if (id === 'snd_custom') {
             let input = document.createElement('input');
@@ -488,6 +482,7 @@ export function applyItem(cat, id) {
         }, 50);
         return;
     }
+
     if (cat === 'booster') {
         let item = shopItems.boosters.find(i => i.id === id);
         if (!item) return;
@@ -505,12 +500,23 @@ export function applyItem(cat, id) {
         playSound('buy');
         return;
     }
+
+    // Обычный эффект — цвет / рамка / бейджик / шрифт
     activeItems[cat] = id;
+
+    // Синхронизируем CA, чтобы эффект применился мгновенно
+    if (cat === 'color') CA.active_color = id;
+    if (cat === 'frame') CA.active_frame = id;
+    if (cat === 'badge') CA.active_badge = id;
+    if (cat === 'font') CA.active_font = id;
+
     saveInventory(); saveAgent();
     renderShopItems(); renderInventory();
     if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
+
     setTimeout(() => {
         if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+        if (typeof window.updateSidebarProfile === 'function') window.updateSidebarProfile();
     }, 50);
     window.notif('✅ Применено');
 }
@@ -530,11 +536,19 @@ export function resetItem(cat) {
     if (cat === 'booster') return;
     let d = { color: 'c_red', frame: 'f_default', badge: 'b_none', font: 'fnt_default' };
     activeItems[cat] = d[cat] || '';
+
+    // Синхронизируем CA
+    if (cat === 'color') CA.active_color = d.color;
+    if (cat === 'frame') CA.active_frame = d.frame;
+    if (cat === 'badge') CA.active_badge = d.badge;
+    if (cat === 'font') CA.active_font = d.font;
+
     saveInventory(); saveAgent();
     renderShopItems(); renderInventory();
     if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
     setTimeout(() => {
         if (typeof window.__rerenderAll === 'function') window.__rerenderAll();
+        if (typeof window.updateSidebarProfile === 'function') window.updateSidebarProfile();
     }, 50);
     window.notif('🔄 Сброшено');
 }
@@ -575,11 +589,10 @@ export function renderInventory() {
             }
             else if (item.category === 'font') {
                 let ff = {
-                    'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune',
-                    'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western',
+                    'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
                     'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
                     'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-                    'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
+                    'fnt_medieval': 'font-medieval'
                 }[item.id] || '';
                 prev = '<div style="padding:8px;font-size:0.9rem;" class="' + ff + '">АБВГД</div>';
             }

@@ -1,6 +1,6 @@
 // ============================================================
 // CHAT / СООБЩЕНИЯ
-// v2.9.5: сброс высоты textarea, Shift+Enter — новый абзац
+// v2.9.6: новые шрифты, .inner вместо .chat-avatar
 // ============================================================
 import { supabase, CA, activeItems, saveAgent, loadAgent, getAgents } from './auth.js';
 import { shopItems, getActiveColorClassForId } from './shop.js';
@@ -28,12 +28,23 @@ let pinnedChatSubscription = null;
 let mentionAgents = [];
 
 // ============================================================
-// ХЕЛПЕР: сброс высоты textarea после отправки
+// ХЕЛПЕРЫ
 // ============================================================
 function resetTextareaHeight(el) {
     if (!el || el.tagName !== 'TEXTAREA') return;
     el.style.height = '36px';
 }
+
+const FONT_MAP = {
+    'fnt_cyber': 'font-cyber',
+    'fnt_glitch': 'font-glitch',
+    'fnt_typewriter': 'font-typewriter',
+    'fnt_stencil': 'font-stencil',
+    'fnt_pixel': 'font-pixel',
+    'fnt_blood': 'font-blood',
+    'fnt_neon': 'font-neon',
+    'fnt_medieval': 'font-medieval'
+};
 
 // ==================== ПРОВЕРКА АКТИВНОГО КАНАЛА ====================
 function isChatOpenAndGeneral() {
@@ -168,7 +179,7 @@ export function renderChat(keepScroll = false) {
         txt = txt.replace(/@all/g, '<span class="mention" style="color:#E91E63;font-weight:bold;">@all</span>');
         txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
         let cs = m.author_color ? (getActiveColorClassForId(m.author_color) === 'rainbow-text' ? 'rainbow-text' : getActiveColorClassForId(m.author_color)) : '';
-        let fc = m.author_font ? { 'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune', 'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western', 'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil', 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon', 'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic' }[m.author_font] || '' : '';
+        let fc = m.author_font ? (FONT_MAP[m.author_font] || '') : '';
         let frc = m.author_frame ? (shopItems.frames.find(f => f.id === m.author_frame)?.cssClass || 'f-default') : 'f-default';
         let bdg = shopItems.badges.find(b => b.id === m.author_badge);
         let be = bdg ? (bdg.image ? '<img src="' + bdg.image + '" class="badge-img">' : (bdg.emoji || '')) : '';
@@ -446,7 +457,7 @@ export function renderDMMessages() {
     if (msgs.length === 0) { c.innerHTML = '<div style="text-align:center;color:#880000;">НЕТ СООБЩЕНИЙ</div>'; return; }
     c.innerHTML = msgs.map(m => {
         let cs = m.author_color ? getActiveColorClassForId(m.author_color) : '';
-        let fc = m.author_font ? { 'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune', 'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western', 'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil', 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon', 'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic' }[m.author_font] || '' : '';
+        let fc = m.author_font ? (FONT_MAP[m.author_font] || '') : '';
         let frc = m.author_frame ? (shopItems.frames.find(f => f.id === m.author_frame)?.cssClass || 'f-default') : 'f-default';
         let replyText = (m.text || '').substring(0, 50).replace(/'/g, "\\'");
         let react = m.reactions || {}, rh = '';
@@ -576,7 +587,7 @@ export function renderClanMessages() {
 
     c.innerHTML = msgs.map(m => {
         let cs = m.author_color ? getActiveColorClassForId(m.author_color) : '';
-        let fc = m.author_font ? { 'fnt_cyber': 'font-cyber', 'fnt_gothic': 'font-gothic', 'fnt_rune': 'font-rune', 'fnt_glitch': 'font-glitch', 'fnt_western': 'font-western', 'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil', 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon', 'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic' }[m.author_font] || '' : '';
+        let fc = m.author_font ? (FONT_MAP[m.author_font] || '') : '';
         let frc = m.author_frame ? (shopItems.frames.find(f => f.id === m.author_frame)?.cssClass || 'f-default') : 'f-default';
         let txt = (m.text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
         txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid rgba(255,255,255,0.1);margin:5px 0;border-radius:12px;" onerror="this.style.display=\'none\'">');

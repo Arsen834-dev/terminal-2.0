@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ТЕРМИНАЛ СИНДИКАТА v2.9.5</title>
 <link rel="icon" href="https://wiki.adven.space/items/contraband/pais.png">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=VT323&family=Share+Tech+Mono&family=Ruslan+Display&family=Pixelify+Sans:wght@400;600;700&family=Special+Elite&family=MedievalSharp&family=Rye&family=UnifrakturMaguntia&family=Cinzel+Decorative:wght@400;700&family=Orbitron:wght@400;700;900&family=Press+Start+2P&family=Bebas+Neue&family=Bangers&family=Audiowide&family=Rubik+Glitch&family=Nosifer&display=swap" rel="stylesheet">
-<meta name="mobile-web-app-capable" content="yes">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=VT323&family=Share+Tech+Mono&family=Ruslan+Display&family=Pixelify+Sans:wght@400;600;700&family=Special+Elite&family=MedievalSharp&family=Orbitron:wght@400;700;900&family=Press+Start+2P&family=Bebas+Neue&family=Audiowide&family=Rubik+Glitch&family=Nosifer&display=swap" rel="stylesheet"><meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#06060a">
 <style>
 /* ============================================================
@@ -379,7 +378,7 @@ a:active, button:active, a:focus, button:focus {
     max-width: 100%;
     height: auto;
     max-height: 360px;
-    margin: 10px auto;
+    margin: 10px 0;
     border: 1px solid var(--border-2);
     border-radius: 6px;
     object-fit: contain;
@@ -390,7 +389,7 @@ a:active, button:active, a:focus, button:focus {
     max-width: 100%;
     height: auto;
     max-height: 420px;
-    margin: 10px auto;
+    margin: 10px 0;
     border-radius: 6px;
     object-fit: contain;
     background: var(--bg-3);
@@ -400,8 +399,8 @@ a:active, button:active, a:focus, button:focus {
     width: auto;
     max-width: 100%;
     height: auto;
-    max-height: 300px;
-    margin: 10px auto;
+    max-height: 320px;
+    margin: 10px 0;
     object-fit: contain;
     background: var(--bg-3);
 }
@@ -970,15 +969,14 @@ textarea.chat-input {
 }
 
 .name-with-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; padding-right: 8px; }
-.name-with-badge .badge-img { width: 32px; height: 32px; vertical-align: middle; }
-
-.badge-img { width: 32px !important; height: 32px !important; vertical-align: middle; margin-left: 6px; image-rendering: pixelated; }
-.chat-author .badge-img { width: 36px !important; height: 36px !important; }
+.badge-img { width: 26px !important; height: 26px !important; vertical-align: middle; margin-left: 4px; image-rendering: pixelated; }
+.chat-author .badge-img { width: 28px !important; height: 28px !important; }
 .card-author .badge-img,
 .comment-author .badge-img,
 .repost-author .badge-img,
 .repost-header .badge-img,
-.feed-profile-name .badge-img { width: 26px !important; height: 26px !important; margin-left: 4px; }
+.feed-profile-name .badge-img { width: 20px !important; height: 20px !important; margin-left: 3px; }
+.name-with-badge .badge-img { width: 26px; height: 26px; vertical-align: middle; }
 
 /* ОБЛОЖКИ */
 .discord-covers { display: flex; gap: 12px; margin: 12px 0; flex-wrap: wrap; }
@@ -1210,13 +1208,9 @@ textarea.chat-input {
 @keyframes cyberScan { 0% { background-position: 0 -100%; } 100% { background-position: 0 200%; } }
 
 .font-typewriter { font-family: 'Special Elite', 'JetBrains Mono', monospace; letter-spacing: 1px; filter: sepia(0.4) contrast(0.9); }
-.font-western { font-family: 'Rye', 'Ruslan Display', serif; text-transform: uppercase; letter-spacing: 2px; font-size: 1.1em; }
-.font-gothic { font-family: 'UnifrakturMaguntia', 'Ruslan Display', serif; letter-spacing: 1px; font-size: 1.2em; }
-.font-rune { font-family: 'Cinzel Decorative', 'Ruslan Display', serif; letter-spacing: 2px; font-weight: 700; font-size: 1.05em; }
 .font-stencil { font-family: 'Bebas Neue', 'Ruslan Display', sans-serif; text-transform: uppercase; letter-spacing: 4px; font-size: 1.2em; }
 .font-pixel { font-family: 'Press Start 2P', 'Pixelify Sans', monospace; font-size: 0.75em; text-transform: uppercase; }
 .font-medieval { font-family: 'MedievalSharp', 'Ruslan Display', serif; font-size: 1.15em; letter-spacing: 0.5px; }
-.font-comic { font-family: 'Bangers', 'Comic Sans MS', cursive; letter-spacing: 2px; font-size: 1.15em; }
 
 .font-neon { font-family: 'Audiowide', 'Ruslan Display', sans-serif; text-shadow: 0 0 5px #76ff03, 0 0 10px #76ff03, 0 0 20px #64dd17; animation: neonTextPulse 1.5s ease-in-out infinite; }
 @keyframes neonTextPulse { 0%, 100% { text-shadow: 0 0 5px #76ff03, 0 0 10px #76ff03, 0 0 20px #64dd17; } 50% { text-shadow: 0 0 10px #76ff03, 0 0 20px #76ff03, 0 0 30px #64dd17; } }
@@ -1252,7 +1246,35 @@ textarea.chat-input {
     position: relative;
     font-size: 1.05em;
 }
+.font-blood::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: 5px;
+    height: 8px;
+    background: radial-gradient(ellipse at 50% 0%, #ff1744 0%, #d50000 60%, transparent 100%);
+    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+    box-shadow: 0 0 6px #d50000, 0 0 10px rgba(213, 0, 0, 0.6);
+    animation: bloodDrop1 2.5s ease-in-out infinite;
+    pointer-events: none;
+}
+.font-blood::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    width: 5px;
+    height: 8px;
+    background: radial-gradient(ellipse at 50% 0%, #ff1744 0%, #d50000 60%, transparent 100%);
+    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+    box-shadow: 0 0 6px #d50000, 0 0 10px rgba(213, 0, 0, 0.6);
+    animation: bloodDrop2 2.5s ease-in-out infinite 1.2s;
+    pointer-events: none;
+}
 @keyframes bloodPulse { 0%, 100% { text-shadow: 0 0 8px #d50000; } 50% { text-shadow: 0 0 14px #d50000, 0 0 24px #b71c1c; } }
+@keyframes bloodDrop1 { 0%, 100% { transform: scale(1) translateY(0); opacity: 0.85; } 50% { transform: scale(1.2) translateY(2px); opacity: 1; } }
+@keyframes bloodDrop2 { 0%, 100% { transform: scale(1) translateY(0); opacity: 0.85; } 50% { transform: scale(1.2) translateY(2px); opacity: 1; } }
 
 /* МОДАЛКИ */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 500; display: none; justify-content: center; align-items: center; padding: 20px; opacity: 0; transition: opacity 0.15s; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
@@ -1497,7 +1519,7 @@ textarea.chat-input {
         </aside>
         <main class="center-content" id="center-content"><div id="center-view"></div></main>
         <aside class="right-panel" id="right-panel">
-            <div class="right-block"><div class="right-block-title">ОНЛАЙН</div><div class="online-list" id="online-list"></div></div>
+            <div class="right-block"><div class="right-block-title">АГЕНТЫ</div><div class="online-list" id="online-list"></div></div>
             <div class="right-block"><div class="right-block-title">ТОП ОТРЯДОВ</div><div id="top-clans"></div></div>
             <div class="right-block"><div class="right-block-title">ОБЪЯВЛЕНИЯ</div><div id="announce-mini"></div></div>
         </aside>

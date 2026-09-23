@@ -1,6 +1,6 @@
 // ============================================================
 // AGENTS / ПРОФИЛИ АГЕНТОВ
-// v2.9.5: сохранение dataset.agentName, обновление эффектов
+// v2.9.6: обновлённые шрифты, эффекты применяются сразу
 // ============================================================
 
 import { supabase, CA, loadAgent, getAgents, saveAgent } from './auth.js';
@@ -44,7 +44,6 @@ export async function showAgentInfo(name) {
     const modal = document.getElementById('modal-agent-profile');
     if (!modal) return;
 
-    // Запоминаем имя открытого агента для перезагрузки после примерки
     let profileContentEl = document.getElementById('profile-content');
     if (profileContentEl) profileContentEl.dataset.agentName = name;
 
@@ -165,7 +164,6 @@ export async function showAgentInfo(name) {
             content = document.getElementById('profile-content');
         }
         content.innerHTML = html;
-        // Возвращаем dataset после innerHTML
         content.dataset.agentName = name;
 
         let modalBox = modal.querySelector('.modal-box');

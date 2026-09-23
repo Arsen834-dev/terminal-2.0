@@ -59,7 +59,20 @@ let repTkInterval = null;
 function getAgentFx(name, agents) {
     if (!agents) agents = feedAgentsCache || {};
     let a = agents[name] || {};
-    let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
+
+    // Для СВОЕГО ника всегда берём актуальные данные из CA
+    if (CA && name === CA.name) {
+        a = {
+            active_color: CA.active_color || activeItems.color,
+            active_frame: CA.active_frame || activeItems.frame,
+            active_badge: CA.active_badge || activeItems.badge,
+            active_font: CA.active_font || activeItems.font,
+            avatar_url: CA.avatar_url || '',
+            role: CA.role || 'agent'
+        };
+    }
+
+    let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';   
     let fontCls = '';
     if (a.active_font && name !== CA?.name) {
         let map = {
