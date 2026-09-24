@@ -1,10 +1,10 @@
 // ============================================================
-// ТЕРМИНАЛ СИНДИКАТА v2.9.5 — MAIN
+// ТЕРМИНАЛ СИНДИКАТА v3.0.0 — MAIN
 // ============================================================
 
 console.log('[MAIN] Модуль начал загрузку');
 
-import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, login, register, saveAgent, loadAgent, getAgents, translit } from './auth.js';
+import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, login, register, saveAgent, loadAgent, getAgents, translit, setInventory } from './auth.js';
 import { loadDiscount, loadInventory, saveInventory, renderShop, renderShopItems, renderShopCategories, renderInventory, previewItem, buyItem, applyItem, resetItem, getItemDiscount, getDiscountedPrice, formatPrice, updateDiscountDisplay, generateNewDiscount, getActiveColorClass, getActiveColorClassForId, getActiveFrameClass, getActiveBadgeEmoji, getActiveFontClass, getBoosterTimeLeft, shopItems } from './shop.js';
 import { loadChatMessages, sendMessage, renderChat, subscribeChat, switchChatTab, loadDMMessages, sendDM, renderDMList, renderDMMessages, subscribeDM, openDM, startDM, loadMoreChatMessages, addReaction, addDMReaction, addAdminReaction, addClanReaction, deleteMessage, deleteClanMessage, deleteAdminMessage, pinChatMessage, pinClanMessage, editMessage, editClanMessage, replyToMessage, replyToClanMessage, cancelReply, loadMentionAgents, showMentionSuggestions, hideMentionSuggestions, updateBadgeIcons, showReactionPickerUniversal, loadAdminMessages, sendAdminMessage, renderAdminChat, subscribeAdminChat, openClanChat, sendClanMessage, renderClanMessages, loadClanMessages, subscribeClanChat, chatMessages, currentClanId, currentDM, dmMessagesAll, unreadMentions, clanChats, isClanChatActive, chatTabActive } from './chat.js';
 import { loadClans, loadClanWars, createClan, joinClan, leaveClan, deleteClan, declareWar, donateToClan, acceptJoinRequest, checkCompletedWars, autoDistributeTreasury, renderClans, changeClanRole, kickClanMember, showDonateModal, openWarTargetModal, clans, clanWars } from './clans.js';
@@ -17,11 +17,12 @@ import { muteAgent, banAgent, deleteAgent, changeAgentRole, renderAdminPanel, re
 import { changeName, changePassword, changeAvatar } from './settings.js';
 import { playSound, startBgMusic, stopBgMusic, toggleSound, toggleMusic, getSoundEnabled, getMusicEnabled, nextBgTrack } from './sounds.js';
 import { notif, closeModal, uploadFileAndInsert, glowIcon, stopGlowIcon } from './utils.js';
-import { loadRpCharacters, createRpCharacter, updateRpCharacter, deleteRpCharacter, getRpCharacters, setCurrentRpChar, loadSavedRpChar, loadRpMessages, subscribeRpChat, sendRpMessage, loadRpScenes, createRpScene, editRpScene, deleteRpScene, renderRpScenes, rpCharacters, getCurrentRpChar, requireCharacter, addRpReaction, deleteRpMessage, editRpMessage, replyToRpMessage, cancelRpReply } from './rp.js';
+import { loadRpCharacters, createRpCharacter, updateRpCharacter, deleteRpCharacter, getRpCharacters, setCurrentRpChar, loadSavedRpChar, loadRpMessages, subscribeRpChat, sendRpMessage, loadRpScenes, createRpScene, editRpScene, deleteRpScene, renderRpScenes, rpCharacters, getCurrentRpChar, requireCharacter, addRpReaction, deleteRpMessage, editRpMessage, replyToRpMessage, cancelRpReply, showRpCharInfo } from './rp.js';
 import { openSceneChat, closeSceneChat, sendSceneMessage, addSceneReaction, deleteSceneMessage, editSceneMessage, replyToSceneMessage } from './rp.js';
 import { renderPostCard as renderPostCardFeed, attachFeedHandlers } from './feed.js';
 import { initWebGraph, destroyWebGraph } from './web.js';
 import { RP_RACES } from './config.js';
+import { initCropper, setCropMode, getCroppedBlob, resetCropper, hasImage } from './cropper.js';
 
 console.log('[MAIN] Импорты загружены');
 
@@ -72,7 +73,7 @@ function getAgentFx(name, agents) {
         };
     }
 
-    let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';   
+    let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
     let fontCls = '';
     if (a.active_font && name !== CA?.name) {
         let map = {
@@ -113,7 +114,6 @@ async function rerenderAll() {
             await refreshFeedOnly();
         }
 
-        // Профиль в модалке — перезагружаем
         let profileModal = document.getElementById('modal-agent-profile');
         if (profileModal && profileModal.classList.contains('show')) {
             let profileContent = document.getElementById('profile-content');
@@ -378,6 +378,7 @@ function updateSidebarProfile() {
     if (name) name.textContent = CA.name || '---';
     if (role) role.textContent = CA.role === 'admin' ? 'АДМИНИСТРАТОР' : CA.role === 'moderator' ? 'МОДЕРАТОР' : 'АГЕНТ';
 }
+window.updateSidebarProfile = updateSidebarProfile;
 
 function applySidebarState() {
     let layout = document.getElementById('main-layout');
@@ -433,7 +434,7 @@ function buildMobileNav() {
 }
 
 // ============================================================
-// ПРАВЫЙ SIDEBAR
+// ПРАВЫЙ SIDEBAR (с realtime обновлением)
 // ============================================================
 async function renderRightPanel() {
     let online = document.getElementById('online-list');
@@ -528,7 +529,7 @@ function openAnnounceView(a) {
     if (!modal) return;
     document.getElementById('modal-announce-view-title').textContent = a.title || '';
     document.getElementById('modal-announce-view-meta').textContent = (typeLabels[a.type] || '📰') + ' · ' + a.author + ' · ' + timeAgo(a.created_at);
-    document.getElementById('modal-announce-view-text').innerHTML = (a.text || '').replace(/\n/g, '<br>');
+    document.getElementById('modal-announce-view-text').innerHTML = linkifyHashtags(escapeHtml(a.text || ''));
     modal.style.display = 'flex';
     setTimeout(() => modal.classList.add('show'), 10);
 }
@@ -688,10 +689,32 @@ async function loadFeedItems() {
     let all = [];
     try {
         if (currentFeedTab === 'all' || currentFeedTab === 'posts') {
-            let q = supabase.from('profile_posts').select('*').order('created_at', { ascending: false }).limit(30);
+            let q = supabase.from('profile_posts').select('*').order('created_at', { ascending: false }).limit(50);
             if (currentFeedFilter === 'mine' && CA) q = q.eq('author', CA.name);
             let { data: posts } = await q;
-            if (posts) posts.forEach(p => all.push({ type: 'post', data: p, time: p.created_at, likes: p.likes || 0 }));
+            if (posts && CA) {
+                // Собираем "кого я вижу": друзья + подписки + я сам
+                let visibleNames = new Set([CA.name]);
+                try {
+                    let friends = getFriends();
+                    friends.forEach(f => {
+                        if (f.status === 'accepted') {
+                            if (f.agent === CA.name) visibleNames.add(f.friend);
+                            if (f.friend === CA.name) visibleNames.add(f.agent);
+                        }
+                    });
+                } catch (e) {}
+                try {
+                    let { data: subs } = await supabase.from('subscriptions').select('target').eq('subscriber', CA.name);
+                    (subs || []).forEach(s => visibleNames.add(s.target));
+                } catch (e) {}
+
+                posts.forEach(p => {
+                    // Репосты показываем только если автор в visibleNames
+                    if (p.repost_of && !visibleNames.has(p.author)) return;
+                    all.push({ type: 'post', data: p, time: p.created_at, likes: p.likes || 0 });
+                });
+            }
         }
         if (currentFeedTab === 'all' || currentFeedTab === 'activity') {
             let { data: ann } = await supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(20);
@@ -831,7 +854,7 @@ function subscribeFeedRealtime() {
 function subscribeAgentsRealtime() {
     if (agentsChannel) supabase.removeChannel(agentsChannel);
     agentsChannel = supabase.channel('agents-realtime')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'agents' }, () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'agents' }, () => {
             renderRightPanel();
         })
         .subscribe();
@@ -864,6 +887,55 @@ function startRepTkTimer() {
         saveAgent();
         updateTopbar();
     }
+}
+
+// ============================================================
+// СИНХРОНИЗАЦИЯ ИНВЕНТАРЯ КАЖДУЮ МИНУТУ
+// ============================================================
+async function syncAgentWithServer() {
+    if (!CA) return;
+    try {
+        let { data } = await supabase.from('agents')
+            .select('inventory, crystals, active_color, active_frame, active_badge, active_font, active_booster, booster_end_time, last_seen')
+            .eq('name', CA.name)
+            .maybeSingle();
+
+        if (data) {
+            // 1. Инвентарь — если на сервере больше предметов, подтягиваем
+            let serverInv = data.inventory || [];
+            let localInv = inventory || [];
+            if (serverInv.length > localInv.length) {
+                setInventory(serverInv);
+                CA.inventory = serverInv;
+                console.log('[SYNC] Инвентарь обновлён с сервера:', serverInv.length);
+            } else if (localInv.length > serverInv.length) {
+                CA.inventory = localInv;
+            }
+
+            // 2. Кристаллы — берём максимум
+            if ((data.crystals || 0) > (CA.crystals || 0)) {
+                CA.crystals = data.crystals;
+            }
+
+            // 3. Активные эффекты — если на сервере что-то есть, а локально дефолт
+            if (data.active_color && activeItems.color === 'c_red' && data.active_color !== 'c_red') {
+                activeItems.color = data.active_color;
+                CA.active_color = data.active_color;
+            }
+            if (data.active_frame && activeItems.frame === 'f_default' && data.active_frame !== 'f_default') {
+                activeItems.frame = data.active_frame;
+                CA.active_frame = data.active_frame;
+            }
+            if (data.active_badge && activeItems.badge === 'b_none' && data.active_badge !== 'b_none') {
+                activeItems.badge = data.active_badge;
+                CA.active_badge = data.active_badge;
+            }
+            if (data.active_font && activeItems.font === 'fnt_default' && data.active_font !== 'fnt_default') {
+                activeItems.font = data.active_font;
+                CA.active_font = data.active_font;
+            }
+        }
+    } catch (e) { console.warn('[SYNC] Ошибка:', e); }
 }
 
 // ============================================================
@@ -1096,6 +1168,7 @@ window.updateStatusBar = updateTopbar;
 // WINDOW ПРОБРОС
 // ============================================================
 window.showAgentInfo = showAgentInfo;
+window.showRpCharInfo = showRpCharInfo;
 window.buyItem = buyItem;
 window.applyItem = applyItem;
 window.resetItem = resetItem;
@@ -1147,8 +1220,13 @@ window.showCreateClan = function() {
 window.showClanInfo = function(clanId) {
     let cl = clans.find(c => c.id == clanId);
     if (!cl) return;
+
+    // Удаляем старую модалку если есть
+    let old = document.getElementById('modal-auto-clan');
+    if (old) old.remove();
+
     let popup = document.createElement('div');
-    popup.className = 'modal-overlay show';
+    popup.className = 'modal-overlay';
     popup.style.display = 'flex';
     popup.id = 'modal-auto-clan';
     popup.innerHTML = '<div class="modal-box">' +
@@ -1157,9 +1235,23 @@ window.showClanInfo = function(clanId) {
         '<div style="color:var(--text-3);font-size:0.8rem;">👑 ' + escapeHtml(cl.leader) + ' · 💰 ' + (cl.treasury || 0) + ' ТК · ⭐ ' + (cl.rating || 0) + '</div>' +
         '<div style="margin-top:12px;font-size:0.8rem;">Участники: ' + (cl.members || []).map(m => escapeHtml(m.name)).join(', ') + '</div>' +
         (cl.members && !cl.members.find(m => m.name === CA?.name) && !clans.some(c => c.members?.some(m => m.name === CA?.name)) ? '<button class="btn full mt-16" id="join-clan-btn-' + cl.id + '">' + (cl.join_type === 'request' ? '📩 ОТПРАВИТЬ ЗАЯВКУ' : '✅ ВСТУПИТЬ') + '</button>' : '') +
-        '<div style="margin-top:16px;text-align:right;"><button class="modal-btn secondary" data-close-modal="modal-auto-clan">ЗАКРЫТЬ</button></div>' +
+        '<div style="margin-top:16px;text-align:right;"><button class="modal-btn secondary" id="close-auto-clan-btn">ЗАКРЫТЬ</button></div>' +
         '</div>';
     document.body.appendChild(popup);
+    setTimeout(() => popup.classList.add('show'), 10);
+
+    // Закрытие
+    document.getElementById('close-auto-clan-btn').onclick = function() {
+        popup.classList.remove('show');
+        setTimeout(() => popup.remove(), 200);
+    };
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) {
+            popup.classList.remove('show');
+            setTimeout(() => popup.remove(), 200);
+        }
+    });
+
     setTimeout(() => {
         document.getElementById('join-clan-btn-' + cl.id)?.addEventListener('click', () => {
             joinClan(cl.id).then(r => {
@@ -1185,27 +1277,50 @@ window.openSceneChat = function(sceneId) {
 };
 
 // ============================================================
-// ЭМОДЗИ
+// ЭМОДЗИ (с target)
 // ============================================================
-function toggleChatEmoji() {
+function toggleChatEmoji(targetId) {
     let grid = document.getElementById('chat-emoji-grid');
     if (!grid) return;
     let emojis = ['😀','😂','🤣','😎','🤩','🥳','😇','🤠','👻','💀','🤡','👽','🤖','👾','👑','🔥','⚡','💣','🗝️','🔑','💉','🧬','🧪','🛡️','⚔️','🗡️','🏹','🔫','🧨','🪓','🔧','🔨','⛏️','🦊','🐺','🐉','🐲','🦅','🦉','🦇','🐍','🦎','🐙','🦑','🦈','🦂','🕷️','🌑','🌕','🌙','✨','💫','☄️','🌌','🪐','🔮','🧿','🕯️','☠️','👁️','🧠','🦾','🦿','🩸','💊','⚙️','⛓️','📡','🖥️','🎲','🎯','🎰','♠️','♦️','♣️','🃏','🀄','🎴','🪙','🏆','🥇','👍','❤','💯'];
     grid.innerHTML = emojis.map(e => '<span style="font-size:1.4rem;padding:5px;text-align:center;cursor:pointer;border:1px solid transparent;transition:all 0.15s;" data-emoji="' + e + '">' + e + '</span>').join('');
+
+    // Определяем целевую textarea
+    let target = targetId;
+    if (!target) {
+        let active = document.activeElement;
+        if (active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) {
+            target = active.id;
+        } else {
+            target = 'chat-input';
+        }
+    }
+    let targetEl = document.getElementById(target);
+    if (!targetEl || (targetEl.tagName !== 'TEXTAREA' && targetEl.tagName !== 'INPUT')) {
+        target = 'chat-input';
+    }
+
     setTimeout(() => {
         document.querySelectorAll('#chat-emoji-grid [data-emoji]').forEach(c => {
             c.onmouseenter = () => c.style.borderColor = 'var(--accent)';
             c.onmouseleave = () => c.style.borderColor = 'transparent';
             c.onclick = function() {
-                let targetId = document.activeElement?.id || 'chat-input';
-                let inp = document.getElementById(targetId);
-                if (inp) inp.value += this.dataset.emoji;
+                let inp = document.getElementById(target);
+                if (inp) {
+                    inp.value += this.dataset.emoji;
+                    if (inp.tagName === 'TEXTAREA') {
+                        inp.style.height = 'auto';
+                        inp.style.height = Math.min(inp.scrollHeight, 120) + 'px';
+                    }
+                }
                 playSound('send');
             };
         });
     }, 10);
+
     let el = document.getElementById('modal-chat-emoji');
-    el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10);
+    el.style.display = 'flex';
+    setTimeout(() => el.classList.add('show'), 10);
 }
 
 window.replyToDMMessage = function(msgId, author, text) {
@@ -1269,6 +1384,15 @@ function renderDiscordCovers() {
 window.__renderDiscordCovers = renderDiscordCovers;
 
 // ============================================================
+// AUTO-RESIZE TEXTAREA
+// ============================================================
+function autoResizeTextarea(el) {
+    if (!el || el.tagName !== 'TEXTAREA') return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ============================================================
 // ОТКРЫТИЕ РАБОЧЕГО СТОЛА
 // ============================================================
 function openDesktop() {
@@ -1286,19 +1410,13 @@ function openDesktop() {
 }
 
 // ============================================================
-// AUTO-RESIZE TEXTAREA
-// ============================================================
-function autoResizeTextarea(el) {
-    if (!el || el.tagName !== 'TEXTAREA') return;
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
-
-// ============================================================
 // DOM READY
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[MAIN] DOMContentLoaded сработал');
+
+    // Инициализация кроппера
+    initCropper();
 
     document.addEventListener('click', (e) => {
         let t = e.target.closest('[data-action]');
@@ -1311,44 +1429,77 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (a === 'feed') { openFeed(); }
     });
 
+    // ==== Делегированный обработчик клика на РП-сообщение ====
     document.addEventListener('click', (e) => {
-        let editSceneBtn = e.target.closest('[data-edit-scene]');
-        if (editSceneBtn) {
-            e.stopPropagation();
-            e.preventDefault();
-            let id = parseInt(editSceneBtn.dataset.editScene);
-            let scene = (window.__rpScenes || []).find(s => s.id === id);
-            if (!scene) return;
-            (async () => {
-                let { loadSceneCovers } = await import('./rp.js');
-                let covers = await loadSceneCovers(id);
-                document.getElementById('scene-modal-title').textContent = '✏️ РЕДАКТИРОВАТЬ СПЕКТАКЛЬ';
-                document.getElementById('scene-title').value = scene.title || '';
-                document.getElementById('scene-desc').value = scene.description || '';
-                window.__sceneCovers = covers.map(c => ({ url: c.image_url, preview: c.image_url, isNew: false }));
-                if (typeof window.__renderDiscordCovers === 'function') window.__renderDiscordCovers();
-                let btn = document.getElementById('submit-scene-btn');
-                btn.dataset.editingScene = id;
-                btn.textContent = 'СОХРАНИТЬ';
-                let el = document.getElementById('modal-scene-create');
-                el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10);
-            })();
-            return;
-        }
-        let delSceneBtn = e.target.closest('[data-delete-scene]');
-        if (delSceneBtn) {
-            e.stopPropagation();
-            e.preventDefault();
-            let id = parseInt(delSceneBtn.dataset.deleteScene);
-            let scene = (window.__rpScenes || []).find(s => s.id === id);
-            confirmDialog('УДАЛИТЬ СПЕКТАКЛЬ', 'Удалить «' + (scene ? scene.title : '?') + '»?', async () => {
-                let r = await deleteRpScene(id);
-                if (r.success) { notif('🗑 Спектакль удалён'); loadRpScenes().then(renderRpScenes); }
-                else notif('⛔ ' + r.error);
-            });
-            return;
+        let rpMsg = e.target.closest('.chat-msg[data-rp-char]');
+        if (!rpMsg) return;
+        // Не открывать если клик по интерактивным элементам
+        if (e.target.closest('[data-menu-btn]') ||
+            e.target.closest('.chat-author') ||
+            e.target.closest('.mention') ||
+            e.target.closest('[data-reaction]') ||
+            e.target.closest('[data-reaction-picker]') ||
+            e.target.closest('[data-reply-rp]') ||
+            e.target.closest('[data-reply-scene]') ||
+            e.target.closest('[data-delete-rp-msg]') ||
+            e.target.closest('[data-delete-scene-msg]') ||
+            e.target.closest('[data-edit-rp-msg]') ||
+            e.target.closest('[data-edit-scene-msg]') ||
+            e.target.closest('img')) return;
+
+        let charName = rpMsg.dataset.rpChar;
+        let owner = rpMsg.dataset.rpOwner;
+        if (charName && owner && typeof window.showRpCharInfo === 'function') {
+            window.showRpCharInfo(charName, owner);
         }
     }, true);
+
+    // ==== Обработчик выбора "аватар/обложка" с кроппером ====
+    document.getElementById('change-image-btn')?.addEventListener('click', () => {
+        document.getElementById('image-choice-file').value = '';
+        resetCropper();
+        let el = document.getElementById('modal-image-choice');
+        el.style.display = 'flex';
+        setTimeout(() => el.classList.add('show'), 10);
+    });
+
+    document.addEventListener('click', async (e) => {
+        let target = e.target.closest('[data-img-target]');
+        if (!target) return;
+        let mode = target.dataset.imgTarget; // 'avatar' | 'cover'
+        let file = document.getElementById('image-choice-file')?.files[0];
+        if (!file) return notif('⛔ ВЫБЕРИ ФАЙЛ');
+        if (!hasImage()) return notif('⚠ ПОДОЖДИ ЗАГРУЗКИ');
+
+        // Устанавливаем режим (квадрат или 3:1)
+        setCropMode(mode);
+
+        // Ждём чуть-чуть, чтобы canvas перерисовался
+        await new Promise(r => setTimeout(r, 50));
+
+        let blob = await getCroppedBlob();
+        if (!blob) return notif('⛔ ОШИБКА ОБРАБОТКИ');
+
+        let croppedFile = new File([blob], 'cropped.png', { type: 'image/png' });
+
+        if (mode === 'avatar') {
+            let r = await changeAvatar(croppedFile);
+            if (r.success) {
+                closeModal('modal-image-choice');
+                resetCropper();
+                updateSidebarProfile();
+                renderFeed();
+            } else notif(r.error || 'ОШИБКА');
+        } else {
+            let r = await changeCover(croppedFile);
+            if (r.success) {
+                closeModal('modal-image-choice');
+                resetCropper();
+                updateSidebarProfile();
+                renderFeed();
+            } else notif(r.error || 'ОШИБКА');
+        }
+    });
 
     document.getElementById('login-btn')?.addEventListener('click', async () => {
         try {
@@ -1413,37 +1564,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('change-name-btn')?.addEventListener('click', () => { document.getElementById('new-name').value = CA?.name || ''; let el = document.getElementById('modal-name'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
     document.getElementById('change-pass-btn')?.addEventListener('click', () => { document.getElementById('old-pass').value = ''; document.getElementById('new-pass').value = ''; let el = document.getElementById('modal-password'); el.style.display = 'flex'; setTimeout(() => el.classList.add('show'), 10); });
-    document.getElementById('change-image-btn')?.addEventListener('click', () => {
-    document.getElementById('image-choice-file').value = '';
-    let el = document.getElementById('modal-image-choice');
-    el.style.display = 'flex';
-    setTimeout(() => el.classList.add('show'), 10);
-});
-
-// Универсальный обработчик выбора
-document.addEventListener('click', async (e) => {
-    let target = e.target.closest('[data-img-target]');
-    if (!target) return;
-    let file = document.getElementById('image-choice-file')?.files[0];
-    if (!file) return notif('⛔ ВЫБЕРИ ФАЙЛ');
-    let kind = target.dataset.imgTarget; // 'avatar' | 'cover'
-
-    if (kind === 'avatar') {
-        let r = await changeAvatar(file);
-        if (r.success) {
-            closeModal('modal-image-choice');
-            updateSidebarProfile();
-            renderFeed();
-        } else notif(r.error || 'ОШИБКА');
-    } else if (kind === 'cover') {
-        let r = await changeCover(file);
-        if (r.success) {
-            closeModal('modal-image-choice');
-            updateSidebarProfile();
-            renderFeed();
-        } else notif(r.error || 'ОШИБКА');
-    }
-});
     document.getElementById('toggle-sound-btn')?.addEventListener('click', () => { toggleSound(); notif(getSoundEnabled() ? '🔊 ВКЛ' : '🔇 ВЫКЛ'); });
     document.getElementById('toggle-music-btn')?.addEventListener('click', () => { let on = toggleMusic(); notif(on ? '🎵 ВКЛ' : '🎵 ВЫКЛ'); });
     document.getElementById('next-track-btn')?.addEventListener('click', () => { nextBgTrack(); notif('⏭ СЛЕДУЮЩИЙ ТРЕК'); });
@@ -1465,28 +1585,39 @@ document.addEventListener('click', async (e) => {
         if (r.success) closeModal('modal-password');
         else notif(r.error);
     });
-    document.getElementById('upload-avatar-btn')?.addEventListener('click', async () => {
-        let f = document.getElementById('avatar-file-input')?.files[0];
-        if (!f) return notif('⛔ ВЫБЕРИ ФАЙЛ');
-        let r = await changeAvatar(f);
-        if (r.success) { closeModal('modal-avatar'); updateSidebarProfile(); renderFeed(); }
-        else notif(r.error || 'ОШИБКА');
-    });
 
     document.querySelector('.send-msg-btn')?.addEventListener('click', e => { e.stopPropagation(); if (isClanChatActive()) sendClanMessage(); else sendMessage(); });
     document.querySelector('.send-dm-btn')?.addEventListener('click', e => { e.stopPropagation(); sendDM(); });
     document.getElementById('rp-send-btn')?.addEventListener('click', sendRpMessage);
     document.getElementById('rp-scene-send-btn')?.addEventListener('click', sendSceneMessage);
     document.querySelectorAll('.chat-tab[data-tab]').forEach(tab => tab.addEventListener('click', function() { switchChatTab(this.dataset.tab); }));
-    document.getElementById('chat-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji(); });
-    document.getElementById('dm-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji(); });
-    document.getElementById('guide-emoji-btn')?.addEventListener('click', toggleChatEmoji);
+
+    // Emoji-кнопки
+    document.getElementById('chat-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('chat-input'); });
+    document.getElementById('dm-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('dm-input'); });
+    document.getElementById('guide-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('guide-text'); });
+    document.getElementById('rp-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('rp-input'); });
+    document.getElementById('rp-scene-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('rp-scene-input'); });
+    document.getElementById('announce-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('new-announce-text'); });
+    document.getElementById('meme-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('meme-text'); });
+    document.getElementById('post-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('post-text'); });
+
+    // File-кнопки
     document.getElementById('chat-file-btn')?.addEventListener('click', () => { document.getElementById('chat-file-input').click(); });
     document.getElementById('dm-file-btn')?.addEventListener('click', () => { document.getElementById('dm-file-input').click(); });
     document.getElementById('guide-file-btn')?.addEventListener('click', () => { document.getElementById('guide-file-input').click(); });
+    document.getElementById('rp-file-btn')?.addEventListener('click', () => { document.getElementById('rp-file-input').click(); });
+    document.getElementById('rp-scene-file-btn')?.addEventListener('click', () => { document.getElementById('rp-scene-file-input').click(); });
+    document.getElementById('announce-file-btn')?.addEventListener('click', () => { document.getElementById('announce-file-input').click(); });
+    document.getElementById('meme-file-btn')?.addEventListener('click', () => { document.getElementById('meme-file').click(); });
+    document.getElementById('post-file-btn')?.addEventListener('click', () => { document.getElementById('post-file').click(); });
+
     document.getElementById('chat-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'chat-input'));
     document.getElementById('dm-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'dm-input'));
     document.getElementById('guide-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'guide-text'));
+    document.getElementById('rp-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'rp-input'));
+    document.getElementById('rp-scene-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'rp-scene-input'));
+    document.getElementById('announce-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'new-announce-text'));
 
     // ENTER — отправить, SHIFT+ENTER — новый абзац
     document.addEventListener('keydown', e => {
@@ -1496,7 +1627,6 @@ document.addEventListener('click', async (e) => {
             if (document.activeElement === document.getElementById('rp-input')) { e.preventDefault(); sendRpMessage(); }
             if (document.activeElement === document.getElementById('rp-scene-input')) { e.preventDefault(); sendSceneMessage(); }
         }
-        // Shift+Enter — браузер сам вставит \n в textarea, ничего не делаем
     });
 
     // AUTO-RESIZE TEXTAREA
@@ -1708,10 +1838,17 @@ document.addEventListener('click', async (e) => {
         if (!e.target.closest('.chat-menu-wrap')) document.querySelectorAll('.chat-menu-dropdown.open').forEach(d => d.classList.remove('open'));
     });
 
-    setInterval(() => { if (CA) { saveAgent(); updateTopbar(); } }, 60000);
+    // Основной интервал: синхронизация + saveAgent
+    setInterval(async () => {
+        if (!CA) return;
+        await syncAgentWithServer();
+        saveAgent();
+        updateTopbar();
+    }, 60000);
+
     setInterval(() => { if (CA && document.visibilityState === 'visible') supabase.from('agents').update({ last_seen: new Date().toISOString() }).eq('name', CA.name); }, 30000);
     setInterval(updateDiscountDisplay, 60000);
     setInterval(() => { if (CA && currentView === 'feed') renderRightPanel(); }, 60000);
 
-    console.log('✅ ТЕРМИНАЛ 2.9.5 ЗАГРУЖЕН');
+    console.log('✅ ТЕРМИНАЛ 3.0.0 ЗАГРУЖЕН');
 });

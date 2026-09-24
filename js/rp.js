@@ -1,6 +1,6 @@
 // ============================================================
 // RP / ТЕКСТОВО-РОЛЕВОЙ ЧАТ + СПЕКТАКЛИ
-// v2.6.0: Discord-обложки в списке, единый getAgentFx, realtime
+// v3.0.0: клик на сообщение → модалка персонажа
 // ============================================================
 
 import { supabase, CA, getAgents } from './auth.js';
@@ -8,6 +8,7 @@ import { notif, timeAgo, closeModal } from './utils.js';
 import { playSound } from './sounds.js';
 import { shopItems, getActiveColorClassForId } from './shop.js';
 import { RP_RACES } from './config.js';
+
 // ==================== СОСТОЯНИЕ ====================
 let rpCharacters = [];
 let rpMessages = [];
@@ -27,11 +28,14 @@ let sceneCoverTimer = null;
 // ==================== ЭФФЕКТЫ ====================
 function fx(name) {
     if (typeof window.__getAgentFx === 'function') return window.__getAgentFx(name);
-    // Fallback
     let colorCls = '';
     let frameCls = 'f-default';
     let roleBadge = '';
     return { colorCls, fontCls: '', frameCls, badgeHtml: '', roleBadge, avatar: '' };
+}
+
+function escapeHtml(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // ==================== ПЕРСОНАЖИ ====================
@@ -121,6 +125,77 @@ export function requireCharacter() {
     return true;
 }
 
+// ==================== МОДАЛКА ПЕРСОНАЖА ====================
+export function showRpCharInfo(charName, charOwner) {
+    if (!charName || !charOwner) return;
+
+    // Удаляем старую модалку если есть
+    let old = document.getElementById('modal-rp-char-view');
+    if (old) old.remove();
+
+    // Свой персонаж — берём из памяти
+    let char = null;
+    if (CA && charOwner === CA.name) {
+        char = rpCharacters.find(c => c.name === charName);
+    }
+    if (char) {
+        renderRpCharModal(char);
+        return;
+    }
+
+    // Чужой — грузим из БД
+    supabase.from('rp_characters').select('*').eq('name', charName).eq('owner', charOwner).maybeSingle().then(({ data }) => {
+        if (data) renderRpCharModal(data);
+        else notif('⛔ Персонаж не найден');
+    });
+}
+
+function renderRpCharModal(char) {
+    let raceObj = RP_RACES.find(r => r.id === char.race) || RP_RACES[0];
+    let html = '<div class="modal-box" style="padding:0;overflow:hidden;max-width:500px;">' +
+        '<button class="profile-close-top" id="rp-char-close-btn">✕</button>' +
+        '<div style="padding:20px;">' +
+        '<div style="display:flex;gap:16px;align-items:center;margin-bottom:16px;">' +
+        '<div class="chat-avatar-frame" style="width:80px;height:80px;border-radius:8px;">' +
+        '<div class="inner" style="font-size:2rem;">' +
+        (char.avatar_url ? '<img src="' + char.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">' : '🎭') +
+        '</div></div>' +
+        '<div>' +
+        '<div style="font-size:1.4rem;font-weight:700;color:var(--accent);">' + escapeHtml(char.name) + '</div>' +
+        '<div style="color:var(--text-3);font-size:0.85rem;margin-top:4px;">' + raceObj.icon + ' ' + raceObj.name + (char.age ? ' · ' + char.age + ' лет' : '') + (char.gender ? ' · ' + escapeHtml(char.gender) : '') + '</div>' +
+        (char.role ? '<div style="color:var(--text-2);font-size:0.85rem;margin-top:4px;">' + escapeHtml(char.role) + '</div>' : '') +
+        '</div></div>' +
+        (char.character ? '<div style="margin-bottom:12px;"><div style="color:var(--accent);font-size:0.75rem;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Характер</div><div style="color:var(--text-2);font-size:0.85rem;line-height:1.6;white-space:pre-wrap;">' + escapeHtml(char.character) + '</div></div>' : '') +
+        (char.biography ? '<div style="margin-bottom:12px;"><div style="color:var(--accent);font-size:0.75rem;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Биография</div><div style="color:var(--text-2);font-size:0.85rem;line-height:1.6;white-space:pre-wrap;">' + escapeHtml(char.biography) + '</div></div>' : '') +
+        '<div style="color:var(--text-4);font-size:0.75rem;margin-top:8px;">Владелец: <span style="color:var(--accent);cursor:pointer;" id="rp-char-owner-link">' + escapeHtml(char.owner) + '</span></div>' +
+        '</div></div>';
+
+    let modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.display = 'flex';
+    modal.id = 'modal-rp-char-view';
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 10);
+
+    // Закрытие
+    document.getElementById('rp-char-close-btn').onclick = () => {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 200);
+    };
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('show');
+            setTimeout(() => modal.remove(), 200);
+        }
+    });
+    // Клик по владельцу → профиль
+    document.getElementById('rp-char-owner-link').onclick = () => {
+        modal.remove();
+        if (typeof window.showAgentInfo === 'function') window.showAgentInfo(char.owner);
+    };
+}
+
 // ==================== РП-ЧАТ (SPACE-X) ====================
 export async function loadRpMessages(room = 'space-x') {
     try {
@@ -194,7 +269,7 @@ export function renderRpMessages() {
             : '🎭';
         let txt = (m.text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
         txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid rgba(255,255,255,0.1);margin:6px 0;border-radius:12px;" onerror="this.style.display=\'none\'">');
-        txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
+        txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="event.stopPropagation();window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
 
         let react = m.reactions || {}, rh = '';
         Object.keys(react).forEach(k => {
@@ -221,11 +296,11 @@ export function renderRpMessages() {
             ? '<div style="color:#880000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_char_name || '???') + ': ' + (m.reply_text || '...') + '</div>'
             : '';
 
-        return '<div class="chat-msg" data-msg-id="' + m.id + '">' +
+        return '<div class="chat-msg" data-msg-id="' + m.id + '" data-rp-char="' + escapeHtml(m.char_name || '') + '" data-rp-owner="' + escapeHtml(m.owner || '') + '" style="cursor:pointer;">' +
             '<div class="chat-msg-left"><div class="chat-avatar-frame f-default"><div class="inner">' + avatarHtml + '</div></div></div>' +
             '<div class="chat-msg-right">' + replyHtml +
             '<div class="chat-header-row">' +
-            '<span class="chat-author name-with-badge ' + e.colorCls + ' ' + e.fontCls + '" style="color:var(--accent);" onclick="window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + e.roleBadge + e.badgeHtml + '</span>' +
+            '<span class="chat-author name-with-badge rp-message-author ' + e.colorCls + ' ' + e.fontCls + '" style="color:var(--accent);" onclick="event.stopPropagation();window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + e.roleBadge + e.badgeHtml + '</span>' +
             '<span style="color:var(--text-3);font-size:0.7rem;">(' + m.owner + ')</span>' +
             '<span class="chat-time">' + m.time + '</span>' + menu +
             '</div>' +
@@ -261,7 +336,6 @@ export async function deleteRpMessage(msgId) {
     if (!msg) return;
     let canMod = CA && (CA.role === 'admin' || CA.role === 'moderator');
     if (msg.owner !== CA?.name && !canMod) return notif('⛔ Нет прав');
-    // Локально удаляем сразу для мгновенного отклика
     rpMessages = rpMessages.filter(m => String(m.id) !== String(msgId));
     renderRpMessages();
     await supabase.from('rp_messages').delete().eq('id', parseInt(msgId));
@@ -333,7 +407,6 @@ export async function loadSceneCovers(sceneId) {
 }
 
 export async function loadFirstCovers() {
-    // Загружаем первую обложку для каждого спектакля (для превью в списке)
     if (rpScenes.length === 0) return {};
     let result = {};
     try {
@@ -391,23 +464,18 @@ export async function editRpScene(sceneId, title, description, coverFiles) {
 
         await supabase.from('rp_scenes').update({ title, description }).eq('id', sceneId);
 
-        // Обложки: удаляем ВСЕ старые и записываем те, что остались + новые
-        // window.__sceneCovers содержит объекты { url?, preview, isNew, file? }
         let covers = window.__sceneCovers || [];
         let keptUrls = covers.filter(c => !c.isNew).map(c => c.url);
         let newFiles = covers.filter(c => c.isNew).map(c => c.file);
 
-        // Удаляем все старые записи
         await supabase.from('rp_scene_images').delete().eq('scene_id', sceneId);
 
-        // Записываем оставшиеся (сохранённые) обложки
         for (let i = 0; i < keptUrls.length; i++) {
             await supabase.from('rp_scene_images').insert({
                 scene_id: sceneId, image_url: keptUrls[i], position: i
             });
         }
 
-        // Загружаем новые
         let offset = keptUrls.length;
         for (let i = 0; i < newFiles.length; i++) {
             if (offset + i >= 5) break;
@@ -480,7 +548,6 @@ export async function renderRpScenes() {
     let c = document.getElementById('rp-scenes-list');
     if (!c) return;
 
-    // Загружаем первые обложки для превью
     await loadFirstCovers();
     let covers = window.__sceneFirstCovers || {};
 
@@ -533,10 +600,6 @@ export async function renderRpScenes() {
     }, 10);
 }
 
-function escapeHtml(s) {
-    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
 // ==================== ЧАТ СПЕКТАКЛЯ ====================
 export async function openSceneChat(sceneId) {
     currentSceneId = sceneId;
@@ -581,7 +644,6 @@ async function renderSceneCovers(sceneId) {
     let covers = await loadSceneCovers(sceneId);
     if (covers.length === 0) { wrap.innerHTML = ''; return; }
 
-    // Discord-style: большая слева + маленькие справа
     let mainUrl = covers[0].image_url;
     let thumbs = covers.map((c, i) =>
         '<div class="scene-cover-thumb-sm' + (i === 0 ? ' active' : '') + '" data-scene-cover-idx="' + i + '">' +
@@ -594,7 +656,6 @@ async function renderSceneCovers(sceneId) {
         (covers.length > 1 ? '<div class="scene-covers-view-thumbs">' + thumbs + '</div>' : '') +
         '</div>';
 
-    // Клик по миниатюре
     wrap.querySelectorAll('[data-scene-cover-idx]').forEach(thumb => {
         thumb.addEventListener('click', () => {
             let idx = parseInt(thumb.dataset.sceneCoverIdx);
@@ -684,7 +745,7 @@ export function renderSceneMessages() {
             : '🎭';
         let txt = (m.text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
         txt = txt.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:200px;max-height:200px;border:1px solid rgba(255,255,255,0.1);margin:6px 0;border-radius:12px;" onerror="this.style.display=\'none\'">');
-        txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
+        txt = txt.replace(/@(\S+)/g, (_, name) => '<span class="mention" onclick="event.stopPropagation();window.showAgentInfo(\'' + name + '\')">@' + name + '</span>');
 
         let react = m.reactions || {}, rh = '';
         Object.keys(react).forEach(k => {
@@ -711,11 +772,11 @@ export function renderSceneMessages() {
             ? '<div style="color:#880000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_char_name || '???') + ': ' + (m.reply_text || '...') + '</div>'
             : '';
 
-        return '<div class="chat-msg" data-msg-id="' + m.id + '">' +
+        return '<div class="chat-msg" data-msg-id="' + m.id + '" data-rp-char="' + escapeHtml(m.char_name || '') + '" data-rp-owner="' + escapeHtml(m.owner || '') + '" style="cursor:pointer;">' +
             '<div class="chat-msg-left"><div class="chat-avatar-frame f-default"><div class="inner">' + avatarHtml + '</div></div></div>' +
             '<div class="chat-msg-right">' + replyHtml +
             '<div class="chat-header-row">' +
-            '<span class="chat-author name-with-badge ' + e.colorCls + ' ' + e.fontCls + '" style="color:var(--accent);" onclick="window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + e.roleBadge + e.badgeHtml + '</span>' +
+            '<span class="chat-author name-with-badge rp-message-author ' + e.colorCls + ' ' + e.fontCls + '" style="color:var(--accent);" onclick="event.stopPropagation();window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + e.roleBadge + e.badgeHtml + '</span>' +
             '<span style="color:var(--text-3);font-size:0.7rem;">(' + m.owner + ')</span>' +
             '<span class="chat-time">' + m.time + '</span>' + menu +
             '</div>' +
@@ -741,7 +802,6 @@ export async function addSceneReaction(msgId, emoji) {
         msg.reactions[key].push(CA.name);
         msg.reactions[emoji] = (msg.reactions[emoji] || 0) + 1;
     }
-    // Локально сразу
     sceneMessages = sceneMessages.map(m => m.id == msgId ? { ...m, reactions: msg.reactions } : m);
     renderSceneMessages();
     await supabase.from('rp_scene_messages').update({ reactions: msg.reactions }).eq('id', parseInt(msgId));
@@ -752,7 +812,6 @@ export async function deleteSceneMessage(msgId) {
     if (!msg) return;
     let canMod = CA && (CA.role === 'admin' || CA.role === 'moderator');
     if (msg.owner !== CA?.name && !canMod) return notif('⛔ Нет прав');
-    // Локально сразу
     sceneMessages = sceneMessages.filter(m => String(m.id) !== String(msgId));
     renderSceneMessages();
     await supabase.from('rp_scene_messages').delete().eq('id', parseInt(msgId));

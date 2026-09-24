@@ -150,6 +150,11 @@ export async function uploadCover(file) {
 export async function saveAgent() {
     if (!CA) return;
     try {
+        // Защита: не терять инвентарь если локально пусто
+        let invToSave = (inventory && inventory.length > 0)
+            ? inventory
+            : (CA.inventory && CA.inventory.length > 0 ? CA.inventory : []);
+
         let data = {
             name: CA.name,
             pass_hash: CA.passHash,
@@ -172,7 +177,7 @@ export async function saveAgent() {
             active_font: activeItems.font,
             active_booster: activeBooster,
             booster_end_time: boosterEndTime,
-            inventory: inventory,
+            inventory: invToSave,
             active_style: activeItems.style || '',
             active_sound: activeItems.sound || '',
             last_seen: new Date().toISOString()
@@ -250,7 +255,23 @@ export async function login() {
     }
 
     CA = ag;
-    setInventory((ag.inventory || []).filter(item => !REMOVED_ITEM_IDS.includes(item.id)));
+
+    // === Синхронизация инвентаря из БД + localStorage ===
+    let dbInv = (ag.inventory || []).filter(item => !REMOVED_ITEM_IDS.includes(item.id));
+    let localInvKey = 'syndicate_inventory_' + ag.name;
+    let localInv = [];
+    try { localInv = JSON.parse(localStorage.getItem(localInvKey) || '[]'); } catch (e) {}
+
+    // Объединяем по id (без дубликатов)
+    let mergedMap = new Map();
+    dbInv.forEach(i => mergedMap.set(i.id, i));
+    localInv.forEach(i => { if (!mergedMap.has(i.id)) mergedMap.set(i.id, i); });
+    let mergedInv = Array.from(mergedMap.values());
+
+    setInventory(mergedInv);
+    localStorage.setItem(localInvKey, JSON.stringify(mergedInv));
+
+    // === Активные эффекты ===
     activeItems.color = (ag.active_color && !REMOVED_ITEM_IDS.includes(ag.active_color)) ? ag.active_color : 'c_red';
     activeItems.frame = (ag.active_frame && !REMOVED_ITEM_IDS.includes(ag.active_frame)) ? ag.active_frame : 'f_default';
     activeItems.badge = (ag.active_badge && !REMOVED_ITEM_IDS.includes(ag.active_badge)) ? ag.active_badge : 'b_none';
@@ -276,6 +297,8 @@ export async function login() {
     CA.nameHistory = CA.nameHistory || [];
     CA.banned = CA.banned || false;
     CA.muted = CA.muted || false;
+    // Синхронизируем CA.inventory чтобы saveAgent не потерял
+    CA.inventory = mergedInv;
 
     // Ежедневный бонус
     let today = new Date().toDateString();
@@ -324,6 +347,7 @@ export async function register() {
     activeItems = { color: 'c_red', frame: 'f_default', badge: 'b_none', font: 'fnt_default', style: '', sound: '', avatar_url: '' };
     activeBooster = null;
     boosterEndTime = null;
+    CA.inventory = inventory;
 
     await saveAgent();
     return { CA, inventory, activeItems };

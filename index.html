@@ -940,32 +940,6 @@ textarea.chat-input {
 }
 
 /* РОЛЬ-БЕЙДЖИКИ */
-.role-badge {
-    position: absolute;
-    top: -10px;
-    right: -14px;
-    font-size: 1rem;
-    line-height: 1;
-    filter: drop-shadow(0 0 5px currentColor) drop-shadow(0 0 10px currentColor);
-    pointer-events: none;
-    animation: roleBadgePop 2s ease-in-out infinite;
-    z-index: 5;
-}
-.role-badge.admin { color: #ffd700; }
-.role-badge.mod { color: #00e5ff; }
-@keyframes roleBadgePop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
-
-.card-author .role-badge,
-.comment-author .role-badge,
-.repost-author .role-badge,
-.repost-header .role-badge,
-.feed-profile-name .role-badge {
-    top: -5px;
-    right: -8px;
-    font-size: 0.65rem;
-    filter: drop-shadow(0 0 3px currentColor);
-    animation: none;
-}
 
 .name-with-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; padding-right: 8px; }
 .badge-img { width: 26px !important; height: 26px !important; vertical-align: middle; margin-left: 4px; image-rendering: pixelated; }

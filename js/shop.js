@@ -1,6 +1,6 @@
 // ============================================================
 // SHOP / МАГАЗИН И ИНВЕНТАРЬ
-// v2.9.6: убраны руны/готика/western, ревизия цен, синхронизация CA
+// v3.0.0: fix saveInventory (не терять инвентарь), fnt_comic
 // ============================================================
 
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, saveAgent, setInventory } from './auth.js';
@@ -245,8 +245,21 @@ export function getBoosterTimeLeft() {
     return h + 'ч ' + m + 'м';
 }
 
+// ============================================================
+// СОХРАНЕНИЕ ИНВЕНТАРЯ — ЗАЩИТА ОТ ПОТЕРИ
+// ============================================================
 export async function saveInventory() {
     if (!CA) return;
+
+    // Защита: если локальный инвентарь пустой, а у CA что-то есть — не сохраняем
+    if (inventory && inventory.length === 0 && CA.inventory && CA.inventory.length > 0) {
+        console.warn('[SHOP] Попытка сохранить пустой инвентарь — пропускаем');
+        return;
+    }
+
+    // Обновляем CA.inventory чтобы при следующем saveAgent не потеряли
+    CA.inventory = inventory;
+
     localStorage.setItem('syndicate_inventory_' + CA.name, JSON.stringify(inventory));
     try {
         await supabase.from('agents').update({
@@ -300,7 +313,7 @@ export function previewItem(cat, id) {
             'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
             'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
             'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
-        }[item.id] || '';        
+        }[item.id] || '';
         c = '<div style="font-size:2rem;padding:20px;" class="' + fc + '">Пример текста</div>';
     } else if (cat === 'sound') {
         c = '<div style="font-size:2rem;padding:10px;">🎵 ' + item.name + '</div>';
@@ -376,12 +389,12 @@ export function renderShopItems() {
                 ? '<img src="' + item.image + '" style="max-width:64px;max-height:64px;">'
                 : '<div style="font-size:2.2rem;">🏅</div>';
         } else if (shopCategory === 'fonts') {
-        let ff = {
-            'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
-            'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
-            'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-            'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
-        }[item.id] || '';
+            let ff = {
+                'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
+                'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
+                'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
+                'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
+            }[item.id] || '';
             prev = '<div style="padding:8px;font-size:1.1rem;" class="' + ff + '">АБВГД</div>';
         } else if (shopCategory === 'sounds') {
             prev = '<div style="font-size:1.6rem;padding:10px;">🔔</div>';
@@ -437,6 +450,7 @@ export function buyItem(cat, id) {
 
     CA.crystals -= actualPrice;
     inventory.push({ category: cat, id, name: item.name, price: actualPrice });
+    CA.inventory = inventory;
     saveInventory();
     saveAgent();
     supabase.from('agents').update({ inventory: inventory, crystals: CA.crystals }).eq('name', CA.name);
@@ -491,6 +505,7 @@ export function applyItem(cat, id) {
         boosterEndTime = new Date(Date.now() + item.duration * 3600000).toISOString();
         let idx = inventory.findIndex(i => i.id === id);
         if (idx !== -1) inventory.splice(idx, 1);
+        CA.inventory = inventory;
         saveInventory(); saveAgent();
         renderShopItems(); renderInventory();
         if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
