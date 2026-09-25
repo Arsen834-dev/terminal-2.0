@@ -84,9 +84,9 @@ export const TICKER_TEXTS = [
     "Связь: Движение Фонариков желает вам удачи!"
 ];
 
-// Удалённые ID предметов (включая старые шрифты)
+// Удалённые ID предметов (включая старые шрифты и трафарет)
 export const REMOVED_ITEM_IDS = [
     'c_inverted', 'c_hellfire', 'c_obsidian', 'c_hexagon', 'c_emerald', 'c_ruby',
     'b_pais', 'b_mauler', 'b_gygax',
-    'fnt_rune', 'fnt_gothic', 'fnt_western'
+    'fnt_rune', 'fnt_gothic', 'fnt_western', 'fnt_stencil'
 ];

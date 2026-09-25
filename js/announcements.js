@@ -1,12 +1,13 @@
 // ============================================================
 // ANNOUNCEMENTS / ОБЪЯВЛЕНИЯ
-// v2.7.0: раскрытие объявления по клику
+// v2.7.1: getAgentFx из ui/renderFx.js
 // ============================================================
 
 import { supabase, CA } from './auth.js';
 import { addLog } from './admin.js';
 import { notif } from './utils.js';
 import { shopItems, getActiveColorClassForId } from './shop.js';
+import { getAgentFx } from './ui/renderFx.js';
 
 let announcements = [];
 let announceFilter = 'all';
@@ -22,15 +23,6 @@ export const announceTypes = {
     update:  { label: '⚡ Обновление',  icon: '⚡', color: '#00ff41' },
     wanted:  { label: '🔍 Розыск',      icon: '🔍', color: '#ff1744' }
 };
-
-function fx(name) {
-    if (typeof window.__getAgentFx === 'function') return window.__getAgentFx(name);
-    let colorCls = '';
-    let frameCls = 'f-default';
-    let roleBadge = '';
-    let badgeHtml = '';
-    return { colorCls, fontCls: '', frameCls, badgeHtml, roleBadge, avatar: '' };
-}
 
 export async function loadAnnouncements() {
     try {
@@ -211,7 +203,6 @@ export function renderAnnounceApp() {
                 renderAnnounceApp();
             }
         }));
-        // Клик по карточке объявления → раскрыть
         document.querySelectorAll('[data-ann-open]').forEach(b => b.addEventListener('click', function(e) {
             e.stopPropagation();
             let id = parseInt(this.dataset.annOpen);
@@ -223,7 +214,7 @@ export function renderAnnounceApp() {
 
 function renderAnnounceCard(a) {
     let t = announceTypes[a.type] || announceTypes.news;
-    let e = fx(a.author);
+    let e = getAgentFx(a.author);
     let titleHtml = a.title ? linkifyHashtags(escapeHtml(a.title)) : '';
     let textHtml = a.text ? linkifyHashtags(escapeHtml(a.text)).replace(/\n/g, '<br>') : '';
     let isPinned = a.pinned;

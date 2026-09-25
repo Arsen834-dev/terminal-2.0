@@ -1,12 +1,13 @@
 // ============================================================
 // FEED / ЛЕНТА — репосты, комментарии, хэштеги, эффекты
-// v2.8.0: шрифт не применяется на свой ник, картинки на всю ширину
+// v3.1.1: общий getAgentFx из ui/renderFx.js
 // ============================================================
 
 import { supabase, CA, getAgents, saveAgent } from './auth.js';
 import { notif } from './utils.js';
 import { playSound } from './sounds.js';
 import { shopItems, getActiveColorClassForId } from './shop.js';
+import { getAgentFx, FONT_MAP } from './ui/renderFx.js';
 
 // ============================================================
 // ХЭШТЕГИ
@@ -62,43 +63,6 @@ export function linkifyHashtags(escapedText) {
 }
 
 // ============================================================
-// ЭФФЕКТЫ
-// ============================================================
-function fx(name, agents) {
-    if (typeof window.__getAgentFx === 'function') {
-        return window.__getAgentFx(name, agents);
-    }
-    let a = (agents || {})[name] || {};
-    let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
-    let fontCls = '';
-    if (a.active_font && name !== CA?.name) {
-        let map = {
-            'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
-            'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
-            'fnt_pixel': 'font-pixel', 'fnt_neon': 'font-neon',
-            'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic',
-            'fnt_blood': 'font-blood'
-        };
-        fontCls = map[a.active_font] || '';
-    }    
-    let frameCls = 'f-default';
-    if (a.active_frame && shopItems.frames) {
-        let f = shopItems.frames.find(x => x.id === a.active_frame);
-        if (f) frameCls = f.cssClass || 'f-default';
-    }
-    let badgeHtml = '';
-    if (a.active_badge && a.active_badge !== 'b_none' && shopItems.badges) {
-        let b = shopItems.badges.find(x => x.id === a.active_badge);
-        if (b && b.image) badgeHtml = '<img src="' + b.image + '" class="badge-img">';
-        else if (b && b.emoji) badgeHtml = '<span style="font-size:1rem;">' + b.emoji + '</span>';
-    }
-    let roleBadge = '';
-    if (a.role === 'admin') roleBadge = '<span class="role-badge admin">👑</span>';
-    else if (a.role === 'moderator') roleBadge = '<span class="role-badge mod">🛡</span>';
-    return { colorCls, fontCls, frameCls, badgeHtml, roleBadge, avatar: a.avatar_url || '' };
-}
-
-// ============================================================
 // РЕНДЕР ПОСТА
 // ============================================================
 export function renderPostCard(post, opts = {}) {
@@ -106,7 +70,7 @@ export function renderPostCard(post, opts = {}) {
     let originalPost = opts.originalPost;
     let compact = opts.compact || false;
 
-    let e = fx(post.author, agents);
+    let e = getAgentFx(post.author, agents);
     let avatarUrl = post.avatar_url || e.avatar;
     let avatarHtml = avatarUrl ? '<img src="' + avatarUrl + '">' : '🕶️';
 
@@ -120,7 +84,7 @@ export function renderPostCard(post, opts = {}) {
 
     // ============ РЕПОСТ ============
     if (post.repost_of && originalPost) {
-        let eo = fx(originalPost.author, agents);
+        let eo = getAgentFx(originalPost.author, agents);
         let oAvatarUrl = originalPost.avatar_url || eo.avatar;
         let origAvatar = oAvatarUrl ? '<img src="' + oAvatarUrl + '">' : '🕶️';
         let origText = originalPost.text
@@ -196,7 +160,7 @@ function renderCommentsSection(post) {
 // КОММЕНТАРИИ
 // ============================================================
 export function renderComment(comment, agents) {
-    let e = fx(comment.author, agents);
+    let e = getAgentFx(comment.author, agents);
     let avatarUrl = comment.avatar_url || e.avatar;
     let avatarHtml = avatarUrl ? '<img src="' + avatarUrl + '">' : '🕶️';
     let liked = comment.liked_by && CA && (Array.isArray(comment.liked_by) ? comment.liked_by : []).includes(CA.name);

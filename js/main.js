@@ -1,15 +1,54 @@
 // ============================================================
-// ТЕРМИНАЛ СИНДИКАТА v3.0.0 — MAIN
+// ТЕРМИНАЛ СИНДИКАТА v3.1.0 — MAIN
+// v3.1.6: спектакли вынесены в features/rp-scenes.js
 // ============================================================
 
 console.log('[MAIN] Модуль начал загрузку');
 
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, login, register, saveAgent, loadAgent, getAgents, translit, setInventory } from './auth.js';
 import { loadDiscount, loadInventory, saveInventory, renderShop, renderShopItems, renderShopCategories, renderInventory, previewItem, buyItem, applyItem, resetItem, getItemDiscount, getDiscountedPrice, formatPrice, updateDiscountDisplay, generateNewDiscount, getActiveColorClass, getActiveColorClassForId, getActiveFrameClass, getActiveBadgeEmoji, getActiveFontClass, getBoosterTimeLeft, shopItems } from './shop.js';
-import { loadChatMessages, sendMessage, renderChat, subscribeChat, switchChatTab, loadDMMessages, sendDM, renderDMList, renderDMMessages, subscribeDM, openDM, startDM, loadMoreChatMessages, addReaction, addDMReaction, addAdminReaction, addClanReaction, deleteMessage, deleteClanMessage, deleteAdminMessage, pinChatMessage, pinClanMessage, editMessage, editClanMessage, replyToMessage, replyToClanMessage, cancelReply, loadMentionAgents, showMentionSuggestions, hideMentionSuggestions, updateBadgeIcons, showReactionPickerUniversal, loadAdminMessages, sendAdminMessage, renderAdminChat, subscribeAdminChat, openClanChat, sendClanMessage, renderClanMessages, loadClanMessages, subscribeClanChat, chatMessages, currentClanId, currentDM, dmMessagesAll, unreadMentions, clanChats, isClanChatActive, chatTabActive } from './chat.js';
+
+// ==================== CHAT ====================
+import {
+    loadChatMessages, sendMessage, renderChat, subscribeChat, switchChatTab,
+    loadMoreChatMessages, addReaction, addAdminReaction, addClanReaction,
+    deleteMessage, deleteClanMessage, deleteAdminMessage,
+    pinChatMessage, pinClanMessage,
+    editMessage, editClanMessage,
+    replyToMessage, replyToClanMessage, cancelReply,
+    loadMentionAgents, showMentionSuggestions, hideMentionSuggestions,
+    updateBadgeIcons, showReactionPickerUniversal,
+    loadAdminMessages, sendAdminMessage, renderAdminChat, subscribeAdminChat,
+    openClanChat, sendClanMessage, renderClanMessages, loadClanMessages, subscribeClanChat,
+    chatMessages, currentClanId, unreadMentions, clanChats,
+    isClanChatActive, chatTabActive
+} from './chat.js';
+
+// ==================== DM ====================
+import {
+    loadDMMessages, sendDM, renderDMList, renderDMMessages, subscribeDM,
+    openDM, startDM, addDMReaction, deleteDMMessage,
+    replyToDMMessage, cancelDmReply
+} from './features/dm.js';
+
+// ==================== MEMES ====================
+import {
+    loadMemes, createMeme, deleteMeme, likeMeme, renderMemes, memes
+} from './features/memes.js';
+
+// ==================== RP SCENES ====================
+import {
+    loadRpScenes, createRpScene, editRpScene, deleteRpScene, renderRpScenes,
+    openSceneChat as openSceneChatFn,
+    closeSceneChat, sendSceneMessage, addSceneReaction, deleteSceneMessage,
+    editSceneMessage, replyToSceneMessage,
+    rpScenes
+} from './features/rp-scenes.js';
+
+// ==================== OTHER ====================
 import { loadClans, loadClanWars, createClan, joinClan, leaveClan, deleteClan, declareWar, donateToClan, acceptJoinRequest, checkCompletedWars, autoDistributeTreasury, renderClans, changeClanRole, kickClanMember, showDonateModal, openWarTargetModal, clans, clanWars } from './clans.js';
 import { loadFriends, sendFriendRequest, acceptFriend, removeFriend, blockAgent, unblockAgent, getFriends, renderFriends } from './friends.js';
-import { loadGuides, createGuide, deleteGuide, editGuide, loadMemes, createMeme, deleteMeme, likeMeme, userGuides, memes, renderGuides, saveEditedGuide, renderMemes, openGuideModal } from './guides.js';
+import { loadGuides, createGuide, deleteGuide, editGuide, userGuides, renderGuides, saveEditedGuide, openGuideModal } from './guides.js';
 import { loadAnnouncements, renderAnnounceApp, createAnnouncement, subscribeAnnouncements } from './announcements.js';
 import { showAgentInfo, createPost, changeCover } from './agents.js';
 import { getAchievements, unlockAchievement, checkAchievements, renderAchievementsUI } from './achievements.js';
@@ -17,100 +56,53 @@ import { muteAgent, banAgent, deleteAgent, changeAgentRole, renderAdminPanel, re
 import { changeName, changePassword, changeAvatar } from './settings.js';
 import { playSound, startBgMusic, stopBgMusic, toggleSound, toggleMusic, getSoundEnabled, getMusicEnabled, nextBgTrack } from './sounds.js';
 import { notif, closeModal, uploadFileAndInsert, glowIcon, stopGlowIcon } from './utils.js';
-import { loadRpCharacters, createRpCharacter, updateRpCharacter, deleteRpCharacter, getRpCharacters, setCurrentRpChar, loadSavedRpChar, loadRpMessages, subscribeRpChat, sendRpMessage, loadRpScenes, createRpScene, editRpScene, deleteRpScene, renderRpScenes, rpCharacters, getCurrentRpChar, requireCharacter, addRpReaction, deleteRpMessage, editRpMessage, replyToRpMessage, cancelRpReply, showRpCharInfo } from './rp.js';
-import { openSceneChat, closeSceneChat, sendSceneMessage, addSceneReaction, deleteSceneMessage, editSceneMessage, replyToSceneMessage } from './rp.js';
+
+// ==================== RP (персонажи + Space-X) ====================
+import {
+    loadRpCharacters, createRpCharacter, updateRpCharacter, deleteRpCharacter,
+    getRpCharacters, setCurrentRpChar, loadSavedRpChar, loadRpMessages, subscribeRpChat,
+    sendRpMessage, rpCharacters, getCurrentRpChar, requireCharacter,
+    addRpReaction, deleteRpMessage, editRpMessage, replyToRpMessage, cancelRpReply, showRpCharInfo
+} from './rp.js';
+
 import { renderPostCard as renderPostCardFeed, attachFeedHandlers } from './feed.js';
 import { initWebGraph, destroyWebGraph } from './web.js';
 import { RP_RACES } from './config.js';
-import { initCropper, setCropMode, getCroppedBlob, resetCropper, hasImage } from './cropper.js';
+import { initCropper, setCropMode, getCroppedBlob, resetCropper, hasImage, getCropMode } from './cropper.js';
+import { getAgentFx, FONT_MAP } from './ui/renderFx.js';
+import {
+    buildSidebar, updateSidebarBadges, updateSidebarProfile,
+    applySidebarState, toggleSidebar, buildMobileNav, setSidebarHandlers
+} from './ui/sidebar.js';
+import { confirmDialog, initModalCloseHandlers } from './ui/modals.js';
+import { getState, setState } from './ui/state.js';
+import { renderRightPanel } from './ui/rightPanel.js';
+import { openApp, closeApp, APP_SCREENS } from './routes.js';
 
 console.log('[MAIN] Импорты загружены');
 
 // ============================================================
-// СОСТОЯНИЕ
+// ЛОКАЛЬНОЕ СОСТОЯНИЕ (для ленты)
 // ============================================================
 let currentFeedTab = 'all';
 let currentFeedFilter = 'fresh';
 let currentHashtag = null;
-let sidebarCollapsed = localStorage.getItem('syndicate_sidebar_collapsed') === 'true';
 let clockInterval = null;
-let currentView = 'feed';
 let feedAgentsCache = null;
 let feedOriginalsCache = null;
 let feedChannel = null;
 let agentsChannel = null;
-
-let newContentFlags = {
-    chat: false,
-    dm: false,
-    friends: false,
-    achievements: false,
-    guides: false,
-    memes: false,
-    announce: false,
-    'rp-community': false,
-    rp: false
-};
-
 let repTkInterval = null;
-
-// ============================================================
-// ЭФФЕКТЫ
-// ============================================================
-function getAgentFx(name, agents) {
-    if (!agents) agents = feedAgentsCache || {};
-    let a = agents[name] || {};
-
-    // Для СВОЕГО ника всегда берём актуальные данные из CA
-    if (CA && name === CA.name) {
-        a = {
-            active_color: CA.active_color || activeItems.color,
-            active_frame: CA.active_frame || activeItems.frame,
-            active_badge: CA.active_badge || activeItems.badge,
-            active_font: CA.active_font || activeItems.font,
-            avatar_url: CA.avatar_url || '',
-            role: CA.role || 'agent'
-        };
-    }
-
-    let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
-    let fontCls = '';
-    if (a.active_font && name !== CA?.name) {
-        let map = {
-            'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
-            'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
-            'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
-            'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
-        };
-        fontCls = map[a.active_font] || '';
-    }
-    let frameCls = 'f-default';
-    if (a.active_frame && shopItems.frames) {
-        let f = shopItems.frames.find(x => x.id === a.active_frame);
-        if (f) frameCls = f.cssClass || 'f-default';
-    }
-    let badgeHtml = '';
-    if (a.active_badge && a.active_badge !== 'b_none' && shopItems.badges) {
-        let b = shopItems.badges.find(x => x.id === a.active_badge);
-        if (b && b.image) badgeHtml = '<img src="' + b.image + '" class="badge-img" alt="">';
-        else if (b && b.emoji) badgeHtml = '<span style="font-size:1rem;">' + b.emoji + '</span>';
-    }
-    let roleBadge = '';
-    if (a.role === 'admin') roleBadge = '<span class="role-badge admin" title="Администратор">👑</span>';
-    else if (a.role === 'moderator') roleBadge = '<span class="role-badge mod" title="Модератор">🛡</span>';
-    return { colorCls, fontCls, frameCls, badgeHtml, roleBadge, avatar: a.avatar_url || '' };
-}
-
-window.__getAgentFx = getAgentFx;
 
 // ============================================================
 // РЕРЕНДЕР ВСЕГО
 // ============================================================
 async function rerenderAll() {
     try {
+        let st = getState();
         feedAgentsCache = await getAgents();
 
-        if (currentView === 'feed') {
+        if (st.currentView === 'feed') {
             await refreshFeedOnly();
         }
 
@@ -125,38 +117,38 @@ async function rerenderAll() {
             }
         }
 
-        if (currentView === 'chat') {
+        if (st.currentView === 'chat') {
             if (chatTabActive === 'general') renderChat();
             else if (chatTabActive === 'clan') renderClanMessages();
             else if (chatTabActive === 'admin') renderAdminChat();
         }
 
-        if (currentView === 'dm') {
+        if (st.currentView === 'dm') {
             renderDMList();
             renderDMMessages();
         }
 
-        if (currentView === 'clans') {
+        if (st.currentView === 'clans') {
             if (typeof renderClans === 'function') renderClans();
         }
 
-        if (currentView === 'friends') {
+        if (st.currentView === 'friends') {
             if (typeof renderFriends === 'function') renderFriends();
         }
 
-        if (currentView === 'inventory') {
+        if (st.currentView === 'inventory') {
             if (typeof renderInventory === 'function') renderInventory();
         }
 
-        if (currentView === 'shop') {
+        if (st.currentView === 'shop') {
             if (typeof renderShopItems === 'function') renderShopItems();
         }
 
-        if (currentView === 'rp') {
+        if (st.currentView === 'rp') {
             if (typeof renderRpMessages === 'function') renderRpMessages();
         }
 
-        if (currentView === 'rp-community') {
+        if (st.currentView === 'rp-community') {
             if (typeof renderRpScenes === 'function') renderRpScenes();
         }
 
@@ -164,29 +156,12 @@ async function rerenderAll() {
 
         if (typeof updateSidebarProfile === 'function') updateSidebarProfile();
 
-        if (currentView === 'announce') renderAnnounceApp();
+        if (st.currentView === 'announce') renderAnnounceApp();
     } catch (e) { console.error('[rerenderAll]', e); }
 }
 window.__rerenderAll = rerenderAll;
 
-// ============================================================
-// УНИВЕРСАЛЬНАЯ МОДАЛКА ПОДТВЕРЖДЕНИЯ
-// ============================================================
-function confirmDialog(title, text, onConfirm) {
-    let modal = document.getElementById('modal-confirm');
-    if (!modal) { if (window.confirm(text)) onConfirm(); return; }
-    document.getElementById('modal-confirm-title').textContent = title || 'ПОДТВЕРЖДЕНИЕ';
-    document.getElementById('modal-confirm-text').textContent = text || '';
-    let okBtn = document.getElementById('modal-confirm-ok');
-    let newOk = okBtn.cloneNode(true);
-    okBtn.parentNode.replaceChild(newOk, okBtn);
-    newOk.addEventListener('click', () => {
-        closeModal('modal-confirm');
-        if (typeof onConfirm === 'function') onConfirm();
-    });
-    modal.style.display = 'flex';
-    setTimeout(() => modal.classList.add('show'), 10);
-}
+// Прокидка confirmDialog в window
 window.confirmDialog = confirmDialog;
 
 // ============================================================
@@ -209,23 +184,18 @@ document.addEventListener('click', (e) => {
     if (btn.dataset && (btn.dataset.reaction || btn.dataset.reactionPicker)) return;
     if (btn.id === 'chat-emoji-btn' || btn.id === 'dm-emoji-btn' || btn.id === 'guide-emoji-btn') return;
     if (btn.id === 'chat-file-btn' || btn.id === 'dm-file-btn' || btn.id === 'guide-file-btn') return;
+    if (btn.id === 'rp-emoji-btn' || btn.id === 'rp-file-btn' || btn.id === 'rp-scene-emoji-btn' || btn.id === 'rp-scene-file-btn') return;
+    if (btn.id === 'announce-emoji-btn' || btn.id === 'announce-file-btn') return;
+    if (btn.id === 'meme-emoji-btn' || btn.id === 'meme-file-btn' || btn.id === 'post-emoji-btn' || btn.id === 'post-file-btn') return;
     if (btn.classList.contains('hashtag-link')) return;
     if (btn.classList.contains('comment-send')) return;
     if (btn.dataset && (btn.dataset.commentSend || btn.dataset.repostBtn || btn.dataset.commentsToggle)) return;
     if (btn.id === 'modal-confirm-ok') return;
     if (btn.classList.contains('discord-cover-thumb')) return;
+    if (btn.id === 'crop-save-btn' || btn.id === 'crop-mode-avatar' || btn.id === 'crop-mode-cover') return;
+    if (btn.id === 'agents-toggle-btn' || btn.id === 'online-toggle-btn') return;
     playSound('click');
 }, true);
-
-// ============================================================
-// data-close-modal
-// ============================================================
-document.addEventListener('click', (e) => {
-    let closeBtn = e.target.closest('[data-close-modal]');
-    if (!closeBtn) return;
-    let id = closeBtn.dataset.closeModal;
-    if (id) closeModal(id);
-});
 
 // ============================================================
 // ЧАСЫ
@@ -293,232 +263,6 @@ setTimeout(() => {
         }, FADE_OUT_TIME);
     }, EAT_TIME);
 }, FADE_IN_TIME + HOLD_TIME);
-
-// ============================================================
-// SIDEBAR
-// ============================================================
-const SIDEBAR_STRUCTURE = [
-    { title: 'ОСНОВНОЕ', items: [
-        { id: 'chat', icon: '💬', label: 'Чат' },
-        { id: 'dm', icon: '📁', label: 'Личка' },
-        { id: 'rp', icon: '🎭', label: 'РП-Чат' }
-    ]},
-    { title: 'СООБЩЕСТВО', items: [
-        { id: 'clans', icon: '⚔️', label: 'Отряды' },
-        { id: 'friends', icon: '🤝', label: 'Друзья' },
-        { id: 'contacts', icon: '🌐', label: 'Сеть' },
-        { id: 'rp-community', icon: '🎬', label: 'Спектакли' }
-    ]},
-    { title: 'ЭКОНОМИКА', items: [
-        { id: 'shop', icon: '🛒', label: 'Магазин' },
-        { id: 'inventory', icon: '🎒', label: 'Инвентарь' }
-    ]},
-    { title: 'КОНТЕНТ', items: [
-        { id: 'achievements', icon: '🏆', label: 'Достижения' },
-        { id: 'guides', icon: '📚', label: 'Гайды' },
-        { id: 'memes', icon: '😂', label: 'Мемы' }
-    ]},
-    { title: 'АДМИН', adminOnly: true, items: [
-        { id: 'admin', icon: '👑', label: 'Админ' },
-        { id: 'logs', icon: '📜', label: 'Логи' },
-        { id: 'announce', icon: '📢', label: 'Объявления' }
-    ]},
-    { title: 'СИСТЕМА', items: [
-        { id: 'settings', icon: '⚙️', label: 'Настройки' }
-    ]}
-];
-
-function buildSidebar() {
-    let nav = document.getElementById('sidebar-nav');
-    if (!nav) return;
-    let isAdmin = CA && (CA.role === 'admin' || CA.role === 'moderator');
-    let html = '';
-    SIDEBAR_STRUCTURE.forEach(group => {
-        if (group.adminOnly && !isAdmin) return;
-        html += '<div class="sidebar-group">';
-        html += '<div class="sidebar-group-title">' + group.title + '</div>';
-        group.items.forEach(item => {
-            let badge = '';
-            if (item.id === 'chat' && (unreadMentions.chat + unreadMentions.clan) > 0) {
-                badge = '<span class="sidebar-item-badge">' + (unreadMentions.chat + unreadMentions.clan) + '</span>';
-            }
-            if (item.id === 'dm' && unreadMentions.dm > 0) {
-                badge = '<span class="sidebar-item-badge">' + unreadMentions.dm + '</span>';
-            }
-            let dot = '';
-            if (newContentFlags[item.id]) {
-                dot = '<span class="sidebar-item-new-dot"></span>';
-            }
-            let isActive = (item.id === currentView);
-            html += '<div class="sidebar-item' + (isActive ? ' active' : '') + '" data-app="' + item.id + '">';
-            html += '<span class="sidebar-item-icon">' + item.icon + '</span>';
-            html += '<span class="sidebar-item-label">' + item.label + '</span>';
-            html += badge;
-            html += dot;
-            html += '</div>';
-        });
-        html += '</div>';
-    });
-    nav.innerHTML = html;
-    updateSidebarProfile();
-    nav.querySelectorAll('[data-app]').forEach(el => {
-        el.addEventListener('click', () => openApp(el.dataset.app));
-    });
-    applySidebarState();
-}
-
-function updateSidebarProfile() {
-    if (!CA) return;
-    let cover = document.getElementById('sidebar-profile-cover');
-    let avatar = document.getElementById('sidebar-profile-avatar');
-    let name = document.getElementById('sidebar-profile-name');
-    let role = document.getElementById('sidebar-profile-role');
-    if (cover) cover.innerHTML = CA.cover_url ? '<img src="' + CA.cover_url + '">' : '';
-    if (avatar) avatar.innerHTML = CA.avatar_url ? '<img src="' + CA.avatar_url + '">' : '🕶️';
-    if (name) name.textContent = CA.name || '---';
-    if (role) role.textContent = CA.role === 'admin' ? 'АДМИНИСТРАТОР' : CA.role === 'moderator' ? 'МОДЕРАТОР' : 'АГЕНТ';
-}
-window.updateSidebarProfile = updateSidebarProfile;
-
-function applySidebarState() {
-    let layout = document.getElementById('main-layout');
-    let sidebar = document.getElementById('left-sidebar');
-    let btn = document.getElementById('toggle-sidebar-btn');
-    if (!layout || !sidebar) return;
-    if (sidebarCollapsed) {
-        layout.classList.add('sidebar-collapsed');
-        sidebar.classList.add('sidebar-collapsed');
-        if (btn) btn.textContent = '[ ► РАЗВЕРНУТЬ ]';
-    } else {
-        layout.classList.remove('sidebar-collapsed');
-        sidebar.classList.remove('sidebar-collapsed');
-        if (btn) btn.textContent = '[ ◄ СВЕРНУТЬ ]';
-    }
-}
-
-function toggleSidebar() {
-    sidebarCollapsed = !sidebarCollapsed;
-    localStorage.setItem('syndicate_sidebar_collapsed', sidebarCollapsed);
-    applySidebarState();
-}
-
-// ============================================================
-// МОБИЛЬНАЯ НАВИГАЦИЯ
-// ============================================================
-function buildMobileNav() {
-    let nav = document.getElementById('mobile-nav-inner');
-    if (!nav) return;
-    let items = [
-        { id: 'chat', icon: '💬', label: 'ЧАТ' },
-        { id: 'contacts', icon: '🌐', label: 'СЕТЬ' },
-        { id: 'profile', icon: '👤', label: 'ПРОФИЛЬ' },
-        { id: 'shop', icon: '🛒', label: 'МАГАЗИН' },
-        { id: 'settings', icon: '⚙️', label: 'НАСТРОЙКИ' }
-    ];
-    nav.innerHTML = items.map(i => {
-        let badge = '';
-        if (i.id === 'chat' && (unreadMentions.chat + unreadMentions.clan) > 0) {
-            badge = '<span class="mobile-nav-badge">' + (unreadMentions.chat + unreadMentions.clan) + '</span>';
-        }
-        return '<button class="mobile-nav-btn" data-app="' + i.id + '">' + badge + '<span class="mobile-nav-icon">' + i.icon + '</span><span>' + i.label + '</span></button>';
-    }).join('');
-    nav.querySelectorAll('[data-app]').forEach(el => {
-        el.addEventListener('click', () => {
-            let id = el.dataset.app;
-            nav.querySelectorAll('[data-app]').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-            if (id === 'profile') { openOwnProfile(); return; }
-            openApp(id);
-        });
-    });
-}
-
-// ============================================================
-// ПРАВЫЙ SIDEBAR (с realtime обновлением)
-// ============================================================
-async function renderRightPanel() {
-    let online = document.getElementById('online-list');
-    if (online) {
-        let agents = await getAgents();
-        feedAgentsCache = agents;
-        let now = Date.now();
-        let allAgents = Object.entries(agents).filter(([n]) => n !== 'W-C26');
-        let sorted = allAgents
-            .map(([name, d]) => {
-                let isOnline = d.last_seen && (now - new Date(d.last_seen).getTime()) < 300000;
-                return { name, data: d, isOnline };
-            })
-            .sort((a, b) => {
-                if (a.isOnline && !b.isOnline) return -1;
-                if (!a.isOnline && b.isOnline) return 1;
-                return a.name.localeCompare(b.name);
-            })
-            .slice(0, 20);
-
-        if (sorted.length === 0) {
-            online.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ АГЕНТОВ</div>';
-        } else {
-            online.innerHTML = sorted.map(({ name, data, isOnline }) => {
-                let fx = getAgentFx(name, agents);
-                let avatarHtml = fx.avatar ? '<div class="inner"><img src="' + fx.avatar + '"></div>' : '<div class="inner">🕶️</div>';
-                let roleIcon = data.role === 'admin' ? '👑' : data.role === 'moderator' ? '🛡' : '🎯';
-                let roleLabel = data.role === 'admin' ? 'Админ' : data.role === 'moderator' ? 'Модер' : 'Агент';
-                let roleBadgeHtml = '';
-                if (data.role === 'admin') roleBadgeHtml = '<span class="online-role-badge admin" title="Администратор">👑</span>';
-                else if (data.role === 'moderator') roleBadgeHtml = '<span class="online-role-badge mod" title="Модератор">🛡</span>';
-                return '<div class="online-item ' + (isOnline ? '' : 'offline') + '" data-show-agent="' + name + '">' +
-                    '<div class="chat-avatar-frame online-avatar ' + fx.frameCls + '">' + avatarHtml + '</div>' +
-                    '<div class="online-name-wrap">' +
-                    '<div class="online-name-row">' +
-                    '<span class="online-name ' + fx.colorCls + ' ' + fx.fontCls + '">' + name + '</span>' +
-                    fx.badgeHtml +
-                    '</div>' +
-                    '<div class="online-role-row">' + roleIcon + ' ' + roleLabel + roleBadgeHtml + '</div>' +
-                    '</div>' +
-                    '<div class="online-dot"></div>' +
-                    '</div>';
-            }).join('');
-            online.querySelectorAll('[data-show-agent]').forEach(el => {
-                el.addEventListener('click', () => showAgentInfo(el.dataset.showAgent));
-            });
-        }
-    }
-    let topClans = document.getElementById('top-clans');
-    if (topClans) {
-        await loadClans();
-        let sorted = [...clans].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 5);
-        if (sorted.length === 0) {
-            topClans.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ ОТРЯДОВ</div>';
-        } else {
-            topClans.innerHTML = sorted.map((cl, i) =>
-                '<div class="top-clan-item">' +
-                '<span class="top-clan-rank">#' + (i + 1) + '</span>' +
-                '<span class="top-clan-name">' + cl.emoji + ' ' + cl.name + '</span>' +
-                '<span class="top-clan-rating">' + (cl.rating || 0) + '</span></div>'
-            ).join('');
-        }
-    }
-    let announceMini = document.getElementById('announce-mini');
-    if (announceMini) {
-        let { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(4);
-        if (!data || data.length === 0) {
-            announceMini.innerHTML = '<div style="color:var(--text-3);font-size:0.75rem;padding:6px;">НЕТ ОБЪЯВЛЕНИЙ</div>';
-        } else {
-            announceMini.innerHTML = data.map(a =>
-                '<div class="announce-mini" data-announce-id="' + a.id + '">' +
-                '<div>' + escapeHtml((a.title || '').substring(0, 60)) + '</div>' +
-                '<div class="announce-mini-time">' + timeAgo(a.created_at) + '</div></div>'
-            ).join('');
-            announceMini.querySelectorAll('[data-announce-id]').forEach(el => {
-                el.addEventListener('click', async () => {
-                    let id = parseInt(el.dataset.announceId);
-                    let { data: full } = await supabase.from('announcements').select('*').eq('id', id).maybeSingle();
-                    if (full) openAnnounceView(full);
-                });
-            });
-        }
-    }
-}
 
 // ============================================================
 // МОДАЛКА ПРОСМОТРА ОБЪЯВЛЕНИЯ
@@ -693,7 +437,6 @@ async function loadFeedItems() {
             if (currentFeedFilter === 'mine' && CA) q = q.eq('author', CA.name);
             let { data: posts } = await q;
             if (posts && CA) {
-                // Собираем "кого я вижу": друзья + подписки + я сам
                 let visibleNames = new Set([CA.name]);
                 try {
                     let friends = getFriends();
@@ -710,7 +453,6 @@ async function loadFeedItems() {
                 } catch (e) {}
 
                 posts.forEach(p => {
-                    // Репосты показываем только если автор в visibleNames
                     if (p.repost_of && !visibleNames.has(p.author)) return;
                     all.push({ type: 'post', data: p, time: p.created_at, likes: p.likes || 0 });
                 });
@@ -813,8 +555,9 @@ function renderMemeCard(m) {
 }
 
 function openFeed() {
+    let st = getState();
     window.__currentView = 'feed';
-    currentView = 'feed';
+    st.currentView = 'feed';
     document.querySelectorAll('.app-screen').forEach(a => { a.classList.remove('show'); setTimeout(() => a.style.display = 'none', 150); });
     document.getElementById('center-content').style.display = '';
     document.querySelectorAll('[data-app]').forEach(el => el.classList.remove('active'));
@@ -832,21 +575,21 @@ function openOwnProfile() { if (CA) showAgentInfo(CA.name); }
 function subscribeFeedRealtime() {
     if (feedChannel) supabase.removeChannel(feedChannel);
     feedChannel = supabase.channel('feed-realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_posts' }, (payload) => {
-            if (currentView === 'feed') refreshFeedOnly();
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_posts' }, () => {
+            if (getState().currentView === 'feed') refreshFeedOnly();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_comments' }, () => {
-            if (currentView === 'feed') {
+            if (getState().currentView === 'feed') {
                 clearTimeout(window.__feedCommentDebounce);
                 window.__feedCommentDebounce = setTimeout(() => refreshFeedOnly(), 300);
             }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
-            if (currentView === 'feed') refreshFeedOnly();
+            if (getState().currentView === 'feed') refreshFeedOnly();
             renderRightPanel();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'memes' }, () => {
-            if (currentView === 'feed') refreshFeedOnly();
+            if (getState().currentView === 'feed') refreshFeedOnly();
         })
         .subscribe();
 }
@@ -890,7 +633,7 @@ function startRepTkTimer() {
 }
 
 // ============================================================
-// СИНХРОНИЗАЦИЯ ИНВЕНТАРЯ КАЖДУЮ МИНУТУ
+// СИНХРОНИЗАЦИЯ ИНВЕНТАРЯ
 // ============================================================
 async function syncAgentWithServer() {
     if (!CA) return;
@@ -901,7 +644,6 @@ async function syncAgentWithServer() {
             .maybeSingle();
 
         if (data) {
-            // 1. Инвентарь — если на сервере больше предметов, подтягиваем
             let serverInv = data.inventory || [];
             let localInv = inventory || [];
             if (serverInv.length > localInv.length) {
@@ -912,12 +654,10 @@ async function syncAgentWithServer() {
                 CA.inventory = localInv;
             }
 
-            // 2. Кристаллы — берём максимум
             if ((data.crystals || 0) > (CA.crystals || 0)) {
                 CA.crystals = data.crystals;
             }
 
-            // 3. Активные эффекты — если на сервере что-то есть, а локально дефолт
             if (data.active_color && activeItems.color === 'c_red' && data.active_color !== 'c_red') {
                 activeItems.color = data.active_color;
                 CA.active_color = data.active_color;
@@ -936,89 +676,6 @@ async function syncAgentWithServer() {
             }
         }
     } catch (e) { console.warn('[SYNC] Ошибка:', e); }
-}
-
-// ============================================================
-// ОТКРЫТИЕ ПРИЛОЖЕНИЙ
-// ============================================================
-function openApp(id) {
-    window.__currentView = id;
-    playSound('open');
-    currentView = id;
-    if (newContentFlags[id]) {
-        newContentFlags[id] = false;
-        buildSidebar();
-    }
-    let map = {
-        chat: 'app-chat', dm: 'app-dm', shop: 'app-shop', inventory: 'app-inventory',
-        clans: 'app-clans', friends: 'app-friends', achievements: 'app-achievements',
-        guides: 'app-guides', memes: 'app-memes', contacts: 'app-contacts',
-        admin: 'app-admin', logs: 'app-logs', announce: 'app-announce',
-        settings: 'app-settings', rp: 'app-rp', 'rp-community': 'app-rp-community',
-        'rp-scene': 'app-rp-scene'
-    };
-    let el = document.getElementById(map[id]);
-    if (!el) return;
-    document.getElementById('center-content').style.display = 'none';
-    el.style.display = 'flex';
-    setTimeout(() => el.classList.add('show'), 10);
-
-    document.querySelectorAll('.sidebar-item').forEach(x => x.classList.remove('active'));
-    let navItem = document.querySelector('.sidebar-item[data-app="' + id + '"]');
-    if (navItem) navItem.classList.add('active');
-
-    if (id === 'chat') {
-        unreadMentions.chat = 0; unreadMentions.clan = 0;
-        updateBadgeIcons(); buildSidebar(); switchChatTab('general');
-        stopGlowIcon('icon-chat'); loadChatMessages();
-    }
-    if (id === 'dm') { unreadMentions.dm = 0; updateBadgeIcons(); buildSidebar(); loadDMMessages(); }
-    if (id === 'contacts') { if (typeof initWebGraph === 'function') initWebGraph(); }
-    if (id === 'achievements') renderAchievementsUI();
-    if (id === 'guides') { loadGuides().then(() => renderGuides()); }
-    if (id === 'memes') { loadMemes().then(() => renderMemes()); }
-    if (id === 'admin') renderAdminPanel();
-    if (id === 'logs') renderLogs();
-    if (id === 'shop') renderShop();
-    if (id === 'inventory') renderInventory();
-    if (id === 'clans') { loadClans().then(() => loadClanWars().then(() => renderClans())); }
-    if (id === 'friends') { loadFriends().then(() => renderFriends()); }
-    if (id === 'announce') { loadAnnouncements().then(() => renderAnnounceApp()); }
-    if (id === 'rp') {
-        loadSavedRpChar();
-        loadRpCharacters().then(() => {
-            updateRpCurrentChar();
-            loadRpMessages('space-x');
-            subscribeRpChat('space-x');
-        });
-    }
-    if (id === 'rp-community') loadRpScenes().then(() => renderRpScenes());
-    if (id === 'rp-scene') { }
-
-    if (CA) { CA.crystals = (CA.crystals || 0) + 2; updateTopbar(); saveAgent(); }
-}
-window.openApp = openApp;
-
-function closeApp(id) {
-    playSound('close');
-    let map = {
-        chat: 'app-chat', dm: 'app-dm', shop: 'app-shop', inventory: 'app-inventory',
-        clans: 'app-clans', friends: 'app-friends', achievements: 'app-achievements',
-        guides: 'app-guides', memes: 'app-memes', contacts: 'app-contacts',
-        admin: 'app-admin', logs: 'app-logs', announce: 'app-announce',
-        settings: 'app-settings', rp: 'app-rp', 'rp-community': 'app-rp-community',
-        'rp-scene': 'app-rp-scene'
-    };
-    let el = document.getElementById(map[id]);
-    if (el) {
-        if (id === 'contacts' && typeof destroyWebGraph === 'function') destroyWebGraph();
-        if (id === 'rp-scene' && typeof closeSceneChat === 'function') closeSceneChat();
-        el.classList.remove('show');
-        setTimeout(() => {
-            el.style.display = 'none';
-            document.getElementById('center-content').style.display = '';
-        }, 150);
-    }
 }
 
 // ============================================================
@@ -1096,9 +753,12 @@ function openCharCreateModal(id) {
 }
 
 async function saveRpChar() {
+    if (!CA) return notif('⛔ Не авторизован');
     let id = document.getElementById('rp-char-id').value;
     let name = document.getElementById('rp-char-name').value.trim();
     if (!name) return notif('⛔ ВВЕДИ ИМЯ');
+    if (name.length < 2 || name.length > 30) return notif('⛔ ИМЯ 2-30 СИМВОЛОВ');
+
     let charData = {
         name,
         race: document.getElementById('rp-char-race').value,
@@ -1109,6 +769,7 @@ async function saveRpChar() {
         biography: document.getElementById('rp-char-bio').value.trim(),
         avatar_url: id ? (getRpCharacters().find(x => x.id == id)?.avatar_url || '') : ''
     };
+
     let file = document.getElementById('rp-char-avatar').files[0];
     if (file) {
         charData.avatar_url = await new Promise(r => {
@@ -1120,7 +781,7 @@ async function saveRpChar() {
                     canvas.width = 256; canvas.height = 256;
                     let ctx = canvas.getContext('2d');
                     let size = Math.min(img.width, img.height);
-                    ctx.drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, 256, 256);
+                    ctx.drawImage(img, (img.width - size) / 2, (img.height - size) / 2, size, size, 0, 0, 256, 256);
                     canvas.toBlob(async blob => {
                         let safeName = translit(CA.name).replace(/[^a-zA-Z0-9_-]/g, '_');
                         let fn = 'rp_' + safeName + '_' + Date.now() + '.png';
@@ -1130,19 +791,24 @@ async function saveRpChar() {
                         r(data.publicUrl);
                     }, 'image/png');
                 };
+                img.onerror = () => r('');
                 img.src = e.target.result;
             };
+            reader.onerror = () => r('');
             reader.readAsDataURL(file);
         });
     }
+
     let res;
     if (id) res = await updateRpCharacter(parseInt(id), charData);
     else res = await createRpCharacter(charData);
+
     if (res.success) {
         closeModal('modal-rp-char-create');
         if (!id && res.character) { setCurrentRpChar(res.character); updateRpCurrentChar(); }
         await loadRpCharacters();
         renderRpCharsList();
+        unlockAchievement('rp_actor');
     } else notif('⛔ ' + res.error);
 }
 
@@ -1221,7 +887,6 @@ window.showClanInfo = function(clanId) {
     let cl = clans.find(c => c.id == clanId);
     if (!cl) return;
 
-    // Удаляем старую модалку если есть
     let old = document.getElementById('modal-auto-clan');
     if (old) old.remove();
 
@@ -1240,7 +905,6 @@ window.showClanInfo = function(clanId) {
     document.body.appendChild(popup);
     setTimeout(() => popup.classList.add('show'), 10);
 
-    // Закрытие
     document.getElementById('close-auto-clan-btn').onclick = function() {
         popup.classList.remove('show');
         setTimeout(() => popup.remove(), 200);
@@ -1273,11 +937,41 @@ window.openWarTargetModal = openWarTargetModal;
 
 window.openSceneChat = function(sceneId) {
     openApp('rp-scene');
-    setTimeout(() => { if (typeof openSceneChat === 'function') openSceneChat(sceneId); }, 100);
+    setTimeout(() => { openSceneChatFn(sceneId); }, 100);
+};
+
+window.openEditSceneModal = async function(sceneId) {
+    let scene = rpScenes.find(s => s.id === sceneId);
+    if (!scene) {
+        let { data } = await supabase.from('rp_scenes').select('*').eq('id', sceneId).maybeSingle();
+        scene = data;
+    }
+    if (!scene) return notif('⛔ Спектакль не найден');
+
+    document.getElementById('scene-modal-title').textContent = '✏️ РЕДАКТИРОВАТЬ СПЕКТАКЛЬ';
+    document.getElementById('scene-title').value = scene.title || '';
+    document.getElementById('scene-desc').value = scene.description || '';
+
+    let covers = [];
+    try {
+        let { data: imgs } = await supabase.from('rp_scene_images')
+            .select('*').eq('scene_id', sceneId).order('position', { ascending: true });
+        covers = (imgs || []).map(i => ({ url: i.image_url, preview: i.image_url, isNew: false }));
+    } catch (e) {}
+    window.__sceneCovers = covers;
+    renderDiscordCovers();
+
+    let btn = document.getElementById('submit-scene-btn');
+    btn.dataset.editingScene = sceneId;
+    btn.textContent = 'СОХРАНИТЬ';
+
+    let el = document.getElementById('modal-scene-create');
+    el.style.display = 'flex';
+    setTimeout(() => el.classList.add('show'), 10);
 };
 
 // ============================================================
-// ЭМОДЗИ (с target)
+// ЭМОДЗИ
 // ============================================================
 function toggleChatEmoji(targetId) {
     let grid = document.getElementById('chat-emoji-grid');
@@ -1285,7 +979,6 @@ function toggleChatEmoji(targetId) {
     let emojis = ['😀','😂','🤣','😎','🤩','🥳','😇','🤠','👻','💀','🤡','👽','🤖','👾','👑','🔥','⚡','💣','🗝️','🔑','💉','🧬','🧪','🛡️','⚔️','🗡️','🏹','🔫','🧨','🪓','🔧','🔨','⛏️','🦊','🐺','🐉','🐲','🦅','🦉','🦇','🐍','🦎','🐙','🦑','🦈','🦂','🕷️','🌑','🌕','🌙','✨','💫','☄️','🌌','🪐','🔮','🧿','🕯️','☠️','👁️','🧠','🦾','🦿','🩸','💊','⚙️','⛓️','📡','🖥️','🎲','🎯','🎰','♠️','♦️','♣️','🃏','🀄','🎴','🪙','🏆','🥇','👍','❤','💯'];
     grid.innerHTML = emojis.map(e => '<span style="font-size:1.4rem;padding:5px;text-align:center;cursor:pointer;border:1px solid transparent;transition:all 0.15s;" data-emoji="' + e + '">' + e + '</span>').join('');
 
-    // Определяем целевую textarea
     let target = targetId;
     if (!target) {
         let active = document.activeElement;
@@ -1323,12 +1016,6 @@ function toggleChatEmoji(targetId) {
     setTimeout(() => el.classList.add('show'), 10);
 }
 
-window.replyToDMMessage = function(msgId, author, text) {
-    let inp = document.getElementById('dm-input');
-    if (inp) { inp.value = '@' + author + ' '; inp.focus(); }
-    notif('↩ ОТВЕТ ДЛЯ ' + author);
-};
-window.cancelDmReply = function() { let ri = document.getElementById('dm-reply-indicator'); if (ri) ri.style.display = 'none'; };
 window.cancelReply = cancelReply;
 window.addRpReaction = addRpReaction;
 window.deleteRpMessage = deleteRpMessage;
@@ -1356,6 +1043,7 @@ function renderDiscordCovers() {
 
     let activeIdx = covers.findIndex(c => c.active);
     if (activeIdx === -1 && covers.length > 0) { activeIdx = 0; covers[0].active = true; }
+
     if (covers.length === 0) {
         main.innerHTML = '<span>НЕТ ОБЛОЖЕК</span>';
     } else {
@@ -1368,18 +1056,32 @@ function renderDiscordCovers() {
         let url = c.preview || c.url;
         grid.innerHTML += '<div class="discord-cover-thumb' + (i === activeIdx ? ' active' : '') + '" data-cover-idx="' + i + '">' +
             '<img src="' + url + '">' +
-            '<span class="remove" data-cover-idx="' + i + '">✕</span>' +
+            '<span class="remove" data-cover-remove="' + i + '">✕</span>' +
             '</div>';
     });
     if (covers.length < 5) {
         grid.innerHTML += '<div class="discord-cover-add" id="discord-cover-add" title="Добавить">+</div>';
     }
+
+    grid.querySelectorAll('[data-cover-idx]').forEach(el => {
+        el.addEventListener('click', (e) => {
+            if (e.target.closest('[data-cover-remove]')) return;
+            let idx = parseInt(el.dataset.coverIdx);
+            covers.forEach((c, i) => c.active = (i === idx));
+            renderDiscordCovers();
+        });
+    });
+    grid.querySelectorAll('[data-cover-remove]').forEach(el => {
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            let idx = parseInt(el.dataset.coverRemove);
+            covers.splice(idx, 1);
+            renderDiscordCovers();
+        });
+    });
+
     let addBtn = document.getElementById('discord-cover-add');
-    if (addBtn) {
-        let newAdd = addBtn.cloneNode(true);
-        addBtn.parentNode.replaceChild(newAdd, addBtn);
-        newAdd.addEventListener('click', () => document.getElementById('scene-covers').click());
-    }
+    if (addBtn) addBtn.addEventListener('click', () => document.getElementById('scene-covers').click());
 }
 window.__renderDiscordCovers = renderDiscordCovers;
 
@@ -1397,6 +1099,12 @@ function autoResizeTextarea(el) {
 // ============================================================
 function openDesktop() {
     document.getElementById('desktop').style.display = 'flex';
+
+    setSidebarHandlers({
+        onOpen: openApp,
+        onOpenProfile: openOwnProfile
+    });
+
     buildSidebar();
     buildMobileNav();
     startClock();
@@ -1415,8 +1123,8 @@ function openDesktop() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[MAIN] DOMContentLoaded сработал');
 
-    // Инициализация кроппера
     initCropper();
+    initModalCloseHandlers();
 
     document.addEventListener('click', (e) => {
         let t = e.target.closest('[data-action]');
@@ -1429,11 +1137,9 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (a === 'feed') { openFeed(); }
     });
 
-    // ==== Делегированный обработчик клика на РП-сообщение ====
     document.addEventListener('click', (e) => {
         let rpMsg = e.target.closest('.chat-msg[data-rp-char]');
         if (!rpMsg) return;
-        // Не открывать если клик по интерактивным элементам
         if (e.target.closest('[data-menu-btn]') ||
             e.target.closest('.chat-author') ||
             e.target.closest('.mention') ||
@@ -1454,29 +1160,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, true);
 
-    // ==== Обработчик выбора "аватар/обложка" с кроппером ====
     document.getElementById('change-image-btn')?.addEventListener('click', () => {
         document.getElementById('image-choice-file').value = '';
         resetCropper();
+        setCropMode('avatar');
         let el = document.getElementById('modal-image-choice');
         el.style.display = 'flex';
         setTimeout(() => el.classList.add('show'), 10);
     });
 
-    document.addEventListener('click', async (e) => {
-        let target = e.target.closest('[data-img-target]');
-        if (!target) return;
-        let mode = target.dataset.imgTarget; // 'avatar' | 'cover'
+    document.addEventListener('click', (e) => {
+        let modeBtn = e.target.closest('[data-crop-mode]');
+        if (!modeBtn) return;
+        let mode = modeBtn.dataset.cropMode;
+        setCropMode(mode);
+    });
+
+    document.getElementById('crop-save-btn')?.addEventListener('click', async () => {
         let file = document.getElementById('image-choice-file')?.files[0];
         if (!file) return notif('⛔ ВЫБЕРИ ФАЙЛ');
         if (!hasImage()) return notif('⚠ ПОДОЖДИ ЗАГРУЗКИ');
 
-        // Устанавливаем режим (квадрат или 3:1)
-        setCropMode(mode);
-
-        // Ждём чуть-чуть, чтобы canvas перерисовался
-        await new Promise(r => setTimeout(r, 50));
-
+        let mode = getCropMode();
         let blob = await getCroppedBlob();
         if (!blob) return notif('⛔ ОШИБКА ОБРАБОТКИ');
 
@@ -1515,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     subscribeFeedRealtime();
                     subscribeAgentsRealtime();
                     subscribeAnnouncements(() => {
-                        if (currentView === 'announce') renderAnnounceApp();
+                        if (getState().currentView === 'announce') renderAnnounceApp();
                         renderRightPanel();
                     });
                     loadChatMessages(); loadDMMessages();
@@ -1546,7 +1251,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     subscribeChat(); subscribeDM(); subscribeFeedRealtime();
                     subscribeAgentsRealtime();
                     subscribeAnnouncements(() => {
-                        if (currentView === 'announce') renderAnnounceApp();
+                        if (getState().currentView === 'announce') renderAnnounceApp();
                         renderRightPanel();
                     });
                     loadChatMessages(); loadDMMessages();
@@ -1592,7 +1297,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rp-scene-send-btn')?.addEventListener('click', sendSceneMessage);
     document.querySelectorAll('.chat-tab[data-tab]').forEach(tab => tab.addEventListener('click', function() { switchChatTab(this.dataset.tab); }));
 
-    // Emoji-кнопки
     document.getElementById('chat-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('chat-input'); });
     document.getElementById('dm-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('dm-input'); });
     document.getElementById('guide-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('guide-text'); });
@@ -1602,7 +1306,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('meme-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('meme-text'); });
     document.getElementById('post-emoji-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleChatEmoji('post-text'); });
 
-    // File-кнопки
     document.getElementById('chat-file-btn')?.addEventListener('click', () => { document.getElementById('chat-file-input').click(); });
     document.getElementById('dm-file-btn')?.addEventListener('click', () => { document.getElementById('dm-file-input').click(); });
     document.getElementById('guide-file-btn')?.addEventListener('click', () => { document.getElementById('guide-file-input').click(); });
@@ -1619,7 +1322,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rp-scene-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'rp-scene-input'));
     document.getElementById('announce-file-input')?.addEventListener('change', e => uploadFileAndInsert(e, 'new-announce-text'));
 
-    // ENTER — отправить, SHIFT+ENTER — новый абзац
     document.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
             if (document.activeElement === document.getElementById('chat-input')) { e.preventDefault(); if (isClanChatActive()) sendClanMessage(); else sendMessage(); }
@@ -1629,7 +1331,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // AUTO-RESIZE TEXTAREA
     document.addEventListener('input', e => {
         if (e.target.tagName === 'TEXTAREA' && e.target.classList.contains('chat-input')) {
             autoResizeTextarea(e.target);
@@ -1794,7 +1495,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let rcb = e.target.closest('[data-reply-clan]');
         if (rcb) { replyToClanMessage(rcb.dataset.replyClan, rcb.dataset.replyAuthor); return; }
         let rdb = e.target.closest('[data-reply-dm]');
-        if (rdb) { let fn = window.replyToDMMessage; if (typeof fn === 'function') fn(rdb.dataset.replyDm, rdb.dataset.replyAuthor, rdb.dataset.replyText); return; }
+        if (rdb) { replyToDMMessage(parseInt(rdb.dataset.replyDm), rdb.dataset.replyAuthor, rdb.dataset.replyText); return; }
         let rrp = e.target.closest('[data-reply-rp]');
         if (rrp) { replyToRpMessage(parseInt(rrp.dataset.replyRp), rrp.dataset.replyCharName, rrp.dataset.replyText); return; }
         let rsc = e.target.closest('[data-reply-scene]');
@@ -1802,8 +1503,27 @@ document.addEventListener('DOMContentLoaded', () => {
         let rad = e.target.closest('[data-reply-admin]');
         if (rad) { let inp = document.getElementById('chat-input'); if (inp) { inp.value = '@' + rad.dataset.replyAuthor + ' '; inp.focus(); } notif('↩ ОТВЕТ ДЛЯ ' + rad.dataset.replyAuthor); return; }
 
+        let editScene = e.target.closest('[data-edit-scene]');
+        if (editScene) {
+            e.stopPropagation();
+            if (typeof window.openEditSceneModal === 'function') window.openEditSceneModal(parseInt(editScene.dataset.editScene));
+            return;
+        }
+        let delScene = e.target.closest('[data-delete-scene]');
+        if (delScene) {
+            e.stopPropagation();
+            let id = parseInt(delScene.dataset.deleteScene);
+            let scene = rpScenes.find(s => s.id === id);
+            confirmDialog('УДАЛИТЬ СПЕКТАКЛЬ', 'Удалить «' + (scene ? scene.title : '?') + '»?', async () => {
+                let r = await deleteRpScene(id);
+                if (r.success) { notif('🗑 Удалено'); loadRpScenes().then(renderRpScenes); }
+                else notif('⛔ ' + r.error);
+            });
+            return;
+        }
+
         let dmb = e.target.closest('[data-delete-dm-msg]');
-        if (dmb) { supabase.from('dm_messages').delete().eq('id', parseInt(dmb.dataset.deleteDmMsg)).then(() => loadDMMessages()); return; }
+        if (dmb) { deleteDMMessage(parseInt(dmb.dataset.deleteDmMsg)); return; }
         let dcl = e.target.closest('[data-delete-clan-msg]');
         if (dcl) { deleteClanMessage(dcl.dataset.deleteClanMsg); return; }
         let dad = e.target.closest('[data-delete-admin-msg]');
@@ -1838,7 +1558,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!e.target.closest('.chat-menu-wrap')) document.querySelectorAll('.chat-menu-dropdown.open').forEach(d => d.classList.remove('open'));
     });
 
-    // Основной интервал: синхронизация + saveAgent
     setInterval(async () => {
         if (!CA) return;
         await syncAgentWithServer();
@@ -1848,7 +1567,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setInterval(() => { if (CA && document.visibilityState === 'visible') supabase.from('agents').update({ last_seen: new Date().toISOString() }).eq('name', CA.name); }, 30000);
     setInterval(updateDiscountDisplay, 60000);
-    setInterval(() => { if (CA && currentView === 'feed') renderRightPanel(); }, 60000);
+    setInterval(() => { if (CA && getState().currentView === 'feed') renderRightPanel(); }, 60000);
 
-    console.log('✅ ТЕРМИНАЛ 3.0.0 ЗАГРУЖЕН');
+    console.log('✅ ТЕРМИНАЛ 3.1.0 ЗАГРУЖЕН');
 });

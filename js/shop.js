@@ -1,6 +1,6 @@
 // ============================================================
 // SHOP / МАГАЗИН И ИНВЕНТАРЬ
-// v3.0.0: fix saveInventory (не терять инвентарь), fnt_comic
+// v3.1.0: убран fnt_stencil, fnt_comic возвращён
 // ============================================================
 
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, saveAgent, setInventory } from './auth.js';
@@ -82,7 +82,6 @@ export const shopItems = {
         { id: 'fnt_comic', name: 'Комикс', price: 200 },
         { id: 'fnt_typewriter', name: 'Машинопись', price: 200 },
         { id: 'fnt_cyber', name: 'Кибер', price: 350 },
-        { id: 'fnt_stencil', name: 'Трафарет', price: 400 },
         { id: 'fnt_medieval', name: 'Средневековье', price: 400 },
         { id: 'fnt_pixel', name: 'Пиксель', price: 500 },
         { id: 'fnt_neon', name: 'Неон', price: 700 },
@@ -133,7 +132,7 @@ export function getActiveFrameClass() {
 export function getActiveFontClass() {
     let m = {
         'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
-        'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
+        'fnt_typewriter': 'font-typewriter',
         'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
         'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
     };
@@ -245,19 +244,14 @@ export function getBoosterTimeLeft() {
     return h + 'ч ' + m + 'м';
 }
 
-// ============================================================
-// СОХРАНЕНИЕ ИНВЕНТАРЯ — ЗАЩИТА ОТ ПОТЕРИ
-// ============================================================
 export async function saveInventory() {
     if (!CA) return;
 
-    // Защита: если локальный инвентарь пустой, а у CA что-то есть — не сохраняем
     if (inventory && inventory.length === 0 && CA.inventory && CA.inventory.length > 0) {
         console.warn('[SHOP] Попытка сохранить пустой инвентарь — пропускаем');
         return;
     }
 
-    // Обновляем CA.inventory чтобы при следующем saveAgent не потеряли
     CA.inventory = inventory;
 
     localStorage.setItem('syndicate_inventory_' + CA.name, JSON.stringify(inventory));
@@ -310,7 +304,7 @@ export function previewItem(cat, id) {
     } else if (cat === 'font') {
         let fc = {
             'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
-            'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
+            'fnt_typewriter': 'font-typewriter',
             'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
             'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
         }[item.id] || '';
@@ -391,7 +385,7 @@ export function renderShopItems() {
         } else if (shopCategory === 'fonts') {
             let ff = {
                 'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
-                'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
+                'fnt_typewriter': 'font-typewriter',
                 'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
                 'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
             }[item.id] || '';
@@ -423,7 +417,7 @@ export function renderShopItems() {
             }
         }
 
-        return '<div class="card" style="border-color:' + borderColor + ';cursor:pointer;padding:14px;overflow:visible;" onclick="window.previewItem(\'' + cs + '\',\'' + item.id + '\')">' +
+        return '<div class="card" style="border-color:' + borderColor + ';cursor:pointer;padding:14px;overflow:visible;" data-preview-cat="' + cs + '" data-preview-id="' + item.id + '">' +
             '<div style="text-align:center;padding:10px;min-height:80px;display:flex;align-items:center;justify-content:center;overflow:visible;">' + prev + '</div>' +
             '<div style="font-weight:600;margin:8px 0;text-align:center;font-size:0.85rem;">' + item.name + '</div>' + discountBadge +
             '<div style="text-align:center;font-size:0.8rem;">' + formatPrice(item.id, item.price || 0) + '</div>' +
@@ -435,6 +429,11 @@ export function renderShopItems() {
         document.querySelectorAll('[data-buy]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); buyItem(this.dataset.buy, this.dataset.id); }));
         document.querySelectorAll('[data-apply]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); applyItem(this.dataset.apply, this.dataset.id); }));
         document.querySelectorAll('[data-reset]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); resetItem(this.dataset.reset); }));
+        document.querySelectorAll('[data-preview-cat]').forEach(el => {
+            el.addEventListener('click', function() {
+                previewItem(this.dataset.previewCat, this.dataset.previewId);
+            });
+        });
     }, 10);
 }
 
@@ -517,10 +516,8 @@ export function applyItem(cat, id) {
         return;
     }
 
-    // Обычный эффект — цвет / рамка / бейджик / шрифт
     activeItems[cat] = id;
 
-    // Синхронизируем CA, чтобы эффект применился мгновенно
     if (cat === 'color') CA.active_color = id;
     if (cat === 'frame') CA.active_frame = id;
     if (cat === 'badge') CA.active_badge = id;
@@ -553,7 +550,6 @@ export function resetItem(cat) {
     let d = { color: 'c_red', frame: 'f_default', badge: 'b_none', font: 'fnt_default' };
     activeItems[cat] = d[cat] || '';
 
-    // Синхронизируем CA
     if (cat === 'color') CA.active_color = d.color;
     if (cat === 'frame') CA.active_frame = d.frame;
     if (cat === 'badge') CA.active_badge = d.badge;
@@ -606,7 +602,7 @@ export function renderInventory() {
             else if (item.category === 'font') {
                 let ff = {
                     'fnt_cyber': 'font-cyber', 'fnt_glitch': 'font-glitch',
-                    'fnt_typewriter': 'font-typewriter', 'fnt_stencil': 'font-stencil',
+                    'fnt_typewriter': 'font-typewriter',
                     'fnt_pixel': 'font-pixel', 'fnt_blood': 'font-blood', 'fnt_neon': 'font-neon',
                     'fnt_medieval': 'font-medieval', 'fnt_comic': 'font-comic'
                 }[item.id] || '';
@@ -629,7 +625,7 @@ export function renderInventory() {
             }
 
             return '<div class="card" style="border-color:' + (active || ba ? 'var(--success)' : 'var(--border-2)') + ';padding:14px;text-align:center;overflow:visible;">' +
-                '<div style="min-height:70px;display:flex;align-items:center;justify-content:center;overflow:visible;" onclick="window.previewItem(\'' + item.category + '\',\'' + item.id + '\')">' + prev + '</div>' +
+                '<div style="min-height:70px;display:flex;align-items:center;justify-content:center;overflow:visible;" data-preview-cat="' + item.category + '" data-preview-id="' + item.id + '">' + prev + '</div>' +
                 '<div style="font-weight:600;margin:6px 0;font-size:0.8rem;">' + item.name + '</div>' +
                 btn + '</div>';
         }).join('') +
@@ -639,6 +635,11 @@ export function renderInventory() {
         document.querySelectorAll('[data-inv-cat]').forEach(b => b.addEventListener('click', function() { window.invCategory = this.dataset.invCat; renderInventory(); }));
         document.querySelectorAll('[data-inv-apply]').forEach(b => b.addEventListener('click', function() { applyItem(this.dataset.invApply, this.dataset.id); }));
         document.querySelectorAll('[data-inv-reset]').forEach(b => b.addEventListener('click', function() { resetItem(this.dataset.invReset); }));
+        document.querySelectorAll('[data-preview-cat]').forEach(el => {
+            el.addEventListener('click', function() {
+                previewItem(this.dataset.previewCat, this.dataset.previewId);
+            });
+        });
     }, 10);
     window.invCategory = invCategory;
 }
@@ -653,3 +654,9 @@ export function addShopLog(who, action, item, price) {
 export function getShopLogs() { return shopLogs; }
 
 export { shopCategory, invCategory, discountedItems, discountEndTime };
+
+// Экспорт в window для inline-обработчиков
+window.previewItem = previewItem;
+window.buyItem = buyItem;
+window.applyItem = applyItem;
+window.resetItem = resetItem;

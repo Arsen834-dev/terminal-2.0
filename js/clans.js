@@ -254,6 +254,7 @@ export async function autoDistributeTreasury() {
     let lastDist = parseInt(localStorage.getItem('syndicate_last_clan_distribute') || '0');
     if (now - lastDist < 3600000) return;
     localStorage.setItem('syndicate_last_clan_distribute', now);
+
     await loadClans();
     for (let cl of clans) {
         if (!cl.members || cl.members.length <= 1 || (cl.treasury || 0) <= 0) continue;
@@ -262,13 +263,23 @@ export async function autoDistributeTreasury() {
         if (bonus <= 0) continue;
         let totalBonus = bonus * cl.members.length;
         if (totalBonus > total) continue;
+
+        let memberNames = cl.members.map(m => m.name);
+        let { data: agentsData } = await supabase
+            .from('agents').select('name, crystals').in('name', memberNames);
+
+        if (!agentsData) continue;
+
+        let updates = agentsData.map(a => ({
+            name: a.name,
+            crystals: (a.crystals || 0) + bonus
+        }));
+
+        await Promise.all(updates.map(u =>
+            supabase.from('agents').update({ crystals: u.crystals }).eq('name', u.name)
+        ));
+
         cl.treasury -= totalBonus;
-        for (let m of cl.members) {
-            try {
-                let { data } = await supabase.from('agents').select('crystals').eq('name', m.name).maybeSingle();
-                if (data) { let nc = (data.crystals || 0) + bonus; await supabase.from('agents').update({ crystals: nc }).eq('name', m.name); }
-            } catch (e) {}
-        }
         await supabase.from('clans').update({ treasury: cl.treasury }).eq('id', cl.id);
     }
 }

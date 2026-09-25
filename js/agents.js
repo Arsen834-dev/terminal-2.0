@@ -1,6 +1,6 @@
 // ============================================================
 // AGENTS / ПРОФИЛИ АГЕНТОВ
-// v2.9.6: обновлённые шрифты, эффекты применяются сразу
+// v2.9.7: общий getAgentFx из ui/renderFx.js
 // ============================================================
 
 import { supabase, CA, loadAgent, getAgents, saveAgent } from './auth.js';
@@ -10,6 +10,7 @@ import { getAchievements } from './achievements.js';
 import { clans } from './clans.js';
 import { notif, closeModal, timeAgo } from './utils.js';
 import { renderPostCard as renderPostCardFeed, attachFeedHandlers } from './feed.js';
+import { getAgentFx } from './ui/renderFx.js';
 
 let wallPosts = [];
 let wallPage = 0;
@@ -17,27 +18,6 @@ let wallTotal = 0;
 let wallAgentName = null;
 let wallLoaded = false;
 const WALL_PAGE_SIZE = 10;
-
-function fx(name, agents) {
-    if (typeof window.__getAgentFx === 'function') return window.__getAgentFx(name, agents);
-    let a = (agents || {})[name] || {};
-    let colorCls = a.active_color ? getActiveColorClassForId(a.active_color) : '';
-    let frameCls = 'f-default';
-    if (a.active_frame && shopItems.frames) {
-        let f = shopItems.frames.find(x => x.id === a.active_frame);
-        if (f) frameCls = f.cssClass || 'f-default';
-    }
-    let roleBadge = '';
-    if (a.role === 'admin') roleBadge = '<span class="role-badge admin">👑</span>';
-    else if (a.role === 'moderator') roleBadge = '<span class="role-badge mod">🛡</span>';
-    let badgeHtml = '';
-    if (a.active_badge && a.active_badge !== 'b_none' && shopItems.badges) {
-        let b = shopItems.badges.find(x => x.id === a.active_badge);
-        if (b && b.image) badgeHtml = '<img src="' + b.image + '" class="badge-img">';
-        else if (b && b.emoji) badgeHtml = '<span style="font-size:1rem;">' + b.emoji + '</span>';
-    }
-    return { colorCls, fontCls: '', frameCls, badgeHtml, roleBadge, avatar: a.avatar_url || '' };
-}
 
 export async function showAgentInfo(name) {
     if (!name) return;
@@ -71,7 +51,7 @@ export async function showAgentInfo(name) {
             ? '<img src="' + agent.avatar_url + '" style="width:100%;height:100%;object-fit:cover;">'
             : '🕶️';
 
-        let e = fx(name);
+        let e = getAgentFx(name);
 
         let now = Date.now();
         let isOnline = agent.name === CA?.name || (agent.last_seen && (now - new Date(agent.last_seen).getTime()) < 300000);

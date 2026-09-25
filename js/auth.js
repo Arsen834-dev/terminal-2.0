@@ -61,7 +61,6 @@ export async function uploadAvatar(file) {
                 canvas.width = AVATAR_DIMENSION;
                 canvas.height = AVATAR_DIMENSION;
                 let ctx = canvas.getContext('2d');
-                // Обрезка по центру в квадрат
                 let size = Math.min(img.width, img.height);
                 let sx = (img.width - size) / 2;
                 let sy = (img.height - size) / 2;
@@ -151,9 +150,14 @@ export async function saveAgent() {
     if (!CA) return;
     try {
         // Защита: не терять инвентарь если локально пусто
-        let invToSave = (inventory && inventory.length > 0)
-            ? inventory
-            : (CA.inventory && CA.inventory.length > 0 ? CA.inventory : []);
+        let invToSave = null;
+        if (inventory && inventory.length > 0) {
+            invToSave = inventory;
+        } else if (CA.inventory && CA.inventory.length > 0) {
+            invToSave = CA.inventory;
+        } else if (Array.isArray(CA.inventory)) {
+            invToSave = CA.inventory;
+        }
 
         let data = {
             name: CA.name,
@@ -177,11 +181,14 @@ export async function saveAgent() {
             active_font: activeItems.font,
             active_booster: activeBooster,
             booster_end_time: boosterEndTime,
-            inventory: invToSave,
             active_style: activeItems.style || '',
             active_sound: activeItems.sound || '',
             last_seen: new Date().toISOString()
         };
+
+        // Только если есть что сохранять — иначе не трогаем inventory
+        if (invToSave !== null) data.inventory = invToSave;
+
         let { error } = await supabase.from('agents').upsert(data, { onConflict: 'name' });
         if (error) console.log('Save agent error:', error);
     } catch (e) {
@@ -262,7 +269,6 @@ export async function login() {
     let localInv = [];
     try { localInv = JSON.parse(localStorage.getItem(localInvKey) || '[]'); } catch (e) {}
 
-    // Объединяем по id (без дубликатов)
     let mergedMap = new Map();
     dbInv.forEach(i => mergedMap.set(i.id, i));
     localInv.forEach(i => { if (!mergedMap.has(i.id)) mergedMap.set(i.id, i); });
@@ -297,7 +303,6 @@ export async function login() {
     CA.nameHistory = CA.nameHistory || [];
     CA.banned = CA.banned || false;
     CA.muted = CA.muted || false;
-    // Синхронизируем CA.inventory чтобы saveAgent не потерял
     CA.inventory = mergedInv;
 
     // Ежедневный бонус

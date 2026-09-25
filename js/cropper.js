@@ -1,6 +1,6 @@
 // ============================================================
 // CROPPER / Редактор изображений (drag, zoom, rotate)
-// v1.0.0
+// v1.0.1: добавлен getCropMode
 // ============================================================
 
 let cropState = {
@@ -14,7 +14,7 @@ let cropState = {
     dragging: false,
     dragStartX: 0,
     dragStartY: 0,
-    mode: 'avatar',  // 'avatar' | 'cover'
+    mode: 'avatar',
     width: 0,
     height: 0
 };
@@ -80,7 +80,6 @@ export function initCropper() {
     }
 
     if (canvas) {
-        // Mouse
         canvas.addEventListener('mousedown', (e) => {
             if (!cropState.img) return;
             cropState.dragging = true;
@@ -101,7 +100,6 @@ export function initCropper() {
             }
         });
 
-        // Touch (мобилки)
         canvas.addEventListener('touchstart', (e) => {
             if (!cropState.img) return;
             if (e.touches.length === 1) {
@@ -125,7 +123,7 @@ export function initCropper() {
     }
 
     window.addEventListener('resize', () => {
-        if (cropState.img && cropState.canvas) {
+        if (cropState.img && cropState.canvas && cropState.ctx) {
             resizeCropCanvas();
             drawCrop();
         }
@@ -146,15 +144,18 @@ export function setCropMode(mode) {
     if (zi) zi.value = 1;
     if (ri) ri.value = 0;
 
-    // Меняем подсказку
     let ratio = mode === 'avatar' ? '1:1' : '3:1';
     let hint = document.getElementById('crop-hint');
     if (hint) hint.textContent = 'Формат ' + ratio + ' · перетаскивай мышью, крути зум и поворот';
 
-    if (cropState.img && cropState.canvas) {
+    if (cropState.img && cropState.canvas && cropState.ctx) {
         resizeCropCanvas();
         drawCrop();
     }
+}
+
+export function getCropMode() {
+    return cropState.mode;
 }
 
 // ============================================================
@@ -163,9 +164,8 @@ export function setCropMode(mode) {
 function resizeCropCanvas() {
     let wrap = document.getElementById('crop-preview');
     let canvas = cropState.canvas;
-    if (!wrap || !canvas) return;
+    if (!wrap || !canvas || !cropState.ctx) return;
 
-    // Меняем высоту превью в зависимости от режима
     if (cropState.mode === 'avatar') {
         wrap.style.height = '320px';
     } else {
@@ -191,7 +191,6 @@ function getCropRect() {
     if (cropState.mode === 'avatar') {
         cropH = h * 0.85;
         cropW = cropH;
-        // Ограничим если ширина больше
         if (cropW > w * 0.9) {
             cropW = w * 0.9;
             cropH = cropW;
@@ -225,7 +224,6 @@ function drawCrop() {
 
     let crop = getCropRect();
 
-    // Масштаб картинки под crop
     let imgAspect = img.width / img.height;
     let cropAspect = crop.w / crop.h;
     let baseScale;
@@ -236,7 +234,6 @@ function drawCrop() {
     }
     let scale = baseScale * cropState.zoom;
 
-    // Рисуем картинку с обрезкой
     ctx.save();
     ctx.beginPath();
     ctx.rect(crop.x, crop.y, crop.w, crop.h);
@@ -251,41 +248,34 @@ function drawCrop() {
     ctx.drawImage(img, -img.width / 2, -img.height / 2);
     ctx.restore();
 
-    // Затемнение вне кропа
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, w, crop.y);
     ctx.fillRect(0, crop.y + crop.h, w, h - crop.y - crop.h);
     ctx.fillRect(0, crop.y, crop.x, crop.h);
     ctx.fillRect(crop.x + crop.w, crop.y, w - crop.x - crop.w, crop.h);
 
-    // Рамка кропа
     ctx.strokeStyle = 'rgba(255,23,68,0.95)';
     ctx.lineWidth = 2;
     ctx.strokeRect(crop.x, crop.y, crop.w, crop.h);
 
-    // Уголки
     let cornerLen = 20;
     ctx.strokeStyle = '#ff1744';
     ctx.lineWidth = 3;
-    // Top-left
     ctx.beginPath();
     ctx.moveTo(crop.x, crop.y + cornerLen);
     ctx.lineTo(crop.x, crop.y);
     ctx.lineTo(crop.x + cornerLen, crop.y);
     ctx.stroke();
-    // Top-right
     ctx.beginPath();
     ctx.moveTo(crop.x + crop.w - cornerLen, crop.y);
     ctx.lineTo(crop.x + crop.w, crop.y);
     ctx.lineTo(crop.x + crop.w, crop.y + cornerLen);
     ctx.stroke();
-    // Bottom-left
     ctx.beginPath();
     ctx.moveTo(crop.x, crop.y + crop.h - cornerLen);
     ctx.lineTo(crop.x, crop.y + crop.h);
     ctx.lineTo(crop.x + cornerLen, crop.y + crop.h);
     ctx.stroke();
-    // Bottom-right
     ctx.beginPath();
     ctx.moveTo(crop.x + crop.w - cornerLen, crop.y + crop.h);
     ctx.lineTo(crop.x + crop.w, crop.y + crop.h);
@@ -323,7 +313,6 @@ export function getCroppedBlob() {
         }
         let scale = baseScale * cropState.zoom;
 
-        // Коэффициент перевода из canvas-координат в выходные
         let k = outW / crop.w;
 
         ctx.save();

@@ -1,13 +1,12 @@
 // ============ SOUND / ЗВУКИ, МУЗЫКА ============
 
-let soundEnabled = true;
-let musicEnabled = true;
+let soundEnabled = localStorage.getItem('syndicate_sound') !== 'false';
+let musicEnabled = localStorage.getItem('syndicate_music') !== 'false';
 let bgMusic = null;
 let bgPlaylist = [];
 let bgTrackIndex = 0;
 const sounds = {};
 
-// Путь к звукам
 const SOUND_PATH = 'assets/sounds/';
 
 export function preloadSound(name, file) {
@@ -17,7 +16,6 @@ export function preloadSound(name, file) {
     } catch (e) {}
 }
 
-// Предзагрузка эффектов
 preloadSound('click', 'click.mp3');
 preloadSound('open', 'open.mp3');
 preloadSound('close', 'close.mp3');
@@ -103,17 +101,17 @@ export function getMusicVolume() {
 // ==================== ТОГГЛЫ ====================
 export function toggleSound() {
     soundEnabled = !soundEnabled;
+    localStorage.setItem('syndicate_sound', String(soundEnabled));
     if (soundEnabled) startBgMusic();
     else stopBgMusic();
-    localStorage.setItem('syndicate_sound', soundEnabled);
     return soundEnabled;
 }
 
 export function toggleMusic() {
     musicEnabled = !musicEnabled;
-    if (musicEnabled) startBgMusic();
+    localStorage.setItem('syndicate_music', String(musicEnabled));
+    if (musicEnabled && soundEnabled) startBgMusic();
     else stopBgMusic();
-    localStorage.setItem('syndicate_music', musicEnabled);
     return musicEnabled;
 }
 
@@ -131,10 +129,10 @@ export function getMusicEnabled() {
 
 export function setSoundEnabled(value) {
     soundEnabled = value;
-    localStorage.setItem('syndicate_sound', soundEnabled);
+    localStorage.setItem('syndicate_sound', String(soundEnabled));
 }
 
 export function setMusicEnabled(value) {
     musicEnabled = value;
-    localStorage.setItem('syndicate_music', musicEnabled);
+    localStorage.setItem('syndicate_music', String(musicEnabled));
 }

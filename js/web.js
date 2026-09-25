@@ -1,5 +1,6 @@
 // ============================================================
 // WEB / ПАУТИНА — граф связей агентов на canvas
+// v1.0.1: безопасная инициализация canvas
 // ============================================================
 
 import { supabase, CA, getAgents } from './auth.js';
@@ -40,20 +41,29 @@ export async function initWebGraph() {
     let wrap = document.getElementById('web-canvas-wrap');
     if (!wrap) return;
 
-    // Если экран маленький — показываем фолбэк-список
     if (window.innerWidth < 600) {
         renderFallbackList();
         return;
     }
 
     ctx = canvas.getContext('2d');
+
+    // Ждём пересчёта layout после display:flex
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
     resizeCanvas();
+
+    if (canvas.clientWidth === 0 || canvas.clientHeight === 0) {
+        setTimeout(() => {
+            resizeCanvas();
+            buildGraph().then(startAnimation);
+        }, 100);
+    } else {
+        await buildGraph();
+        startAnimation();
+    }
+
     window.addEventListener('resize', resizeCanvas);
-
-    await buildGraph();
-    startAnimation();
-
-    // Обработчики
     canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('click', onClick);
     canvas.addEventListener('mouseleave', () => { hoveredNode = null; });
@@ -65,6 +75,10 @@ export function destroyWebGraph() {
         animationId = null;
     }
     window.removeEventListener('resize', resizeCanvas);
+    if (canvas) {
+        canvas.removeEventListener('mousemove', onMouseMove);
+        canvas.removeEventListener('click', onClick);
+    }
     canvas = null;
     ctx = null;
     nodes = [];
@@ -95,17 +109,14 @@ async function buildGraph() {
     let names = Object.keys(agents).filter(n => n !== 'W-C26');
     let now = Date.now();
 
-    // Центр — текущий игрок
     let w = canvas.clientWidth || 800;
     let h = canvas.clientHeight || 600;
     let cx = w / 2;
     let cy = h / 2;
 
-    // Текущий игрок в центре
     let me = CA?.name;
     if (!me) return;
 
-    // Разделяем на группы: друзья, коллеги по отряду, остальные
     let myClan = clans.find(c => c.members && c.members.some(m => m.name === me));
     let friendNames = new Set();
     friends.forEach(f => {
@@ -119,7 +130,6 @@ async function buildGraph() {
         myClan.members.forEach(m => { if (m.name !== me) clanNames.add(m.name); });
     }
 
-    // Создаём узлы
     let radius = Math.min(w, h) * 0.38;
     let otherNames = names.filter(n => n !== me);
 
@@ -137,7 +147,6 @@ async function buildGraph() {
         radius: ME_RADIUS
     }];
 
-    // Распределяем остальных по кругу
     let friendArr = otherNames.filter(n => friendNames.has(n));
     let clanArr = otherNames.filter(n => !friendNames.has(n) && clanNames.has(n));
     let otherArr = otherNames.filter(n => !friendNames.has(n) && !clanNames.has(n));
@@ -146,7 +155,6 @@ async function buildGraph() {
 
     allOther.forEach((name, i) => {
         let angle = (i / allOther.length) * Math.PI * 2 - Math.PI / 2;
-        // Друзья ближе, остальные дальше
         let r = friendNames.has(name) ? radius * 0.6
               : clanNames.has(name)   ? radius * 0.8
               : radius;
@@ -168,7 +176,6 @@ async function buildGraph() {
         });
     });
 
-    // Рёбра: от меня к каждому другу и коллеге по отряду
     edges = [];
     nodes.forEach(n => {
         if (n.isMe) return;
@@ -177,7 +184,6 @@ async function buildGraph() {
         }
     });
 
-    // Рёбра между друзьями (если они дружат между собой)
     let friendList = Array.from(friendNames);
     for (let i = 0; i < friendList.length; i++) {
         for (let j = i + 1; j < friendList.length; j++) {
@@ -207,7 +213,6 @@ function startAnimation() {
 }
 
 function updatePhysics() {
-    // Лёгкое отталкивание узлов друг от друга
     for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
             let a = nodes[i], b = nodes[j];
@@ -226,7 +231,6 @@ function updatePhysics() {
         }
     }
 
-    // Возврат к исходной позиции (лёгкая пружина)
     let w = canvas.clientWidth || 800;
     let h = canvas.clientHeight || 600;
     let cx = w / 2, cy = h / 2;
@@ -239,7 +243,6 @@ function updatePhysics() {
             n.vy = 0;
             return;
         }
-        // Пружина к целевой позиции (мягкая)
         n.vx *= 0.92;
         n.vy *= 0.92;
         n.x += n.vx;
@@ -254,7 +257,6 @@ function draw() {
 
     ctx.clearRect(0, 0, w, h);
 
-    // Фон — сетка
     ctx.strokeStyle = COLORS.accentFaint;
     ctx.lineWidth = 1;
     let grid = 30;
@@ -271,7 +273,6 @@ function draw() {
         ctx.stroke();
     }
 
-    // Рёбра
     edges.forEach(e => {
         let a = nodes.find(n => n.id === e.from);
         let b = nodes.find(n => n.id === e.to);
@@ -294,11 +295,9 @@ function draw() {
         ctx.setLineDash([]);
     });
 
-    // Узлы
     nodes.forEach(n => {
         let isHovered = hoveredNode && hoveredNode.id === n.id;
 
-        // Свечение
         if (n.isMe || n.online) {
             let glowColor = n.isMe ? COLORS.accent : COLORS.online;
             let grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.radius * 3);
@@ -310,7 +309,6 @@ function draw() {
             ctx.fill();
         }
 
-        // Круг
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.radius + (isHovered ? 3 : 0), 0, Math.PI * 2);
         if (n.isMe) {
@@ -324,12 +322,10 @@ function draw() {
         }
         ctx.fill();
 
-        // Обводка
         ctx.strokeStyle = n.online ? COLORS.online : COLORS.offline;
         ctx.lineWidth = n.isMe ? 3 : 2;
         ctx.stroke();
 
-        // Имя
         ctx.fillStyle = isHovered ? COLORS.accent : (n.isMe ? COLORS.accent : COLORS.text);
         ctx.font = (n.isMe ? 'bold 13px' : '11px') + ' JetBrains Mono, monospace';
         ctx.textAlign = 'center';
@@ -368,11 +364,7 @@ function onMouseMove(e) {
 
 function onClick(e) {
     if (!hoveredNode) return;
-    if (hoveredNode.isMe) {
-        if (typeof window.showAgentInfo === 'function') window.showAgentInfo(hoveredNode.name);
-    } else {
-        if (typeof window.showAgentInfo === 'function') window.showAgentInfo(hoveredNode.name);
-    }
+    if (typeof window.showAgentInfo === 'function') window.showAgentInfo(hoveredNode.name);
 }
 
 // ============================================================

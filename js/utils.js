@@ -6,17 +6,17 @@ export function notif(msg) {
         position: fixed;
         top: 20px;
         left: 50%;
-        transform: translateX(-50%);
+        transform: translateX(-50%) translateY(-10px);
         background: var(--bg-2);
         border: 1px solid var(--accent);
         padding: 14px 24px;
         z-index: 10000;
-        font-family: 'Inter', sans-serif;
+        font-family: var(--font-mono);
         color: var(--text);
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         font-weight: 500;
-        border-radius: var(--radius-pill);
-        box-shadow: var(--shadow-lg);
+        border-radius: var(--radius);
+        box-shadow: 0 0 30px rgba(255, 23, 68, 0.25), 0 8px 24px rgba(0, 0, 0, 0.6);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         opacity: 0;
@@ -24,6 +24,7 @@ export function notif(msg) {
         pointer-events: none;
         max-width: 90vw;
         text-align: center;
+        letter-spacing: 1px;
     `;
     n.textContent = msg;
     document.body.appendChild(n);
@@ -99,6 +100,18 @@ export function timeAgo(dateStr) {
     return new Date(dateStr).toLocaleDateString('ru-RU');
 }
 
+export function parseHashtags(text) {
+    if (!text) return [];
+    let regex = /(?:^|\s)#([\p{L}\p{N}_-]{1,32})/gu;
+    let found = [];
+    let m;
+    while ((m = regex.exec(text)) !== null) {
+        let tag = m[1].toLowerCase().trim();
+        if (tag && !found.includes(tag)) found.push(tag);
+    }
+    return found;
+}
+
 export function randomFrom(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -121,7 +134,6 @@ export function stopGlowIcon(id) {
     if (el) el.classList.remove('new-badge-glow');
 }
 
-// Копирование в буфер
 export function copyToClipboard(text) {
     if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => notif('📋 Скопировано'));
