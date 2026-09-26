@@ -607,8 +607,29 @@ function subscribeAgentsRealtime() {
 // ============================================================
 // РЕПА/ТК ТАЙМЕР
 // ============================================================
-repTkInterval = setInterval(() => {
+function startRepTkTimer() {
+    // Защита: если CA ещё не загружен — не запускаем
     if (!CA) return;
+
+    if (repTkInterval) clearInterval(repTkInterval);
+
+    repTkInterval = setInterval(() => {
+        if (!CA) return;
+        let now = Date.now();
+        let lastRepTk = parseInt(localStorage.getItem('syndicate_last_rep_tk_' + CA.name) || '0');
+        if (now - lastRepTk >= 1800000) {
+            let repGain = applyBooster(1, 'rep');
+            let tkGain = applyBooster(50, 'tk');
+            CA.rep = Math.min(100, (CA.rep || 0) + repGain);
+            CA.crystals = (CA.crystals || 0) + tkGain;
+            localStorage.setItem('syndicate_last_rep_tk_' + CA.name, now);
+            saveAgent();
+            updateTopbar();
+            notif('📈 +' + repGain + ' репа, +' + tkGain + ' ТК');
+        }
+    }, 60000);
+
+    // Разовая проверка при запуске (тоже под защитой)
     let now = Date.now();
     let lastRepTk = parseInt(localStorage.getItem('syndicate_last_rep_tk_' + CA.name) || '0');
     if (now - lastRepTk >= 1800000) {
@@ -619,19 +640,7 @@ repTkInterval = setInterval(() => {
         localStorage.setItem('syndicate_last_rep_tk_' + CA.name, now);
         saveAgent();
         updateTopbar();
-        notif('📈 +' + repGain + ' репа, +' + tkGain + ' ТК');
     }
-}, 60000);
-let now = Date.now();
-let lastRepTk = parseInt(localStorage.getItem('syndicate_last_rep_tk_' + CA.name) || '0');
-if (now - lastRepTk >= 1800000) {
-    let repGain = applyBooster(1, 'rep');
-    let tkGain = applyBooster(50, 'tk');
-    CA.rep = Math.min(100, (CA.rep || 0) + repGain);
-    CA.crystals = (CA.crystals || 0) + tkGain;
-    localStorage.setItem('syndicate_last_rep_tk_' + CA.name, now);
-    saveAgent();
-    updateTopbar();
 }
 
 // ============================================================
