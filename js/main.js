@@ -6,8 +6,15 @@
 console.log('[MAIN] Модуль начал загрузку');
 
 import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, login, register, saveAgent, loadAgent, getAgents, translit, setInventory, applyBooster, getActiveBoosterTimeLeft } from './auth.js';
-import { loadDiscount, loadInventory, saveInventory, renderShop, renderShopItems, renderShopCategories, renderInventory, previewItem, buyItem, applyItem, resetItem, getItemDiscount, getDiscountedPrice, formatPrice, updateDiscountDisplay, generateNewDiscount, getActiveColorClass, getActiveColorClassForId, getActiveFrameClass, getActiveBadgeEmoji, getActiveFontClass, getBoosterTimeLeft, shopItems } from './shop.js';
-
+import {
+    loadDiscount, loadInventory, saveInventory, renderShop, renderShopItems,
+    renderShopCategories, renderInventory, previewItem, buyItem, applyItem,
+    resetItem, getItemDiscount, getDiscountedPrice, formatPrice,
+    updateDiscountDisplay, generateNewDiscount, getActiveColorClass,
+    getActiveColorClassForId, getActiveFrameClass, getActiveBadgeEmoji,
+    getActiveFontClass, getBoosterTimeLeft, shopItems,
+    getGiftMode, startGiftMode, cancelGiftMode, openGiftAgentModal
+} from './shop.js';
 // ==================== CHAT ====================
 import {
     loadChatMessages, sendMessage, renderChat, subscribeChat, switchChatTab,
@@ -94,6 +101,50 @@ let feedOriginalsCache = null;
 let feedChannel = null;
 let agentsChannel = null;
 let repTkInterval = null;
+
+function showGiftNotification(item) {
+    let n = document.createElement('div');
+    n.style.cssText = `
+        position: fixed;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        background: linear-gradient(135deg, var(--accent-dark), #1a0000);
+        border: 2px solid var(--accent);
+        padding: 20px 32px;
+        z-index: 10001;
+        font-family: var(--font-mono);
+        color: var(--text);
+        font-size: 0.95rem;
+        border-radius: var(--radius);
+        box-shadow: 0 0 50px var(--accent-glow), 0 8px 32px rgba(0, 0, 0, 0.8);
+        opacity: 0;
+        transition: opacity 0.4s, transform 0.4s;
+        pointer-events: none;
+        max-width: 90vw;
+        text-align: center;
+        letter-spacing: 1px;
+    `;
+    n.innerHTML =
+        '<div style="font-size:2rem;margin-bottom:8px;">🎁</div>' +
+        '<div style="font-size:1.1rem;font-weight:700;color:var(--accent);text-shadow:0 0 8px var(--accent);margin-bottom:6px;">ВАМ ПОДАРОК!</div>' +
+        '<div style="color:var(--text-2);font-size:0.85rem;">от <span style="color:var(--accent);font-weight:600;">' + item.gift_from + '</span></div>' +
+        '<div style="color:var(--text);margin-top:6px;font-weight:600;font-size:1rem;">' + item.name + '</div>' +
+        (item.gift_message ? '<div style="color:var(--text-3);font-size:0.8rem;margin-top:8px;font-style:italic;max-width:300px;">«' + item.gift_message + '»</div>' : '');
+
+    document.body.appendChild(n);
+
+    requestAnimationFrame(() => {
+        n.style.opacity = '1';
+        n.style.transform = 'translateX(-50%) translateY(0)';
+    });
+
+    setTimeout(() => {
+        n.style.opacity = '0';
+        n.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(() => n.remove(), 400);
+    }, 6000);
+}
 
 // ============================================================
 // РЕРЕНДЕР ВСЕГО
@@ -600,6 +651,29 @@ function subscribeAgentsRealtime() {
     agentsChannel = supabase.channel('agents-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'agents' }, () => {
             renderRightPanel();
+        })
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'agents',
+            filter: 'name=eq.' + (CA?.name || '__none__')
+        }, payload => {
+            if (!CA) return;
+            let newInv = payload.new.inventory || [];
+            let oldInv = inventory || [];
+
+            if (newInv.length > oldInv.length) {
+                let newItems = newInv.filter(i => !oldInv.find(o => o.id === i.id));
+                newItems.forEach(item => {
+                    if (item.gift_from) {
+                        showGiftNotification(item);
+                        playSound('achieve');
+                    }
+                });
+                setInventory(newInv);
+                CA.inventory = newInv;
+                if (getState().currentView === 'inventory') renderInventory();
+            }
         })
         .subscribe();
 }
@@ -1142,6 +1216,21 @@ function openDesktop() {
     checkCompletedWars();
     autoDistributeTreasury();
     startRepTkTimer();
+    // Проверка непрочитанных подарков при входе
+    setTimeout(() => {
+        if (!CA) return;
+        let inv = inventory || [];
+        let unreadGifts = inv.filter(i => i.gift_from && !i.gift_read);
+        if (unreadGifts.length > 0) {
+            unreadGifts.forEach((item, idx) => {
+                setTimeout(() => showGiftNotification(item), idx * 1500);
+                // Помечаем как прочитанное
+                item.gift_read = true;
+            });
+            // Сохраняем в БД, чтобы не показывать повторно
+            supabase.from('agents').update({ inventory: inv }).eq('name', CA.name);
+        }
+    }, 2000);
     console.log('[MAIN] Рабочий стол открыт');
 }
 
