@@ -1,7 +1,7 @@
 // ============================================================
-// UI / SIDEBAR + MOBILE NAV
+// UI / SIDEBAR + MOBILE NAV + DRAWER
+// v2.0.0: добавлен мобильный drawer
 // ============================================================
-// Меняется редко. Только когда добавляешь новые пункты меню.
 
 import { CA } from '../auth.js';
 import { unreadMentions } from '../chat.js';
@@ -40,10 +40,10 @@ export const SIDEBAR_STRUCTURE = [
 
 export const MOBILE_NAV_ITEMS = [
     { id: 'chat', icon: '💬', label: 'ЧАТ' },
-    { id: 'contacts', icon: '🌐', label: 'СЕТЬ' },
-    { id: 'profile', icon: '👤', label: 'ПРОФИЛЬ' },
+    { id: 'clans', icon: '⚔️', label: 'ОТРЯДЫ' },
+    { id: '__menu__', icon: '☰', label: 'МЕНЮ' },
     { id: 'shop', icon: '🛒', label: 'МАГАЗИН' },
-    { id: 'settings', icon: '⚙️', label: 'НАСТРОЙКИ' }
+    { id: 'rp', icon: '🎭', label: 'РП' }
 ];
 
 let onOpenApp = null;
@@ -63,7 +63,6 @@ export function buildSidebar() {
     let st = getState();
     let isAdmin = CA && (CA.role === 'admin' || CA.role === 'moderator');
 
-    // Уже построен — только обновить badges
     if (nav.dataset.built === '1' && nav.dataset.role === (isAdmin ? 'admin' : 'user')) {
         updateSidebarBadges();
         return;
@@ -99,9 +98,6 @@ export function buildSidebar() {
     applySidebarState();
 }
 
-// ============================================================
-// UPDATE BADGES
-// ============================================================
 export function updateSidebarBadges() {
     let nav = document.getElementById('sidebar-nav');
     if (!nav) return;
@@ -130,9 +126,6 @@ export function updateSidebarBadges() {
     });
 }
 
-// ============================================================
-// UPDATE PROFILE BLOCK
-// ============================================================
 export function updateSidebarProfile() {
     if (!CA) return;
     let cover = document.getElementById('sidebar-profile-cover');
@@ -146,9 +139,6 @@ export function updateSidebarProfile() {
                               : CA.role === 'moderator' ? 'МОДЕРАТОР' : 'АГЕНТ';
 }
 
-// ============================================================
-// APPLY COLLAPSED STATE
-// ============================================================
 export function applySidebarState() {
     let st = getState();
     let layout = document.getElementById('main-layout');
@@ -166,9 +156,6 @@ export function applySidebarState() {
     }
 }
 
-// ============================================================
-// TOGGLE
-// ============================================================
 export function toggleSidebar() {
     let st = getState();
     st.sidebarCollapsed = !st.sidebarCollapsed;
@@ -182,14 +169,15 @@ export function toggleSidebar() {
 export function buildMobileNav() {
     let nav = document.getElementById('mobile-nav-inner');
     if (!nav) return;
-    let st = getState();
 
     nav.innerHTML = MOBILE_NAV_ITEMS.map(i => {
         let badge = '';
         if (i.id === 'chat' && ((unreadMentions.chat || 0) + (unreadMentions.clan || 0)) > 0) {
             badge = '<span class="mobile-nav-badge">' + ((unreadMentions.chat || 0) + (unreadMentions.clan || 0)) + '</span>';
         }
-        return '<button class="mobile-nav-btn" data-app="' + i.id + '">' + badge +
+        let isMenu = i.id === '__menu__';
+        let extraStyle = isMenu ? 'background:var(--accent-dim);color:var(--accent);' : '';
+        return '<button class="mobile-nav-btn" data-app="' + i.id + '" style="' + extraStyle + '">' + badge +
             '<span class="mobile-nav-icon">' + i.icon + '</span>' +
             '<span>' + i.label + '</span></button>';
     }).join('');
@@ -197,10 +185,71 @@ export function buildMobileNav() {
     nav.querySelectorAll('[data-app]').forEach(el => {
         el.addEventListener('click', () => {
             let id = el.dataset.app;
+            if (id === '__menu__') {
+                openMobileDrawer();
+                return;
+            }
             nav.querySelectorAll('[data-app]').forEach(b => b.classList.remove('active'));
             el.classList.add('active');
             if (id === 'profile') { if (onOpenProfile) onOpenProfile(); return; }
             if (onOpenApp) onOpenApp(id);
         });
     });
+}
+
+// ============================================================
+// MOBILE DRAWER
+// ============================================================
+export function buildMobileDrawer() {
+    let nav = document.getElementById('mobile-sidebar-nav');
+    if (!nav) return;
+    let st = getState();
+    let isAdmin = CA && (CA.role === 'admin' || CA.role === 'moderator');
+
+    let html = '';
+    SIDEBAR_STRUCTURE.forEach(group => {
+        if (group.adminOnly && !isAdmin) return;
+        html += '<div class="sidebar-group">';
+        html += '<div class="sidebar-group-title">' + group.title + '</div>';
+        group.items.forEach(item => {
+            let isActive = (item.id === st.currentView);
+            html += '<div class="sidebar-item' + (isActive ? ' active' : '') + '" data-mobile-app="' + item.id + '">';
+            html += '<span class="sidebar-item-icon">' + item.icon + '</span>';
+            html += '<span class="sidebar-item-label">' + item.label + '</span>';
+            html += '</div>';
+        });
+        html += '</div>';
+    });
+    nav.innerHTML = html;
+
+    nav.querySelectorAll('[data-mobile-app]').forEach(el => {
+        el.addEventListener('click', () => {
+            closeMobileDrawer();
+            setTimeout(() => {
+                if (onOpenApp) onOpenApp(el.dataset.mobileApp);
+            }, 150);
+        });
+    });
+}
+
+export function openMobileDrawer() {
+    buildMobileDrawer();
+    let drawer = document.getElementById('mobile-drawer');
+    if (drawer) {
+        drawer.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+export function closeMobileDrawer() {
+    let drawer = document.getElementById('mobile-drawer');
+    if (drawer) {
+        drawer.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+}
+
+export function initMobileDrawer() {
+    document.getElementById('mobile-drawer-close')?.addEventListener('click', closeMobileDrawer);
+    document.getElementById('mobile-drawer-overlay')?.addEventListener('click', closeMobileDrawer);
 }

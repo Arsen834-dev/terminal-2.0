@@ -5,7 +5,7 @@
 
 console.log('[MAIN] Модуль начал загрузку');
 
-import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, login, register, saveAgent, loadAgent, getAgents, translit, setInventory } from './auth.js';
+import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, login, register, saveAgent, loadAgent, getAgents, translit, setInventory, applyBooster, getActiveBoosterTimeLeft } from './auth.js';
 import { loadDiscount, loadInventory, saveInventory, renderShop, renderShopItems, renderShopCategories, renderInventory, previewItem, buyItem, applyItem, resetItem, getItemDiscount, getDiscountedPrice, formatPrice, updateDiscountDisplay, generateNewDiscount, getActiveColorClass, getActiveColorClassForId, getActiveFrameClass, getActiveBadgeEmoji, getActiveFontClass, getBoosterTimeLeft, shopItems } from './shop.js';
 
 // ==================== CHAT ====================
@@ -72,7 +72,8 @@ import { initCropper, setCropMode, getCroppedBlob, resetCropper, hasImage, getCr
 import { getAgentFx, FONT_MAP } from './ui/renderFx.js';
 import {
     buildSidebar, updateSidebarBadges, updateSidebarProfile,
-    applySidebarState, toggleSidebar, buildMobileNav, setSidebarHandlers
+    applySidebarState, toggleSidebar, buildMobileNav, setSidebarHandlers,
+    buildMobileDrawer, initMobileDrawer
 } from './ui/sidebar.js';
 import { confirmDialog, initModalCloseHandlers } from './ui/modals.js';
 import { getState, setState } from './ui/state.js';
@@ -606,30 +607,31 @@ function subscribeAgentsRealtime() {
 // ============================================================
 // РЕПА/ТК ТАЙМЕР
 // ============================================================
-function startRepTkTimer() {
-    if (repTkInterval) clearInterval(repTkInterval);
-    repTkInterval = setInterval(() => {
-        if (!CA) return;
-        let now = Date.now();
-        let lastRepTk = parseInt(localStorage.getItem('syndicate_last_rep_tk_' + CA.name) || '0');
-        if (now - lastRepTk >= 1800000) {
-            CA.rep = Math.min(100, (CA.rep || 0) + 1);
-            CA.crystals = (CA.crystals || 0) + 50;
-            localStorage.setItem('syndicate_last_rep_tk_' + CA.name, now);
-            saveAgent();
-            updateTopbar();
-            notif('📈 +1 репа, +50 ТК');
-        }
-    }, 60000);
+repTkInterval = setInterval(() => {
+    if (!CA) return;
     let now = Date.now();
     let lastRepTk = parseInt(localStorage.getItem('syndicate_last_rep_tk_' + CA.name) || '0');
     if (now - lastRepTk >= 1800000) {
-        CA.rep = Math.min(100, (CA.rep || 0) + 1);
-        CA.crystals = (CA.crystals || 0) + 50;
+        let repGain = applyBooster(1, 'rep');
+        let tkGain = applyBooster(50, 'tk');
+        CA.rep = Math.min(100, (CA.rep || 0) + repGain);
+        CA.crystals = (CA.crystals || 0) + tkGain;
         localStorage.setItem('syndicate_last_rep_tk_' + CA.name, now);
         saveAgent();
         updateTopbar();
+        notif('📈 +' + repGain + ' репа, +' + tkGain + ' ТК');
     }
+}, 60000);
+let now = Date.now();
+let lastRepTk = parseInt(localStorage.getItem('syndicate_last_rep_tk_' + CA.name) || '0');
+if (now - lastRepTk >= 1800000) {
+    let repGain = applyBooster(1, 'rep');
+    let tkGain = applyBooster(50, 'tk');
+    CA.rep = Math.min(100, (CA.rep || 0) + repGain);
+    CA.crystals = (CA.crystals || 0) + tkGain;
+    localStorage.setItem('syndicate_last_rep_tk_' + CA.name, now);
+    saveAgent();
+    updateTopbar();
 }
 
 // ============================================================
@@ -821,14 +823,29 @@ function updateTopbar() {
     let r = document.getElementById('topbar-rep');
     if (c) c.textContent = CA.crystals || 0;
     if (r) r.textContent = CA.rep || 0;
+
+    // Бустер в топбаре
+    let bSep = document.getElementById('topbar-booster-sep');
+    let bWrap = document.getElementById('topbar-booster');
+    let bTime = document.getElementById('topbar-booster-time');
+    let boosterTimeLeft = getActiveBoosterTimeLeft();
+
+    if (activeBooster && boosterTimeLeft) {
+        if (bSep) bSep.style.display = '';
+        if (bWrap) bWrap.style.display = '';
+        if (bTime) bTime.textContent = boosterTimeLeft;
+    } else {
+        if (bSep) bSep.style.display = 'none';
+        if (bWrap) bWrap.style.display = 'none';
+    }
+
     let ps = document.querySelectorAll('.feed-profile-stat-value');
     if (ps.length >= 2) {
         ps[0].textContent = CA.crystals || 0;
         ps[1].textContent = CA.rep || 0;
         if (ps[2]) ps[2].textContent = CA.achievements?.length || 0;
     }
-}
-window.updateStatusBar = updateTopbar;
+};
 
 // ============================================================
 // WINDOW ПРОБРОС
@@ -1107,6 +1124,8 @@ function openDesktop() {
 
     buildSidebar();
     buildMobileNav();
+    buildMobileDrawer();
+    initMobileDrawer();
     startClock();
     updateTopbar();
     openFeed();

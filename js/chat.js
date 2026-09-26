@@ -2,7 +2,7 @@
 // CHAT / ОБЩИЙ + КЛАН + АДМИН ЧАТЫ
 // v3.1.2: ЛС вынесены в features/dm.js
 // ============================================================
-import { supabase, CA, activeItems, saveAgent, loadAgent, getAgents } from './auth.js';
+import { supabase, CA, activeItems, saveAgent, loadAgent, getAgents, applyBooster } from './auth.js';
 import { shopItems, getActiveColorClassForId } from './shop.js';
 import { clans } from './clans.js';
 import { notif, glowIcon, stopGlowIcon } from './utils.js';
@@ -240,8 +240,7 @@ export async function sendMessage() {
 
     playSound('send');
     CA.chatCount = (CA.chatCount || 0) + 1;
-    CA.crystals = (CA.crystals || 0) + 15;
-    inp.value = '';
+    CA.crystals = (CA.crystals || 0) + applyBooster(15, 'tk');
     resetTextareaHeight(inp);
     replyTo = null;
     cancelReply();
@@ -613,8 +612,7 @@ export async function sendClanMessage() {
 
     playSound('send');
     CA.chatCount = (CA.chatCount || 0) + 1;
-    CA.crystals = (CA.crystals || 0) + 15;
-    inp.value = '';
+    CA.crystals = (CA.crystals || 0) + applyBooster(15, 'tk');
     resetTextareaHeight(inp);
     replyTo = null;
     cancelReply();

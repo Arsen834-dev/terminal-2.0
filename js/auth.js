@@ -149,7 +149,6 @@ export async function uploadCover(file) {
 export async function saveAgent() {
     if (!CA) return;
     try {
-        // Защита: не терять инвентарь если локально пусто
         let invToSave = null;
         if (inventory && inventory.length > 0) {
             invToSave = inventory;
@@ -186,7 +185,6 @@ export async function saveAgent() {
             last_seen: new Date().toISOString()
         };
 
-        // Только если есть что сохранять — иначе не трогаем inventory
         if (invToSave !== null) data.inventory = invToSave;
 
         let { error } = await supabase.from('agents').upsert(data, { onConflict: 'name' });
@@ -225,7 +223,7 @@ export function getActiveItems() { return activeItems; }
 export function getActiveBooster() { return activeBooster; }
 export function getBoosterEndTime() { return boosterEndTime; }
 
-export function setActiveItems(items) { activeItems = { ...activeItems, ...items }; }
+export function setActiveItems(items) { Object.assign(activeItems, items); }
 export function setActiveBooster(b) { activeBooster = b; }
 export function setBoosterEndTime(t) { boosterEndTime = t; }
 
@@ -234,6 +232,30 @@ export function setInventory(newInv) {
     if (Array.isArray(newInv)) {
         newInv.forEach(i => inventory.push(i));
     }
+}
+
+// ==================== BOOSTER EFFECT ====================
+export function applyBooster(baseAmount, type) {
+    if (!activeBooster || !boosterEndTime) return baseAmount;
+
+    if (new Date(boosterEndTime).getTime() < Date.now()) {
+        activeBooster = null;
+        boosterEndTime = null;
+        return baseAmount;
+    }
+
+    if (type === 'tk' && activeBooster.effect === 'tk_x2') return baseAmount * 2;
+    if (type === 'rep' && activeBooster.effect === 'rep_x2') return baseAmount * 2;
+
+    return baseAmount;
+}
+
+export function getActiveBoosterTimeLeft() {
+    if (!boosterEndTime) return '';
+    let n = Date.now(), e = new Date(boosterEndTime).getTime();
+    if (n >= e) return '';
+    let d = e - n, h = Math.floor(d / 3600000), m = Math.floor((d % 3600000) / 60000);
+    return h + 'ч ' + m + 'м';
 }
 
 // ==================== ВХОД / РЕГИСТРАЦИЯ ====================
@@ -263,7 +285,6 @@ export async function login() {
 
     CA = ag;
 
-    // === Синхронизация инвентаря из БД + localStorage ===
     let dbInv = (ag.inventory || []).filter(item => !REMOVED_ITEM_IDS.includes(item.id));
     let localInvKey = 'syndicate_inventory_' + ag.name;
     let localInv = [];
@@ -277,7 +298,6 @@ export async function login() {
     setInventory(mergedInv);
     localStorage.setItem(localInvKey, JSON.stringify(mergedInv));
 
-    // === Активные эффекты ===
     activeItems.color = (ag.active_color && !REMOVED_ITEM_IDS.includes(ag.active_color)) ? ag.active_color : 'c_red';
     activeItems.frame = (ag.active_frame && !REMOVED_ITEM_IDS.includes(ag.active_frame)) ? ag.active_frame : 'f_default';
     activeItems.badge = (ag.active_badge && !REMOVED_ITEM_IDS.includes(ag.active_badge)) ? ag.active_badge : 'b_none';
@@ -305,7 +325,6 @@ export async function login() {
     CA.muted = CA.muted || false;
     CA.inventory = mergedInv;
 
-    // Ежедневный бонус
     let today = new Date().toDateString();
     let lastBonus = localStorage.getItem('syndicate_daily_bonus_' + CA.name);
     if (lastBonus !== today) {
@@ -313,7 +332,6 @@ export async function login() {
         localStorage.setItem('syndicate_daily_bonus_' + CA.name, today);
     }
 
-    // Базовые предметы
     if (!inventory.find(i => i.id === 'c_red')) inventory.push({ category: 'color', id: 'c_red', name: 'Красный', price: 0 });
     if (!inventory.find(i => i.id === 'f_default')) inventory.push({ category: 'frame', id: 'f_default', name: 'Без рамки', price: 0 });
     if (!inventory.find(i => i.id === 'b_none')) inventory.push({ category: 'badge', id: 'b_none', name: 'Без бейджика', price: 0 });

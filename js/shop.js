@@ -1,9 +1,9 @@
 // ============================================================
 // SHOP / МАГАЗИН И ИНВЕНТАРЬ
-// v3.1.0: убран fnt_stencil, fnt_comic возвращён
+// v3.1.7: фикс бага applyItem + функция giftItem
 // ============================================================
 
-import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, saveAgent, setInventory } from './auth.js';
+import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, saveAgent, setInventory, setActiveBooster, setBoosterEndTime } from './auth.js';
 import { REMOVED_ITEM_IDS } from './config.js';
 import { playSound } from './sounds.js';
 
@@ -500,10 +500,15 @@ export function applyItem(cat, id) {
     if (cat === 'booster') {
         let item = shopItems.boosters.find(i => i.id === id);
         if (!item) return;
-        activeBooster = { id, effect: item.effect, duration: item.duration, name: item.name };
-        boosterEndTime = new Date(Date.now() + item.duration * 3600000).toISOString();
+
+        // ✅ ИСПОЛЬЗУЕМ СЕТТЕРЫ, а не прямое присваивание
+        setActiveBooster({ id, effect: item.effect, duration: item.duration, name: item.name });
+        setBoosterEndTime(new Date(Date.now() + item.duration * 3600000).toISOString());
+
+        // Удаляем бустер из инвентаря
         let idx = inventory.findIndex(i => i.id === id);
         if (idx !== -1) inventory.splice(idx, 1);
+
         CA.inventory = inventory;
         saveInventory(); saveAgent();
         renderShopItems(); renderInventory();
@@ -516,6 +521,7 @@ export function applyItem(cat, id) {
         return;
     }
 
+    // ✅ Для color/frame/badge/font — мутируем объект, а не переприсваиваем
     activeItems[cat] = id;
 
     if (cat === 'color') CA.active_color = id;
@@ -563,6 +569,53 @@ export function resetItem(cat) {
         if (typeof window.updateSidebarProfile === 'function') window.updateSidebarProfile();
     }, 50);
     window.notif('🔄 Сброшено');
+}
+
+// ============================================================
+// GIFT ITEM — подарить предмет другому агенту
+// ============================================================
+export async function giftItem(cat, id, recipient, message) {
+    if (!CA) return { success: false, error: 'Не авторизован' };
+    if (!recipient || recipient === CA.name) return { success: false, error: 'Нельзя себе' };
+
+    // Проверяем есть ли предмет в инвентаре
+    let itemInInv = inventory.find(i => i.id === id);
+    if (!itemInInv) return { success: false, error: 'Предмета нет в инвентаре' };
+
+    // Проверяем получателя
+    let { data: receiver } = await supabase.from('agents')
+        .select('name, inventory').ilike('name', recipient).maybeSingle();
+    if (!receiver) return { success: false, error: 'Получатель не найден' };
+
+    let receiverInv = receiver.inventory || [];
+    if (receiverInv.find(i => i.id === id)) {
+        return { success: false, error: 'У получателя уже есть этот предмет' };
+    }
+
+    // Убираем из инвентаря отправителя
+    let idx = inventory.findIndex(i => i.id === id);
+    inventory.splice(idx, 1);
+    CA.inventory = inventory;
+
+    // Добавляем получателю
+    receiverInv.push({
+        ...itemInInv,
+        gift_from: CA.name,
+        gift_message: message || '',
+        gift_at: new Date().toISOString()
+    });
+
+    try {
+        await supabase.from('agents').update({ inventory: receiverInv }).eq('name', receiver.name);
+        await saveInventory();
+        await saveAgent();
+
+        window.notif('🎁 Подарок отправлен!');
+        playSound('send');
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: 'Ошибка отправки' };
+    }
 }
 
 export function renderInventory() {
@@ -624,10 +677,16 @@ export function renderInventory() {
                     : '<button class="btn full" data-inv-apply="' + item.category + '" data-id="' + item.id + '" style="padding:8px;font-size:0.8rem;">Применить</button>';
             }
 
+            // Кнопка подарить — для не-активных предметов
+            let giftBtn = '';
+            if (!active && !ba && item.id !== 'c_red' && item.id !== 'f_default' && item.id !== 'b_none' && item.id !== 'fnt_default') {
+                giftBtn = '<button class="btn secondary full" data-gift-item="' + item.id + '" data-gift-cat="' + item.category + '" data-gift-name="' + item.name + '" style="padding:6px;font-size:0.7rem;margin-top:4px;">🎁 Подарить</button>';
+            }
+
             return '<div class="card" style="border-color:' + (active || ba ? 'var(--success)' : 'var(--border-2)') + ';padding:14px;text-align:center;overflow:visible;">' +
                 '<div style="min-height:70px;display:flex;align-items:center;justify-content:center;overflow:visible;" data-preview-cat="' + item.category + '" data-preview-id="' + item.id + '">' + prev + '</div>' +
                 '<div style="font-weight:600;margin:6px 0;font-size:0.8rem;">' + item.name + '</div>' +
-                btn + '</div>';
+                btn + giftBtn + '</div>';
         }).join('') +
         '</div></div>';
 
@@ -640,8 +699,52 @@ export function renderInventory() {
                 previewItem(this.dataset.previewCat, this.dataset.previewId);
             });
         });
+        // Обработчики для кнопки "Подарить"
+        document.querySelectorAll('[data-gift-item]').forEach(b => {
+            b.addEventListener('click', function(e) {
+                e.stopPropagation();
+                let itemId = this.dataset.giftItem;
+                let itemCat = this.dataset.giftCat;
+                let itemName = this.dataset.giftName;
+                openGiftModal(itemCat, itemId, itemName);
+            });
+        });
     }, 10);
     window.invCategory = invCategory;
+}
+
+// ============================================================
+// GIFT MODAL
+// ============================================================
+function openGiftModal(cat, id, name) {
+    let modal = document.getElementById('modal-gift');
+    if (!modal) return;
+
+    document.getElementById('gift-item-preview').innerHTML =
+        '<div style="font-weight:700;font-size:1.1rem;color:var(--accent);">🎁 ' + name + '</div>' +
+        '<div style="color:var(--text-3);font-size:0.75rem;margin-top:4px;">' + cat + '</div>';
+    document.getElementById('gift-recipient').value = '';
+    document.getElementById('gift-message').value = '';
+
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('show'), 10);
+
+    let submitBtn = document.getElementById('gift-submit-btn');
+    let newBtn = submitBtn.cloneNode(true);
+    submitBtn.parentNode.replaceChild(newBtn, submitBtn);
+    newBtn.addEventListener('click', async () => {
+        let recipient = document.getElementById('gift-recipient').value.trim();
+        let message = document.getElementById('gift-message').value.trim();
+        if (!recipient) return window.notif('⛔ ВВЕДИ ИМЯ');
+
+        let r = await giftItem(cat, id, recipient, message);
+        if (r.success) {
+            window.closeModal('modal-gift');
+            renderInventory();
+        } else {
+            window.notif('⛔ ' + r.error);
+        }
+    });
 }
 
 export function addShopLog(who, action, item, price) {

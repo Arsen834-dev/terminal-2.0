@@ -1,8 +1,7 @@
 // ============================================================
 // FEATURES / RP-SCENES — спектакли
+// v3.0.5: фикс цвета ников
 // ============================================================
-// Всё, что связано со спектаклями: создание, редактирование,
-// удаление, обложки, чат внутри спектакля.
 
 import { supabase, CA } from '../auth.js';
 import { notif, timeAgo, closeModal } from '../utils.js';
@@ -10,9 +9,6 @@ import { playSound } from '../sounds.js';
 import { getAgentFx } from '../ui/renderFx.js';
 import { getCurrentRpChar } from '../rp.js';
 
-// ============================================================
-// СОСТОЯНИЕ
-// ============================================================
 let rpScenes = [];
 let currentSceneId = null;
 let sceneMessages = [];
@@ -25,9 +21,6 @@ function escapeHtml(s) {
     return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// ============================================================
-// ЗАГРУЗКА СПЕКТАКЛЕЙ
-// ============================================================
 export async function loadRpScenes() {
     try {
         let { data } = await supabase.from('rp_scenes')
@@ -39,9 +32,6 @@ export async function loadRpScenes() {
     } catch (e) {}
 }
 
-// ============================================================
-// ОБЛОЖКИ
-// ============================================================
 export async function loadSceneCovers(sceneId) {
     try {
         let { data } = await supabase.from('rp_scene_images')
@@ -102,9 +92,6 @@ async function uploadSceneCover(sceneId, file, position) {
     });
 }
 
-// ============================================================
-// СОЗДАНИЕ / РЕДАКТИРОВАНИЕ / УДАЛЕНИЕ
-// ============================================================
 export async function createRpScene(title, description, coverFiles) {
     if (!CA) return { success: false, error: '⚠ Не авторизован' };
     let currentRpChar = getCurrentRpChar();
@@ -195,9 +182,6 @@ export async function deleteRpScene(sceneId) {
     } catch (e) { return { success: false, error: 'Ошибка' }; }
 }
 
-// ============================================================
-// РЕНДЕР СПИСКА
-// ============================================================
 export async function renderRpScenes() {
     let c = document.getElementById('rp-scenes-list');
     if (!c) return;
@@ -276,9 +260,6 @@ export async function renderRpScenes() {
     }, 10);
 }
 
-// ============================================================
-// ЧАТ СПЕКТАКЛЯ
-// ============================================================
 export async function openSceneChat(sceneId) {
     currentSceneId = sceneId;
     sceneReplyTo = null;
@@ -451,11 +432,12 @@ export function renderSceneMessages() {
             ? '<div style="color:#880000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_char_name || '???') + ': ' + (m.reply_text || '...') + '</div>'
             : '';
 
+        // ✅ УБРАН style="color:var(--accent);"
         return '<div class="chat-msg" data-msg-id="' + m.id + '" data-rp-char="' + escapeHtml(m.char_name || '') + '" data-rp-owner="' + escapeHtml(m.owner || '') + '" style="cursor:pointer;">' +
             '<div class="chat-msg-left"><div class="chat-avatar-frame f-default"><div class="inner">' + avatarHtml + '</div></div></div>' +
             '<div class="chat-msg-right">' + replyHtml +
             '<div class="chat-header-row">' +
-            '<span class="chat-author name-with-badge rp-message-author ' + e.colorCls + ' ' + e.fontCls + '" style="color:var(--accent);" onclick="event.stopPropagation();window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + e.roleBadge + e.badgeHtml + '</span>' +
+            '<span class="chat-author name-with-badge rp-message-author ' + e.colorCls + ' ' + e.fontCls + '" onclick="event.stopPropagation();window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + e.roleBadge + e.badgeHtml + '</span>' +
             '<span style="color:var(--text-3);font-size:0.7rem;">(' + m.owner + ')</span>' +
             '<span class="chat-time">' + m.time + '</span>' + menu +
             '</div>' +
@@ -535,9 +517,6 @@ export function cancelSceneReply() {
     if (ri) ri.style.display = 'none';
 }
 
-// ============================================================
-// ЭКСПОРТЫ
-// ============================================================
 export {
     rpScenes,
     currentSceneId,

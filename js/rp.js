@@ -1,6 +1,6 @@
 // ============================================================
 // RP / РП-ПЕРСОНАЖИ И SPACE-X ЧАТ
-// v3.0.3: спектакли вынесены в features/rp-scenes.js
+// v3.0.4: фикс цвета ников (убрано style="color:var(--accent)")
 // ============================================================
 
 import { supabase, CA, getAgents } from './auth.js';
@@ -275,11 +275,12 @@ export function renderRpMessages() {
             ? '<div style="color:#880000;font-size:0.7rem;margin-bottom:2px;">↩ ' + (m.reply_char_name || '???') + ': ' + (m.reply_text || '...') + '</div>'
             : '';
 
+        // ✅ УБРАН style="color:var(--accent);" — теперь цвет применяется из e.colorCls
         return '<div class="chat-msg" data-msg-id="' + m.id + '" data-rp-char="' + escapeHtml(m.char_name || '') + '" data-rp-owner="' + escapeHtml(m.owner || '') + '" style="cursor:pointer;">' +
             '<div class="chat-msg-left"><div class="chat-avatar-frame f-default"><div class="inner">' + avatarHtml + '</div></div></div>' +
             '<div class="chat-msg-right">' + replyHtml +
             '<div class="chat-header-row">' +
-            '<span class="chat-author name-with-badge rp-message-author ' + e.colorCls + ' ' + e.fontCls + '" style="color:var(--accent);" onclick="event.stopPropagation();window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + e.roleBadge + e.badgeHtml + '</span>' +
+            '<span class="chat-author name-with-badge rp-message-author ' + e.colorCls + ' ' + e.fontCls + '" onclick="event.stopPropagation();window.showAgentInfo(\'' + m.owner + '\')">' + m.char_name + e.roleBadge + e.badgeHtml + '</span>' +
             '<span style="color:var(--text-3);font-size:0.7rem;">(' + m.owner + ')</span>' +
             '<span class="chat-time">' + m.time + '</span>' + menu +
             '</div>' +

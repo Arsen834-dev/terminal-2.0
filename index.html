@@ -105,8 +105,12 @@
         <div class="topbar-item"><span class="topbar-status-dot"></span><span id="topbar-status">ONLINE</span></div>
         <span class="topbar-sep">│</span>
         <div class="topbar-item"><span>♦</span><span class="value accent" id="topbar-crystals">0</span></div>
+        <span class="topbar-sep" id="topbar-booster-sep" style="display:none;">│</span>
+        <div class="topbar-item" id="topbar-booster" style="display:none;">
+            <span>⚡</span>
+            <span class="value accent" id="topbar-booster-time">--</span>
+        </div>
         <span class="topbar-sep">│</span>
-        <div class="topbar-item"><span>⭐</span><span class="value accent" id="topbar-rep">0</span></div>
     </header>
 
     <div class="main-layout" id="main-layout">
@@ -136,6 +140,33 @@
     </footer>
 
 </div>
+<!-- МОДАЛКА ПОДАРКА -->
+<div class="modal-overlay" id="modal-gift">
+    <div class="modal-box">
+        <div class="modal-title">🎁 ПОДАРОК</div>
+        <div id="gift-item-preview" style="text-align:center;margin-bottom:16px;padding:14px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:6px;"></div>
+        <input type="text" class="modal-input" id="gift-recipient" placeholder="Имя получателя" autocomplete="off">
+        <textarea class="modal-textarea" id="gift-message" placeholder="Сообщение (необязательно)" style="min-height:80px;"></textarea>
+        <div style="margin-top:16px;text-align:right;">
+            <button class="modal-btn secondary" data-close-modal="modal-gift">ОТМЕНА</button>
+            <button class="modal-btn" id="gift-submit-btn">ПОДАРИТЬ</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОБИЛЬНОЕ МЕНЮ -->
+<div class="mobile-drawer" id="mobile-drawer">
+    <div class="mobile-drawer-overlay" id="mobile-drawer-overlay"></div>
+    <div class="mobile-drawer-content">
+        <div class="mobile-drawer-header">
+            <span class="mobile-drawer-title">МЕНЮ</span>
+            <button class="mobile-drawer-close" id="mobile-drawer-close">✕</button>
+        </div>
+        <div class="sidebar-scroll" id="mobile-sidebar-nav"></div>
+    </div>
+</div>
+
+<nav class="mobile-nav" id="mobile-nav"><div class="mobile-nav-inner" id="mobile-nav-inner"></div></nav>
 
 <nav class="mobile-nav" id="mobile-nav"><div class="mobile-nav-inner" id="mobile-nav-inner"></div></nav>
 
@@ -505,8 +536,13 @@
                 <option value="skrell">🐸 СКРЕЛЛ</option>
                 <option value="ipc">🤖 КИБОРГ</option>
                 <option value="arcana">🔮 АРКАН</option>
-            </select>
-            <input type="number" class="modal-input" id="rp-char-age" placeholder="ВОЗРАСТ" style="flex:0 0 110px;">
+                <option value="novakid">🌟 НОВАКИД</option>
+                <option value="nian">🏵️ НИАН</option>
+                <option value="dusk">🌑 СУМЕРЕЧНИК</option>
+                <option value="rezomi">🧬 РЕЗОМИ</option>
+                <option value="felenid">🐈 ФЕЛЕНИД</option>
+            </select>            
+        <input type="number" class="modal-input" id="rp-char-age" placeholder="ВОЗРАСТ" style="flex:0 0 110px;">
         </div>
         <input type="text" class="modal-input" id="rp-char-gender" placeholder="ПОЛ">
         <input type="text" class="modal-input" id="rp-char-role" placeholder="РОЛЬ / ПРОФЕССИЯ">
