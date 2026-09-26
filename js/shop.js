@@ -1,11 +1,12 @@
 // ============================================================
 // SHOP / МАГАЗИН И ИНВЕНТАРЬ
-// v3.1.7: фикс бага applyItem + функция giftItem
+// v3.1.9: фикс экспортов, giftSearchQuery, getAgents
 // ============================================================
 
-import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, saveAgent, setInventory, setActiveBooster, setBoosterEndTime } from './auth.js';
+import { supabase, CA, inventory, activeItems, activeBooster, boosterEndTime, saveAgent, setInventory, setActiveBooster, setBoosterEndTime, getAgents } from './auth.js';
 import { REMOVED_ITEM_IDS } from './config.js';
 import { playSound } from './sounds.js';
+import { closeModal } from './utils.js';
 
 export const shopItems = {
     colors: [
@@ -101,10 +102,11 @@ export const shopItems = {
 
 let shopCategory = 'colors';
 let invCategory = 'color';
-let giftMode = null;      
-let giftSearchQuery = ''; 
+let discountedItems = {};
 let discountEndTime = 0;
 let shopLogs = JSON.parse(localStorage.getItem('syndicate_shop_logs') || '[]');
+let giftMode = null;
+let giftSearchQuery = '';
 
 export function getActiveColorClass() {
     return getActiveColorClassForId(activeItems.color);
@@ -335,7 +337,7 @@ export function renderShop() {
     let giftBanner = '';
     if (giftMode) {
         giftBanner =
-            '<div class="card" style="border-left-color:var(--accent);background:linear-gradient(90deg, var(--accent-dim), transparent);margin-bottom:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;">' +
+            '<div class="card" style="border-left-color:var(--accent);background:linear-gradient(90deg, var(--accent-dim), transparent);margin-bottom:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">' +
             '<div>' +
             '<div style="color:var(--accent);font-weight:700;font-size:1rem;">🎁 ВЫ ДАРИТЕ:</div>' +
             '<div style="font-size:1.15rem;font-weight:600;margin-top:4px;">' + giftMode.recipientName + '</div>' +
@@ -344,7 +346,6 @@ export function renderShop() {
             '<button class="btn danger" id="cancel-gift-mode-btn" style="padding:8px 14px;font-size:0.75rem;">✕ ОТМЕНА</button>' +
             '</div>';
     } else {
-        // Обычная кнопка "Подарить кому-то"
         giftBanner =
             '<button class="btn full" id="start-gift-btn" style="margin-bottom:16px;padding:12px;background:var(--accent-dark);">' +
             '🎁 ПОДАРИТЬ ТОВАР ДРУГОМУ АГЕНТУ' +
@@ -363,7 +364,6 @@ export function renderShop() {
     renderShopCategories();
     renderShopItems();
 
-    // Обработчики баннера
     setTimeout(() => {
         document.getElementById('start-gift-btn')?.addEventListener('click', () => {
             openGiftAgentModal();
@@ -371,19 +371,35 @@ export function renderShop() {
         document.getElementById('cancel-gift-mode-btn')?.addEventListener('click', () => {
             cancelGiftMode();
         });
-
-        // Обработчики кнопок "Подарить" на товарах
-        document.querySelectorAll('[data-gift-shop]').forEach(b => {
-            b.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (!giftMode) return;
-                let itemCat = this.dataset.giftShop;
-                let itemId = this.dataset.id;
-                let itemName = this.dataset.name;
-                openGiftConfirmModal(itemCat, itemId, itemName, giftMode.recipientName);
-            });
-        });
+        attachShopHandlers();
     }, 10);
+}
+
+function attachShopHandlers() {
+    document.querySelectorAll('[data-buy]').forEach(b => b.addEventListener('click', function(e) {
+        e.stopPropagation();
+        buyItem(this.dataset.buy, this.dataset.id);
+    }));
+    document.querySelectorAll('[data-apply]').forEach(b => b.addEventListener('click', function(e) {
+        e.stopPropagation();
+        applyItem(this.dataset.apply, this.dataset.id);
+    }));
+    document.querySelectorAll('[data-reset]').forEach(b => b.addEventListener('click', function(e) {
+        e.stopPropagation();
+        resetItem(this.dataset.reset);
+    }));
+    document.querySelectorAll('[data-preview-cat]').forEach(el => {
+        el.addEventListener('click', function() {
+            previewItem(this.dataset.previewCat, this.dataset.previewId);
+        });
+    });
+    document.querySelectorAll('[data-gift-shop]').forEach(b => {
+        b.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (!giftMode) return;
+            openGiftConfirmModal(this.dataset.giftShop, this.dataset.id, this.dataset.name, giftMode.recipientName);
+        });
+    });
 }
 
 function openGiftConfirmModal(cat, id, name, recipient) {
@@ -419,7 +435,6 @@ function openGiftConfirmModal(cat, id, name, recipient) {
         let r = await giftItem(cat, id, recipient, message);
         if (r.success) {
             closeModal('modal-gift-confirm');
-            // Выходим из режима подарка
             giftMode = null;
             renderShop();
             if (typeof window.updateStatusBar === 'function') window.updateStatusBar();
@@ -441,17 +456,7 @@ export function renderShopCategories() {
                 window.shopCategory = this.dataset.shopCat;
                 renderShopCategories();
                 renderShopItems();
-                // После перерисовки — заново навесить обработчики подарков
-                document.querySelectorAll('[data-gift-shop]').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        if (!giftMode) return;
-                        let itemCat = this.dataset.giftShop;
-                        let itemId = this.dataset.id;
-                        let itemName = this.dataset.name;
-                        openGiftConfirmModal(itemCat, itemId, itemName, giftMode.recipientName);
-                    });
-                });
+                attachShopHandlers();
             });
         });
     }, 10);
@@ -472,6 +477,7 @@ export function renderShopItems() {
         if (active) borderColor = 'var(--success)';
         else if (owned) borderColor = 'var(--warning)';
         if (itemDiscount > 0) borderColor = 'var(--accent)';
+        if (giftMode) borderColor = 'var(--accent)';
 
         let prev = '';
         if (shopCategory === 'colors') {
@@ -501,7 +507,6 @@ export function renderShopItems() {
 
         let btns = '';
         if (giftMode) {
-            // Режим подарка — только кнопка "Подарить"
             let actualPrice = getDiscountedPrice(item.id, item.price);
             if (CA && CA.crystals < actualPrice) {
                 btns = '<div style="color:var(--danger);font-size:0.75rem;text-align:center;">⛔ Нет ТК</div>' +
@@ -526,6 +531,7 @@ export function renderShopItems() {
                 btns = '<button class="btn full" data-buy="' + cs + '" data-id="' + item.id + '" style="padding:8px;font-size:0.8rem;">Купить</button>';
             }
         }
+
         return '<div class="card" style="border-color:' + borderColor + ';cursor:pointer;padding:14px;overflow:visible;" data-preview-cat="' + cs + '" data-preview-id="' + item.id + '">' +
             '<div style="text-align:center;padding:10px;min-height:80px;display:flex;align-items:center;justify-content:center;overflow:visible;">' + prev + '</div>' +
             '<div style="font-weight:600;margin:8px 0;text-align:center;font-size:0.85rem;">' + item.name + '</div>' + discountBadge +
@@ -534,16 +540,7 @@ export function renderShopItems() {
             '</div>';
     }).join('');
 
-    setTimeout(() => {
-        document.querySelectorAll('[data-buy]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); buyItem(this.dataset.buy, this.dataset.id); }));
-        document.querySelectorAll('[data-apply]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); applyItem(this.dataset.apply, this.dataset.id); }));
-        document.querySelectorAll('[data-reset]').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); resetItem(this.dataset.reset); }));
-        document.querySelectorAll('[data-preview-cat]').forEach(el => {
-            el.addEventListener('click', function() {
-                previewItem(this.dataset.previewCat, this.dataset.previewId);
-            });
-        });
-    }, 10);
+    setTimeout(attachShopHandlers, 10);
 }
 
 export function buyItem(cat, id) {
@@ -610,11 +607,9 @@ export function applyItem(cat, id) {
         let item = shopItems.boosters.find(i => i.id === id);
         if (!item) return;
 
-        // ✅ ИСПОЛЬЗУЕМ СЕТТЕРЫ, а не прямое присваивание
         setActiveBooster({ id, effect: item.effect, duration: item.duration, name: item.name });
         setBoosterEndTime(new Date(Date.now() + item.duration * 3600000).toISOString());
 
-        // Удаляем бустер из инвентаря
         let idx = inventory.findIndex(i => i.id === id);
         if (idx !== -1) inventory.splice(idx, 1);
 
@@ -630,7 +625,6 @@ export function applyItem(cat, id) {
         return;
     }
 
-    // ✅ Для color/frame/badge/font — мутируем объект, а не переприсваиваем
     activeItems[cat] = id;
 
     if (cat === 'color') CA.active_color = id;
@@ -691,13 +685,11 @@ export async function giftItem(cat, id, recipient, message) {
     let item = shopItems[cats[cat]] ? shopItems[cats[cat]].find(i => i.id === id) : null;
     if (!item) return { success: false, error: 'Товар не найден' };
 
-    // Проверяем баланс
     let actualPrice = getDiscountedPrice(id, item.price);
     if ((CA.crystals || 0) < actualPrice) {
         return { success: false, error: 'Недостаточно ТК' };
     }
 
-    // Проверяем получателя
     let { data: receiver } = await supabase.from('agents')
         .select('name, inventory').ilike('name', recipient).maybeSingle();
     if (!receiver) return { success: false, error: 'Получатель не найден' };
@@ -707,10 +699,8 @@ export async function giftItem(cat, id, recipient, message) {
         return { success: false, error: 'У получателя уже есть этот товар' };
     }
 
-    // Списываем ТК у отправителя
     CA.crystals -= actualPrice;
 
-    // Формируем предмет
     let giftItemData = {
         category: cat,
         id: item.id,
@@ -722,14 +712,12 @@ export async function giftItem(cat, id, recipient, message) {
         gift_read: false
     };
 
-    // Добавляем получателю
     receiverInv.push(giftItemData);
 
     try {
         await supabase.from('agents').update({ inventory: receiverInv }).eq('name', receiver.name);
         await saveAgent();
 
-        // Пишем в логи магазина
         addShopLog(CA.name, 'gift', item.name + ' → ' + receiver.name, actualPrice);
 
         window.notif('🎁 Подарок отправлен: ' + item.name + ' → ' + receiver.name);
@@ -799,7 +787,6 @@ export function renderInventory() {
                     : '<button class="btn full" data-inv-apply="' + item.category + '" data-id="' + item.id + '" style="padding:8px;font-size:0.8rem;">Применить</button>';
             }
 
-            // Кнопка подарить — для не-активных предметов
             let giftBtn = '';
             if (!active && !ba && item.id !== 'c_red' && item.id !== 'f_default' && item.id !== 'b_none' && item.id !== 'fnt_default') {
                 giftBtn = '<button class="btn secondary full" data-gift-item="' + item.id + '" data-gift-cat="' + item.category + '" data-gift-name="' + item.name + '" style="padding:6px;font-size:0.7rem;margin-top:4px;">🎁 Подарить</button>';
@@ -822,7 +809,6 @@ export function renderInventory() {
                 previewItem(this.dataset.previewCat, this.dataset.previewId);
             });
         });
-        // Обработчики для кнопки "Подарить"
         document.querySelectorAll('[data-gift-item]').forEach(b => {
             b.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -836,9 +822,6 @@ export function renderInventory() {
     window.invCategory = invCategory;
 }
 
-// ============================================================
-// GIFT MODAL
-// ============================================================
 function openGiftModal(cat, id, name) {
     let modal = document.getElementById('modal-gift');
     if (!modal) return;
@@ -870,14 +853,6 @@ function openGiftModal(cat, id, name) {
     });
 }
 
-export function addShopLog(who, action, item, price) {
-    let time = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
-    shopLogs.unshift({ who, action, item, price, time });
-    if (shopLogs.length > 200) shopLogs.pop();
-    localStorage.setItem('syndicate_shop_logs', JSON.stringify(shopLogs));
-}
-
-export function getShopLogs() { return shopLogs; }
 // ============================================================
 // GIFT MODE
 // ============================================================
@@ -901,7 +876,6 @@ export function getGiftSearchQuery() {
     return giftSearchQuery;
 }
 
-// Открыть модалку выбора агента
 export async function openGiftAgentModal() {
     let modal = document.getElementById('modal-gift-agent');
     if (!modal) return;
@@ -918,7 +892,6 @@ export async function openGiftAgentModal() {
         searchInput?.focus();
     }, 10);
 
-    // Обработчик поиска
     if (searchInput) {
         let newInput = searchInput.cloneNode(true);
         searchInput.parentNode.replaceChild(newInput, searchInput);
@@ -943,7 +916,6 @@ async function renderGiftAgentList() {
         return true;
     });
 
-    // Сортируем: онлайн первыми, потом по алфавиту
     let now = Date.now();
     names.sort((a, b) => {
         let aOn = agents[a].last_seen && (now - new Date(agents[a].last_seen).getTime()) < 300000;
@@ -978,7 +950,6 @@ async function renderGiftAgentList() {
             '</div>';
     }).join('');
 
-    // Обработчики клика
     list.querySelectorAll('[data-gift-recipient]').forEach(el => {
         el.addEventListener('click', () => {
             let name = el.dataset.giftRecipient;
@@ -988,9 +959,24 @@ async function renderGiftAgentList() {
     });
 }
 
+// ============================================================
+// LOGS
+// ============================================================
+export function addShopLog(who, action, item, price) {
+    let time = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+    shopLogs.unshift({ who, action, item, price, time });
+    if (shopLogs.length > 200) shopLogs.pop();
+    localStorage.setItem('syndicate_shop_logs', JSON.stringify(shopLogs));
+}
+
+export function getShopLogs() { return shopLogs; }
+
+// ============================================================
+// ЭКСПОРТЫ
+// ============================================================
 export { shopCategory, invCategory, discountedItems, discountEndTime };
 
-// Экспорт в window для inline-обработчиков
+// Прокидка в window
 window.previewItem = previewItem;
 window.buyItem = buyItem;
 window.applyItem = applyItem;

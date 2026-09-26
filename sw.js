@@ -2,8 +2,8 @@ self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open('syndicate-v1').then(function(cache) {
       return cache.addAll([
-        '/',
-        '/index.html'
+        './',
+        './index.html'
       ]);
     })
   );
